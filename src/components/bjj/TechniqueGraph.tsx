@@ -112,7 +112,7 @@ export function TechniqueGraph({
 
   const [focusedId, setFocusedId] = useState<number | null>(null);
   const [dir, setDir] = useState<FocusDir>("both");
-  const [filter, setFilter] = useState<BaseFilter>("all");
+  const [filter, setFilter] = useState<BaseFilter>("myBelt");
   const [giFilter, setGiFilter] = useState<GiFilter>("all");
   const [legalOnly, setLegalOnly] = useState(false);
   const [safetyLens, setSafetyLens] = useState(false);
@@ -283,18 +283,20 @@ export function TechniqueGraph({
               ctx.setLineDash([]);
             }
             // подпись: только фокусный узел или крупный зум; длинные — обрезаем (без наслаивания)
-            const scale = netRef.current?.getScale() ?? 1;
-            if (!d.dim && (d.focused || scale >= 1.6)) {
-              const text = t.label.length > 16 ? t.label.slice(0, 15) + "…" : t.label;
-              ctx.font = `600 ${Math.max(9, 11 / Math.min(scale, 1.6))}px Manrope, sans-serif`;
-              ctx.textAlign = "center";
-              ctx.textBaseline = "top";
-              ctx.lineWidth = 3;
-              ctx.strokeStyle = pal.labelStroke;
-              ctx.strokeText(text, x, y + r + 5);
-              ctx.fillStyle = pal.label;
-              ctx.fillText(text, x, y + r + 5);
-            }
+            // подпись: только фокусный узел или крупный зум; длинные — обрезаем (без наслаивания)
+const scale = netRef.current?.getScale() ?? 1;
+// Оптимизация: показываем подписи только при зуме >= 1.8 (было 1.6)
+if (!d.dim && (d.focused || scale >= 1.8)) {
+  const text = t.label.length > 14 ? t.label.slice(0, 13) + "…" : t.label; // было 16/15
+  ctx.font = `600 ${Math.max(10, 12 / Math.min(scale, 1.8))}px Manrope, sans-serif`; // было 9/11/1.6
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = pal.labelStroke;
+  ctx.strokeText(text, x, y + r + 5);
+  ctx.fillStyle = pal.label;
+  ctx.fillText(text, x, y + r + 5);
+}
             ctx.restore();
           },
           nodeDimensions: { width: r * 2, height: r * 2 },
@@ -326,17 +328,39 @@ export function TechniqueGraph({
     nodesDSRef.current = nodesDS;
     edgesDSRef.current = edgesDS;
 
-    const net = new Network(
-      el,
-      { nodes: nodesDS as never, edges: edgesDS as never },
-      {
-        physics: false,
-        layout: { improvedLayout: false },
-        nodes: { shadow: false },
-        edges: { smooth: false },
-        interaction: { hover: true, tooltipDelay: 150, hideEdgesOnDrag: true, hideEdgesOnZoom: true },
+const net = new Network(
+  el,
+  { nodes: nodesDS as never, edges: edgesDS as never },
+  {
+    physics: false,
+    layout: { improvedLayout: false },
+    nodes: { 
+      shadow: false,
+      font: {
+        size: 12,
+        color: theme.label,
+        strokeWidth: 3,
+        strokeColor: theme.labelStroke,
       },
-    );
+    },
+    edges: { 
+      smooth: false,
+      arrows: {
+        to: { enabled: true, scaleFactor: 0.5 },
+      },
+    },
+    interaction: { 
+      hover: true, 
+      tooltipDelay: 150, 
+      hideEdgesOnDrag: true, 
+      hideEdgesOnZoom: true,
+      navigationButtons: false, // отключено — у тебя свои кнопки
+      keyboard: true,           // управление с клавиатуры
+      zoomView: true,
+      dragView: true,
+    },
+  },
+);
     netRef.current = net;
 
     net.on("beforeDrawing", (ctx: CanvasRenderingContext2D) => {
@@ -444,21 +468,21 @@ export function TechniqueGraph({
     });
 
     let resizeTimer: ReturnType<typeof setTimeout> | undefined;
-    const ro = new ResizeObserver(() => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        const W = el.offsetWidth, H = el.offsetHeight;
-        if (!W || !H) return;
-        const wantO: Orientation = heroModeRef.current ? "vertical" : pickOrientation(W, H);
-        const wantC = pickCols(wantO, W, H);
-        if (wantO !== paramsRef.current.orientation || wantC !== paramsRef.current.cols) {
-          rebuildLayout(wantO, wantC);
-        } else {
-          net.redraw();
-          computeMinScale();
-        }
-      }, 150);
-    });
+const ro = new ResizeObserver(() => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const W = el.offsetWidth, H = el.offsetHeight;
+    if (!W || !H) return;
+    const wantO: Orientation = heroModeRef.current ? "vertical" : pickOrientation(W, H);
+    const wantC = pickCols(wantO, W, H);
+    if (wantO !== paramsRef.current.orientation || wantC !== paramsRef.current.cols) {
+      rebuildLayout(wantO, wantC);
+    } else {
+      net.redraw();
+      computeMinScale();
+    }
+  }, 250); // ← было 150, стало 250 (меньше перерисовок)
+});
     ro.observe(el);
 
     return () => {
