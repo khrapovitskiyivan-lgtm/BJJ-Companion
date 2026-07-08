@@ -3,11 +3,12 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TechniqueCard } from "@/components/bjj/TechniqueCard";
 import { Progress } from "@/components/ui/progress";
-import { TECHNIQUES } from "@/lib/bjj/data";
+import { exportProgress, importProgress } from "@/lib/progress";
 import { BELT_LABEL, BELT_ORDER, GROUP_LABEL } from "@/lib/bjj/constants";
 import { useProgress } from "@/lib/bjj/store";
 import type { Belt, Group, ProgressStatus } from "@/lib/bjj/types";
-import { Check, CircleDot, Circle, Trophy } from "lucide-react";
+import { Check, CircleDot, Circle, Trophy, Download, Upload } from "lucide-react";
+import { exportProgress, importProgress } from "~/lib/progress";
 
 export const Route = createFileRoute("/progress")({
   component: ProgressPage,
@@ -82,6 +83,37 @@ function ProgressView() {
         <h1 className="text-xl font-bold tracking-tight">Прогресс</h1>
         <p className="text-xs text-muted-foreground">Отмечайте изученное — данные хранятся локально</p>
       </header>
+            <section className="flex gap-2">
+        <button
+          onClick={exportProgress}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+        >
+          <Download className="h-4 w-4" />
+          Экспорт
+        </button>
+        
+        <label className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium cursor-pointer">
+          <Upload className="h-4 w-4" />
+          Импорт
+          <input
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                try {
+                  await importProgress(file);
+                  alert('✅ Прогресс импортирован!');
+                  window.location.reload();
+                } catch (err) {
+                  alert('❌ Ошибка импорта: ' + (err as Error).message);
+                }
+              }
+            }}
+          />
+        </label>
+      </section>
 
       <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
         <div className="flex items-center justify-between">
