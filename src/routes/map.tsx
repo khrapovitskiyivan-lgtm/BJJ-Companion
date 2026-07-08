@@ -9,15 +9,15 @@ export const Route = createFileRoute("/map")({
 
 function MapPage() {
   return (
-    <AppShell>
+    <AppShell wide>
       <div className="space-y-3">
         <header className="px-1">
           <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Технический атлас</p>
-          <h1 className="text-xl font-bold tracking-tight">Созвездие приёмов</h1>
+          <h1 className="text-xl font-bold tracking-tight">Карта обучения</h1>
         </header>
         <ClientOnly
           fallback={
-            <div className="h-[640px] w-full rounded-3xl border border-white/10 bg-[#0a0b0e]" />
+            <div className="h-[640px] w-full rounded-3xl border border-border bg-card" />
           }
         >
           <GraphInner />

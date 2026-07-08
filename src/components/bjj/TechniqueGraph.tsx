@@ -1,94 +1,97 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { Network, type Data, type Options } from "vis-network";
+import { Network } from "vis-network";
 import { DataSet } from "vis-data";
 import { Link } from "@tanstack/react-router";
-import { X, Focus, Layers } from "lucide-react";
-import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
+import { X, Search, Maximize2, Smartphone, ShieldAlert, Target, Flag } from "lucide-react";
+import { TECHNIQUES, TECH_BY_ID, contentFor } from "@/lib/bjj/data";
 import { BELT_ORDER, BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
+import {
+  computeLayout, pickOrientation, pickCols, beltLanes,
+  type GraphLayout, type Orientation,
+} from "@/lib/bjj/graphLayout";
+import { readiness, currentFocus, nextToLearn, learningPath } from "@/lib/bjj/recommend";
 import type { ProgressMap } from "@/lib/bjj/store";
 import type { Belt, StyleProfile, Technique } from "@/lib/bjj/types";
 
-// === TECHNIQUE GRAPH — "Structured constellation" + focus mode ===
+// === TECHNIQUE GRAPH — иерархия по поясам, статичная раскладка, физика ВЫКЛ ===
+// Портировано из проверенного прототипа (graph-hier). Кодировка: пояс = обводка,
+// статус = заливка, размер = сложность, кольцо = готовность пререквизитов,
+// пунктирное кольцо = риск травмы (линза безопасности).
 
-const BELT_HEX: Record<Belt, string> = {
-  white: "#e8e6df",
-  blue: "#4c8bf5",
-  purple: "#a855f7",
-  brown: "#8a5a2b",
-  black: "#1a1a20",
-};
+type FocusDir = "both" | "up" | "down" | "path";
+type BaseFilter = "all" | "myBelt" | "mastered" | "available";
+type GiFilter = "all" | "gi" | "nogi";
 
-const STATUS_DONE = "#34d399";
-const STATUS_PROGRESS = "#fbbf24";
-const NODE_BG = "#0f1013";
-const DIM_BG = "#0b0c0f";
-const DIM_BORDER = "rgba(120,120,130,0.18)";
-const EDGE_PREREQ = "rgba(148,163,184,0.22)";
-const EDGE_CHAIN = "rgba(96,165,250,0.35)";
-const EDGE_SETUP = "rgba(192,132,252,0.32)";
-const EDGE_DIM = "rgba(80,85,100,0.06)";
-const EDGE_HL_PREREQ = "rgba(148,163,184,0.95)";
-const EDGE_HL_CHAIN = "rgba(96,165,250,1)";
-const EDGE_HL_SETUP = "rgba(192,132,252,1)";
-
-type FilterMode = "all" | "myBelt" | "mastered" | "available";
-type Hops = 1 | 2;
-
-type NodeItem = {
-  id: number;
-  label: string;
-  title: string;
-  shape: "dot";
-  size: number;
-  borderWidth: number;
-  color: {
-    background: string;
-    border: string;
-    highlight: { background: string; border: string };
-    hover: { background: string; border: string };
-  };
-  hidden?: boolean;
-};
-
-type EdgeItem = {
+interface EdgeItem {
   id: string;
   from: number;
   to: number;
   kind: "prereq" | "chain" | "setup";
-  color: { color: string; highlight: string; hover: string };
-  arrows?: { to: { enabled: boolean; scaleFactor: number } };
+  color?: { color: string; highlight: string; hover: string };
+  width?: number;
   dashes?: boolean;
-  width: number;
-  hidden?: boolean;
+  arrows?: unknown;
+}
+
+// Палитры под темы приложения
+const PALETTE = {
+  dark: {
+    canvasBg: "#0a0b0e",
+    nodeBg: "#0f1013",
+    edgeBase: "rgba(96,102,120,0.14)",
+    edgeDim: "rgba(80,85,100,0.03)",
+    edgeIn: "rgba(148,163,184,0.95)",
+    edgeOut: "rgba(96,165,250,1)",
+    bandEven: "rgba(255,255,255,0.022)",
+    bandOdd: "rgba(255,255,255,0.006)",
+    laneLabel: "#71717a",
+    watermarkAlpha: 0.07,
+    label: "#c9c9d1",
+    labelStroke: "#0a0b0e",
+    focusRing: "#ffffff",
+    belts: { white: "#e8e6df", blue: "#4c8bf5", purple: "#a855f7", brown: "#8a5a2b", black: "#3f3f46" } as Record<Belt, string>,
+    done: "#34d399",
+    prog: "#fbbf24",
+    risk: "#ef4444",
+    riskMed: "#f97316",
+  },
+  light: {
+    canvasBg: "#f7f7f5",
+    nodeBg: "#ffffff",
+    edgeBase: "rgba(90,95,110,0.18)",
+    edgeDim: "rgba(120,125,140,0.05)",
+    edgeIn: "rgba(71,85,105,0.95)",
+    edgeOut: "rgba(37,99,235,1)",
+    bandEven: "rgba(0,0,0,0.028)",
+    bandOdd: "rgba(0,0,0,0.008)",
+    laneLabel: "#8a8a92",
+    watermarkAlpha: 0.08,
+    label: "#3f3f46",
+    labelStroke: "#f7f7f5",
+    focusRing: "#111111",
+    belts: { white: "#b8b6ac", blue: "#3b82f6", purple: "#9333ea", brown: "#92561f", black: "#27272a" } as Record<Belt, string>,
+    done: "#10b981",
+    prog: "#d97706",
+    risk: "#dc2626",
+    riskMed: "#ea580c",
+  },
 };
+type Palette = (typeof PALETTE)["dark"];
 
-// Build adjacency once (undirected, all edge kinds).
-function buildAdjacency() {
-  const adj = new Map<number, Set<number>>();
-  const add = (a: number, b: number) => {
-    if (!TECH_BY_ID[a] || !TECH_BY_ID[b]) return;
-    if (!adj.has(a)) adj.set(a, new Set());
-    if (!adj.has(b)) adj.set(b, new Set());
-    adj.get(a)!.add(b);
-    adj.get(b)!.add(a);
-  };
-  for (const t of TECHNIQUES) {
-    for (const p of t.prerequisites) add(t.id, p);
-    for (const c of t.chain_to) add(t.id, c);
-    for (const s of t.common_setups) add(t.id, s);
-  }
-  return adj;
+function riskLevel(t: Technique): "critical" | "medium" | "low" {
+  const r = contentFor(t, "ru")?.injuryRisk ?? "";
+  if (/КРИТИЧНО/i.test(r)) return "critical";
+  if (/Средний/i.test(r)) return "medium";
+  return "low";
 }
 
-function beltIdx(b: Belt) {
-  return BELT_ORDER.indexOf(b);
-}
-
-function nodeColorFor(t: Technique, status: string) {
-  const belt = BELT_HEX[t.belt];
-  if (status === "done") return { bg: STATUS_DONE, border: STATUS_DONE };
-  if (status === "in_progress") return { bg: STATUS_PROGRESS, border: STATUS_PROGRESS };
-  return { bg: NODE_BG, border: belt };
+interface RenderData {
+  status: "not_started" | "in_progress" | "done";
+  dim: boolean;
+  focused: boolean;
+  showLabel: boolean;
+  readyFrac: number; // готовность пререквизитов 0..1
+  risk: "critical" | "medium" | "low";
 }
 
 export function TechniqueGraph({
@@ -98,360 +101,657 @@ export function TechniqueGraph({
   progress: ProgressMap;
   profile: StyleProfile;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const netRef = useRef<Network | null>(null);
-  const nodesDSRef = useRef<DataSet<NodeItem> | null>(null);
+  const nodesDSRef = useRef<DataSet<Record<string, unknown>> | null>(null);
   const edgesDSRef = useRef<DataSet<EdgeItem> | null>(null);
+  const layoutRef = useRef<GraphLayout | null>(null);
+  const renderRef = useRef<Map<number, RenderData>>(new Map());
+  const minScaleRef = useRef(0.1);
+  const paramsRef = useRef<{ orientation: Orientation; cols: number }>({ orientation: "horizontal", cols: 3 });
 
   const [focusedId, setFocusedId] = useState<number | null>(null);
-  const [hops, setHops] = useState<Hops>(1);
-  const [filter, setFilter] = useState<FilterMode>("all");
+  const [dir, setDir] = useState<FocusDir>("both");
+  const [filter, setFilter] = useState<BaseFilter>("all");
+  const [giFilter, setGiFilter] = useState<GiFilter>("all");
+  const [legalOnly, setLegalOnly] = useState(false);
+  const [safetyLens, setSafetyLens] = useState(false);
+  const [query, setQuery] = useState("");
+  const [heroMode, setHeroMode] = useState(false);
+  const [heroBelt, setHeroBelt] = useState<Belt>(profile.belt);
 
-  const adjacency = useMemo(() => buildAdjacency(), []);
+  const theme: Palette = profile.theme === "dark" ? PALETTE.dark : PALETTE.light;
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
+  const safetyLensRef = useRef(safetyLens);
+  safetyLensRef.current = safetyLens;
+  const heroModeRef = useRef(heroMode);
+  heroModeRef.current = heroMode;
+  const profileThemeRef = useRef(profile.theme);
+  profileThemeRef.current = profile.theme;
 
-  // Compute base "matches filter" set (before focus is applied).
-  const matches = useMemo(() => {
-    const set = new Set<number>();
-    const myIdx = beltIdx(profile.belt);
+  // --- рёбра (стабильны на всю жизнь графа) ---
+  const edges = useMemo<EdgeItem[]>(() => {
+    const out: EdgeItem[] = [];
+    const arrow = { to: { enabled: true, scaleFactor: 0.35 } };
     for (const t of TECHNIQUES) {
+      for (const p of t.prerequisites)
+        if (TECH_BY_ID[p]) out.push({ id: `p${p}-${t.id}`, from: p, to: t.id, kind: "prereq", arrows: arrow });
+      for (const c of t.chain_to)
+        if (TECH_BY_ID[c]) out.push({ id: `c${t.id}-${c}`, from: t.id, to: c, kind: "chain", arrows: arrow });
+      for (const s of t.common_setups)
+        if (TECH_BY_ID[s]) out.push({ id: `s${t.id}-${s}`, from: t.id, to: s, kind: "setup", dashes: true });
+    }
+    return out;
+  }, []);
+
+  // --- поиск ---
+  const searchResults = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return TECHNIQUES.filter(
+      (t) =>
+        t.nameRu.toLowerCase().includes(q) ||
+        t.nameEn.toLowerCase().includes(q) ||
+        t.label.toLowerCase().includes(q),
+    ).slice(0, 8);
+  }, [query]);
+
+  // --- рекомендации ---
+  const focusTech = useMemo(() => currentFocus(TECHNIQUES, progress), [progress]);
+  const recommendations = useMemo(
+    () => nextToLearn(TECHNIQUES, progress, profile.belt, 4),
+    [progress, profile.belt],
+  );
+
+  // --- фильтры ---
+  const beltIdx = (b: Belt) => BELT_ORDER.indexOf(b);
+  const matchesFilter = useCallback(
+    (t: Technique): boolean => {
       const s = progress[t.id] ?? "not_started";
-      if (filter === "myBelt") {
-        if (beltIdx(t.belt) <= myIdx) set.add(t.id);
-      } else if (filter === "mastered") {
-        if (s === "done") set.add(t.id);
-      } else if (filter === "available") {
-        if (beltIdx(t.belt) > myIdx) continue;
-        const allDone =
-          t.prerequisites.length === 0 ||
-          t.prerequisites.every((p) => (progress[p] ?? "not_started") === "done");
-        if (allDone && s !== "done") set.add(t.id);
-      } else {
-        set.add(t.id);
+      if (giFilter === "gi" && !t.gi) return false;
+      if (giFilter === "nogi" && !t.noGi) return false;
+      if (legalOnly && !t.legal_ibjjf_gi && !t.legal_ibjjf_nogi) return false;
+      if (filter === "myBelt") return beltIdx(t.belt) <= beltIdx(profile.belt);
+      if (filter === "mastered") return s === "done";
+      if (filter === "available") {
+        if (beltIdx(t.belt) > beltIdx(profile.belt)) return false;
+        return t.prerequisites.every((p) => progress[p] === "done") && s !== "done";
+      }
+      return true;
+    },
+    [filter, giFilter, legalOnly, progress, profile.belt],
+  );
+
+  // --- фокус: направленный + режим «путь» ---
+  const focusSet = useMemo<Set<number> | null>(() => {
+    if (focusedId == null) return null;
+    const t = TECH_BY_ID[focusedId];
+    if (!t) return null;
+    if (dir === "path") return new Set(learningPath(t, progress).map((x) => x.id));
+    const set = new Set<number>([focusedId]);
+    for (const e of edges) {
+      if (dir === "both") {
+        if (e.from === focusedId) set.add(e.to);
+        if (e.to === focusedId) set.add(e.from);
+      } else if (dir === "up") {
+        if (e.to === focusedId) set.add(e.from);
+      } else if (dir === "down") {
+        if (e.from === focusedId) set.add(e.to);
       }
     }
     return set;
-  }, [filter, progress, profile.belt]);
+  }, [focusedId, dir, edges, progress]);
 
-  // Focus neighborhood via BFS on undirected adjacency.
-  const focusSet = useMemo(() => {
-    if (focusedId == null) return null;
-    const visited = new Map<number, number>();
-    visited.set(focusedId, 0);
-    const queue: number[] = [focusedId];
-    while (queue.length) {
-      const cur = queue.shift()!;
-      const d = visited.get(cur)!;
-      if (d >= hops) continue;
-      for (const nb of adjacency.get(cur) ?? []) {
-        if (!visited.has(nb)) {
-          visited.set(nb, d + 1);
-          queue.push(nb);
-        }
-      }
-    }
-    return new Set(visited.keys());
-  }, [focusedId, hops, adjacency]);
+  const rebuildLayout = useCallback((orientation: Orientation, cols: number) => {
+    const nodesDS = nodesDSRef.current;
+    const net = netRef.current;
+    if (!nodesDS || !net) return;
+    paramsRef.current = { orientation, cols };
+    const layout = computeLayout(TECHNIQUES, orientation, cols);
+    layoutRef.current = layout;
+    nodesDS.update(
+      TECHNIQUES.map((t) => {
+        const p = layout.positions.get(t.id)!;
+        return { id: t.id, x: p.x, y: p.y };
+      }),
+    );
+    net.redraw();
+    net.fit({ animation: false } as never);
+    minScaleRef.current = net.getScale();
+  }, []);
 
-  const visibleIds = useMemo(() => {
-    if (!focusSet) return matches;
-    const out = new Set<number>();
-    for (const id of focusSet) if (matches.has(id) || id === focusedId) out.add(id);
-    return out;
-  }, [focusSet, matches, focusedId]);
-
-  const stats = useMemo(() => {
-    const total = TECHNIQUES.length;
-    let done = 0;
-    let inProgress = 0;
-    for (const t of TECHNIQUES) {
-      const s = progress[t.id];
-      if (s === "done") done++;
-      else if (s === "in_progress") inProgress++;
-    }
-    return { total, done, inProgress, visible: visibleIds.size, pct: Math.round((done / total) * 100) };
-  }, [progress, visibleIds.size]);
-
-  // Build network once, or rebuild when progress changes (colors change).
+  // --- построение сети (один раз; обновления — без пересоздания) ---
   useEffect(() => {
-    if (!ref.current) return;
+    const el = containerRef.current;
+    if (!el) return;
 
-    const nodes: NodeItem[] = TECHNIQUES.map((t) => {
-      const status = progress[t.id] ?? "not_started";
-      const { bg, border } = nodeColorFor(t, status);
-      const size = 6 + t.difficulty * 1.8;
-      return {
-        id: t.id,
-        label: "",
-        title: `${t.nameRu} · ${BELT_LABEL[t.belt]}`,
-        shape: "dot",
-        size,
-        borderWidth: 2,
-        color: {
-          background: bg,
-          border,
-          highlight: { background: bg, border: "#ffffff" },
-          hover: { background: bg, border: "#ffffff" },
-        },
-      };
+    const w = el.offsetWidth || 800;
+    const h = el.offsetHeight || 520;
+    const orientation = pickOrientation(w, h);
+    const cols = pickCols(orientation, w, h);
+    paramsRef.current = { orientation, cols };
+    const layout = computeLayout(TECHNIQUES, orientation, cols);
+    layoutRef.current = layout;
+
+    const render = renderRef.current;
+    TECHNIQUES.forEach((t) => {
+      render.set(t.id, {
+        status: progress[t.id] ?? "not_started",
+        dim: false,
+        focused: false,
+        showLabel: false,
+        readyFrac: readiness(t, progress).frac,
+        risk: riskLevel(t),
+      });
     });
 
-    const arrow = { to: { enabled: true, scaleFactor: 0.35 } };
-    const edges: EdgeItem[] = [];
-    for (const t of TECHNIQUES) {
-      for (const p of t.prerequisites)
-        if (TECH_BY_ID[p])
-          edges.push({
-            id: `p-${p}-${t.id}`,
-            from: p,
-            to: t.id,
-            kind: "prereq",
-            arrows: arrow,
-            color: { color: EDGE_PREREQ, highlight: EDGE_HL_PREREQ, hover: EDGE_HL_PREREQ },
-            width: 0.6,
-          });
-      for (const c of t.chain_to)
-        if (TECH_BY_ID[c])
-          edges.push({
-            id: `c-${t.id}-${c}`,
-            from: t.id,
-            to: c,
-            kind: "chain",
-            arrows: arrow,
-            color: { color: EDGE_CHAIN, highlight: EDGE_HL_CHAIN, hover: EDGE_HL_CHAIN },
-            width: 0.8,
-          });
-      for (const s of t.common_setups)
-        if (TECH_BY_ID[s])
-          edges.push({
-            id: `s-${t.id}-${s}`,
-            from: t.id,
-            to: s,
-            kind: "setup",
-            color: { color: EDGE_SETUP, highlight: EDGE_HL_SETUP, hover: EDGE_HL_SETUP },
-            dashes: true,
-            width: 0.6,
-          });
-    }
+    const mkRenderer =
+      (t: Technique) =>
+      ({ ctx, x, y }: { ctx: CanvasRenderingContext2D; x: number; y: number }) => {
+        const r = 7 + t.difficulty * 2.2;
+        return {
+          drawNode: () => {
+            const d = renderRef.current.get(t.id);
+            if (!d) return;
+            const pal = themeRef.current;
+            ctx.save();
+            if (d.dim) ctx.globalAlpha = 0.14;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fillStyle = d.status === "done" ? pal.done : d.status === "in_progress" ? pal.prog : pal.nodeBg;
+            ctx.fill();
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = d.focused ? pal.focusRing : pal.belts[t.belt];
+            ctx.stroke();
+            if (d.status !== "done" && d.readyFrac > 0 && d.readyFrac < 1) {
+              ctx.beginPath();
+              ctx.arc(x, y, r + 4, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * d.readyFrac);
+              ctx.lineWidth = 2;
+              ctx.strokeStyle = pal.prog;
+              ctx.stroke();
+            }
+            if (safetyLensRef.current && d.risk !== "low") {
+              ctx.beginPath();
+              ctx.arc(x, y, r + (d.status !== "done" ? 7 : 4), 0, Math.PI * 2);
+              ctx.lineWidth = 2;
+              ctx.setLineDash(d.risk === "critical" ? [4, 3] : [2, 4]);
+              ctx.strokeStyle = d.risk === "critical" ? pal.risk : pal.riskMed;
+              ctx.stroke();
+              ctx.setLineDash([]);
+            }
+            const scale = netRef.current?.getScale() ?? 1;
+            if (!d.dim && (d.showLabel || scale >= 1.35)) {
+              ctx.font = `600 ${Math.max(9, 11 / Math.min(scale, 1.6))}px Manrope, sans-serif`;
+              ctx.textAlign = "center";
+              ctx.textBaseline = "top";
+              ctx.lineWidth = 3;
+              ctx.strokeStyle = pal.labelStroke;
+              ctx.strokeText(t.label, x, y + r + 5);
+              ctx.fillStyle = pal.label;
+              ctx.fillText(t.label, x, y + r + 5);
+            }
+            ctx.restore();
+          },
+          nodeDimensions: { width: r * 2, height: r * 2 },
+        };
+      };
 
-    const nodesDS = new DataSet<NodeItem>(nodes);
-    const edgesDS = new DataSet<EdgeItem>(edges);
+    const nodesDS = new DataSet<Record<string, unknown>>(
+      TECHNIQUES.map((t) => {
+        const p = layout.positions.get(t.id)!;
+        return {
+          id: t.id,
+          x: p.x,
+          y: p.y,
+          fixed: { x: true, y: true },
+          shape: "custom",
+          title: `${t.nameRu} · ${BELT_LABEL[t.belt]} · ${GROUP_LABEL[t.group]}`,
+          ctxRenderer: mkRenderer(t),
+        };
+      }),
+    );
+    const pal0 = themeRef.current;
+    const edgesDS = new DataSet<EdgeItem>(
+      edges.map((e) => ({
+        ...e,
+        color: { color: pal0.edgeBase, highlight: pal0.edgeIn, hover: pal0.edgeIn },
+        width: 0.6,
+      })),
+    );
     nodesDSRef.current = nodesDS;
     edgesDSRef.current = edgesDS;
 
-    const data: Data = { nodes: nodesDS as unknown as Data["nodes"], edges: edgesDS as unknown as Data["edges"] };
-    const options: Options = {
-      autoResize: true,
-      physics: {
-        stabilization: { iterations: 220, fit: true },
-        barnesHut: {
-          gravitationalConstant: -4500,
-          springLength: 140,
-          springConstant: 0.02,
-          damping: 0.35,
-          avoidOverlap: 0.4,
-        },
+    const net = new Network(
+      el,
+      { nodes: nodesDS as never, edges: edgesDS as never },
+      {
+        physics: false,
+        layout: { improvedLayout: false },
+        nodes: { shadow: false },
+        edges: { smooth: false },
+        interaction: { hover: true, tooltipDelay: 150, hideEdgesOnDrag: true, hideEdgesOnZoom: true },
       },
-      interaction: { hover: true, tooltipDelay: 120, hideEdgesOnDrag: true },
-      edges: { smooth: { enabled: true, type: "continuous", roundness: 0.3 } },
-    };
-
-    const net = new Network(ref.current, data, options);
+    );
     netRef.current = net;
 
-    net.on("click", (params: { nodes: number[] }) => {
-      const id = params.nodes?.[0];
-      if (id == null) setFocusedId(null);
-      else setFocusedId(id);
+    net.on("beforeDrawing", (ctx: CanvasRenderingContext2D) => {
+      const L = layoutRef.current;
+      if (!L) return;
+      const pal = themeRef.current;
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      L.bands.forEach((bd, i) => {
+        ctx.fillStyle = i % 2 === 0 ? pal.bandEven : pal.bandOdd;
+        ctx.fillRect(L.xMin - 30, bd.y0 - 24, L.xMax - L.xMin + 60, bd.y1 - bd.y0 + 48);
+        const label =
+          bd.type === "belt" ? BELT_LABEL[bd.key as Belt] : GROUP_LABEL[bd.key as keyof typeof GROUP_LABEL];
+        ctx.fillStyle = bd.type === "belt" ? pal.belts[bd.key as Belt] : pal.laneLabel;
+        ctx.globalAlpha = pal.watermarkAlpha;
+        ctx.font = `800 ${Math.min((bd.y1 - bd.y0) * 0.7, 150)}px Manrope, sans-serif`;
+        ctx.fillText((label ?? bd.key).toUpperCase(), (L.xMin + L.xMax) / 2, (bd.y0 + bd.y1) / 2);
+        ctx.globalAlpha = 1;
+      });
+      ctx.restore();
+    });
+    net.on("afterDrawing", (ctx: CanvasRenderingContext2D) => {
+      const L = layoutRef.current;
+      if (!L) return;
+      const pal = themeRef.current;
+      ctx.save();
+      const topY = L.bands[0].y0 - 26;
+      L.lanes.forEach((l) => {
+        const fs = Math.max(11, Math.min((l.x1 - l.x0) * 0.16, 22));
+        const label =
+          l.type === "belt" ? BELT_LABEL[l.key as Belt] : GROUP_LABEL[l.key as keyof typeof GROUP_LABEL];
+        ctx.fillStyle = l.type === "belt" ? pal.belts[l.key as Belt] : pal.laneLabel;
+        ctx.globalAlpha = l.type === "belt" ? 0.85 : 1;
+        ctx.font = `700 ${fs}px Manrope, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText((label ?? l.key).toUpperCase(), (l.x0 + l.x1) / 2, topY);
+        ctx.globalAlpha = 1;
+      });
+      ctx.restore();
     });
 
+    net.on("click", (params: { nodes: number[] }) => {
+      const id = params.nodes?.[0] ?? null;
+      setFocusedId(id);
+      if (id != null) {
+        const sc = heroModeRef.current ? Math.max(net.getScale(), 0.9) : 1.0;
+        net.focus(id, { scale: sc, animation: { duration: 400, easingFunction: "easeInOutQuad" } });
+      }
+    });
+
+    let clamping = false;
+    net.on("zoom", () => {
+      if (clamping) return;
+      const s = net.getScale();
+      const target = s < minScaleRef.current ? minScaleRef.current : s > 3.5 ? 3.5 : null;
+      if (target != null) {
+        clamping = true;
+        net.moveTo({ scale: target });
+        clamping = false;
+      }
+    });
+
+    const computeMinScale = () => {
+      const before = { s: net.getScale(), p: net.getViewPosition() };
+      net.fit({ animation: false } as never);
+      minScaleRef.current = net.getScale();
+      net.moveTo({ scale: before.s, position: before.p });
+    };
+
+    net.once("afterDrawing", () => {
+      computeMinScale();
+      if ((el.offsetWidth || 0) < 640) {
+        const lane = beltLanes(layout).find((l) => l.key === profile.belt);
+        if (lane) {
+          const scale = Math.max(0.7, minScaleRef.current);
+          net.moveTo({
+            position: { x: (lane.x0 + lane.x1) / 2, y: layout.bands[0].y0 + el.offsetHeight / 2 / scale },
+            scale,
+          });
+        }
+      } else {
+        net.fit({ animation: false } as never);
+      }
+    });
+
+    let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+    const ro = new ResizeObserver(() => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const W = el.offsetWidth, H = el.offsetHeight;
+        if (!W || !H) return;
+        const wantO: Orientation = heroModeRef.current ? "vertical" : pickOrientation(W, H);
+        const wantC = pickCols(wantO, W, H);
+        if (wantO !== paramsRef.current.orientation || wantC !== paramsRef.current.cols) {
+          rebuildLayout(wantO, wantC);
+        } else {
+          net.redraw();
+          computeMinScale();
+        }
+      }, 150);
+    });
+    ro.observe(el);
+
     return () => {
+      clearTimeout(resizeTimer);
+      ro.disconnect();
       net.destroy();
       netRef.current = null;
       nodesDSRef.current = null;
       edgesDSRef.current = null;
     };
-  }, [progress]);
-
-  // Apply visibility (filter + focus) without rebuilding the network.
-  useEffect(() => {
-    const nodesDS = nodesDSRef.current;
-    const edgesDS = edgesDSRef.current;
-    if (!nodesDS || !edgesDS) return;
-
-    const isDimmed = focusSet !== null || filter !== "all";
-
-    const nodeUpdates: Partial<NodeItem>[] = TECHNIQUES.map((t) => {
-      const status = progress[t.id] ?? "not_started";
-      const { bg, border } = nodeColorFor(t, status);
-      const visible = visibleIds.has(t.id) || t.id === focusedId;
-      if (!isDimmed) {
-        return {
-          id: t.id,
-          color: {
-            background: bg,
-            border,
-            highlight: { background: bg, border: "#ffffff" },
-            hover: { background: bg, border: "#ffffff" },
-          },
-        } as Partial<NodeItem>;
-      }
-      if (visible) {
-        return {
-          id: t.id,
-          color: {
-            background: bg,
-            border: t.id === focusedId ? "#ffffff" : border,
-            highlight: { background: bg, border: "#ffffff" },
-            hover: { background: bg, border: "#ffffff" },
-          },
-        } as Partial<NodeItem>;
-      }
-      return {
-        id: t.id,
-        color: {
-          background: DIM_BG,
-          border: DIM_BORDER,
-          highlight: { background: DIM_BG, border: DIM_BORDER },
-          hover: { background: DIM_BG, border: DIM_BORDER },
-        },
-      } as Partial<NodeItem>;
-    });
-    nodesDS.update(nodeUpdates as NodeItem[]);
-
-    const edgeUpdates: Partial<EdgeItem>[] = edgesDS.get().map((e) => {
-      const bothVisible = visibleIds.has(e.from) && visibleIds.has(e.to);
-      const bothOrFocused =
-        bothVisible ||
-        (focusedId != null && (e.from === focusedId || e.to === focusedId) && (visibleIds.has(e.from) || visibleIds.has(e.to)));
-      if (!isDimmed || bothOrFocused) {
-        const base =
-          e.kind === "prereq" ? EDGE_PREREQ : e.kind === "chain" ? EDGE_CHAIN : EDGE_SETUP;
-        const hl =
-          e.kind === "prereq" ? EDGE_HL_PREREQ : e.kind === "chain" ? EDGE_HL_CHAIN : EDGE_HL_SETUP;
-        const strong = focusedId != null && (e.from === focusedId || e.to === focusedId);
-        return {
-          id: e.id,
-          color: { color: strong ? hl : base, highlight: hl, hover: hl },
-          width: strong ? e.width * 2 : e.width,
-        } as Partial<EdgeItem>;
-      }
-      return {
-        id: e.id,
-        color: { color: EDGE_DIM, highlight: EDGE_DIM, hover: EDGE_DIM },
-        width: 0.3,
-      } as Partial<EdgeItem>;
-    });
-    edgesDS.update(edgeUpdates as EdgeItem[]);
-
-    // Recenter on focus change.
-    if (focusedId != null && netRef.current) {
-      const nb = Array.from(focusSet ?? [focusedId]);
-      netRef.current.focus(focusedId, {
-        scale: 1.1,
-        animation: { duration: 500, easingFunction: "easeInOutQuad" },
-      });
-      void nb;
-    }
-  }, [visibleIds, focusSet, focusedId, filter, progress]);
-
-  const fit = useCallback(() => {
-    netRef.current?.fit({ animation: { duration: 400, easingFunction: "easeInOutQuad" } });
+    // Сеть строится один раз; прогресс/фильтры/тема применяются отдельным эффектом ниже.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const clearFocus = useCallback(() => setFocusedId(null), []);
+  // --- применение прогресса/фильтров/фокуса/темы БЕЗ пересоздания сети ---
+  useEffect(() => {
+    const net = netRef.current;
+    const edgesDS = edgesDSRef.current;
+    if (!net || !edgesDS) return;
+    const pal = theme;
+    const dimmed = focusSet !== null || filter !== "all" || giFilter !== "all" || legalOnly;
+
+    const visible = new Set<number>();
+    for (const t of TECHNIQUES) {
+      if (focusSet) {
+        if (focusSet.has(t.id)) visible.add(t.id);
+      } else if (matchesFilter(t)) visible.add(t.id);
+    }
+    if (focusedId != null) visible.add(focusedId);
+
+    for (const t of TECHNIQUES) {
+      const d = renderRef.current.get(t.id)!;
+      d.status = progress[t.id] ?? "not_started";
+      d.readyFrac = readiness(t, progress).frac;
+      d.dim = dimmed && !visible.has(t.id);
+      d.focused = t.id === focusedId;
+      d.showLabel = focusSet ? focusSet.has(t.id) : false;
+    }
+
+    edgesDS.update(
+      edges.map((e) => {
+        const related = focusedId != null && (e.from === focusedId || e.to === focusedId);
+        const inPath =
+          dir === "path" && focusSet != null && focusSet.has(e.from) && focusSet.has(e.to) && e.kind === "prereq";
+        const bothVisible = visible.has(e.from) && visible.has(e.to);
+        if (!dimmed || ((related || inPath) && bothVisible)) {
+          let col = pal.edgeBase;
+          if (related) col = e.to === focusedId ? pal.edgeIn : pal.edgeOut;
+          if (inPath) col = pal.edgeOut;
+          return {
+            id: e.id,
+            color: { color: col, highlight: pal.edgeIn, hover: pal.edgeIn },
+            width: related || inPath ? 1.6 : 0.6,
+          };
+        }
+        return { id: e.id, color: { color: pal.edgeDim, highlight: pal.edgeDim, hover: pal.edgeDim }, width: 0.3 };
+      }),
+    );
+    net.redraw();
+  }, [progress, focusSet, focusedId, dir, filter, giFilter, legalOnly, safetyLens, theme, matchesFilter, edges]);
+
+  // --- пояс-герой ---
+  const focusBelt = useCallback((belt: Belt, animate = true) => {
+    const net = netRef.current;
+    const L = layoutRef.current;
+    const el = containerRef.current;
+    if (!net || !L || !el) return;
+    const lane = beltLanes(L).find((l) => l.key === belt);
+    if (!lane) return;
+    const scale = Math.max(minScaleRef.current, Math.min(3, el.offsetWidth / (1.9 * (lane.x1 - lane.x0))));
+    net.moveTo({
+      position: { x: (lane.x0 + lane.x1) / 2, y: L.bands[0].y0 - 20 + el.offsetHeight / 2 / scale },
+      scale,
+      animation: animate ? ({ duration: 350, easingFunction: "easeInOutQuad" } as never) : false,
+    });
+  }, []);
+
+  const toggleHero = useCallback(() => {
+    const next = !heroMode;
+    setHeroMode(next);
+    heroModeRef.current = next;
+    const el = containerRef.current;
+    if (!el) return;
+    if (next) {
+      rebuildLayout("vertical", pickCols("vertical", el.offsetWidth, el.offsetHeight));
+      setTimeout(() => focusBelt(heroBelt, false), 50);
+    } else {
+      const o = pickOrientation(el.offsetWidth, el.offsetHeight);
+      rebuildLayout(o, pickCols(o, el.offsetWidth, el.offsetHeight));
+    }
+  }, [heroMode, heroBelt, rebuildLayout, focusBelt]);
+
+  const jumpTo = useCallback((id: number) => {
+    setFocusedId(id);
+    netRef.current?.focus(id, { scale: 1.1, animation: { duration: 400, easingFunction: "easeInOutQuad" } });
+  }, []);
+
+  const selectFromSearch = useCallback(
+    (t: Technique) => {
+      setQuery("");
+      jumpTo(t.id);
+    },
+    [jumpTo],
+  );
+
+  const overviewFit = useCallback(() => {
+    netRef.current?.fit({ animation: { duration: 400, easingFunction: "easeInOutQuad" } } as never);
+  }, []);
 
   const focusedTech = focusedId != null ? TECH_BY_ID[focusedId] : null;
+  const stats = useMemo(() => {
+    let done = 0;
+    for (const t of TECHNIQUES) if (progress[t.id] === "done") done++;
+    return { total: TECHNIQUES.length, done, pct: Math.round((done / TECHNIQUES.length) * 100) };
+  }, [progress]);
+
+  const heroBelts = BELT_ORDER.filter((b) => TECHNIQUES.some((t) => t.belt === b));
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0a0b0e] shadow-2xl">
-      {/* Header */}
-      <div className="flex items-end justify-between border-b border-white/5 px-5 py-4">
-        <div>
-          <h2 className="text-sm font-semibold tracking-tight text-zinc-100">Карта техник</h2>
-          <p className="mt-0.5 text-[11px] text-zinc-500">
-            {stats.visible}/{stats.total} · {stats.done} изучено · {stats.inProgress} в процессе
-          </p>
+    <div className="relative overflow-hidden rounded-3xl border border-border bg-card shadow-xl">
+      {/* Шапка: статистика + поиск */}
+      <div className="border-b border-border px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold tracking-tight">Карта техник</h2>
+            <p className="text-[11px] text-muted-foreground">
+              {stats.done}/{stats.total} изучено · {stats.pct}%
+            </p>
+          </div>
+          <div className="relative w-44 sm:w-56">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Поиск техники…"
+              className="w-full rounded-full border border-border bg-background py-1.5 pl-8 pr-3 text-xs outline-none focus:ring-1 focus:ring-ring"
+            />
+            {searchResults.length > 0 && (
+              <div className="absolute right-0 top-full z-30 mt-1 w-64 overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
+                {searchResults.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => selectFromSearch(t)}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted"
+                  >
+                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: theme.belts[t.belt] }} />
+                    <span className="min-w-0 flex-1 truncate">{t.nameRu}</span>
+                    <span className="shrink-0 text-[10px] text-muted-foreground">{GROUP_LABEL[t.group]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          {focusedId != null && (
-            <button
-              onClick={() => setHops(hops === 1 ? 2 : 1)}
-              className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-medium text-zinc-300 transition hover:bg-white/10"
-              title="Глубина фокуса"
-            >
-              <Layers className="h-3 w-3" />
-              {hops} hop{hops === 2 ? "s" : ""}
-            </button>
-          )}
+
+        {/* Фильтры + направление фокуса */}
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          {(
+            [
+              ["all", "Все"],
+              ["myBelt", "Мой пояс"],
+              ["mastered", "Освоенные"],
+              ["available", "Доступные"],
+            ] as [BaseFilter, string][]
+          ).map(([f, label]) => (
+            <Chip key={f} active={filter === f} onClick={() => { setFilter(f); setFocusedId(null); }}>
+              {label}
+            </Chip>
+          ))}
+          <span className="mx-1 h-4 w-px bg-border" />
+          {(
+            [
+              ["all", "Gi+NoGi"],
+              ["gi", "Gi"],
+              ["nogi", "No-Gi"],
+            ] as [GiFilter, string][]
+          ).map(([f, label]) => (
+            <Chip key={f} active={giFilter === f} onClick={() => setGiFilter(f)}>
+              {label}
+            </Chip>
+          ))}
+          <Chip active={legalOnly} onClick={() => setLegalOnly(!legalOnly)}>
+            IBJJF
+          </Chip>
+          <Chip active={safetyLens} onClick={() => setSafetyLens(!safetyLens)}>
+            <ShieldAlert className="mr-1 inline h-3 w-3" />
+            Риск
+          </Chip>
+          <span className="mx-1 h-4 w-px bg-border" />
+          {(
+            [
+              ["both", "Соседи"],
+              ["up", "← Раньше"],
+              ["down", "Дальше →"],
+              ["path", "Путь"],
+            ] as [FocusDir, string][]
+          ).map(([d, label]) => (
+            <Chip key={d} active={dir === d} onClick={() => setDir(d)}>
+              {label}
+            </Chip>
+          ))}
+        </div>
+      </div>
+
+      {/* Канвас */}
+      <div className="relative h-[520px] w-full" style={{ background: theme.canvasBg }}>
+        <div ref={containerRef} className="absolute inset-0" />
+
+        {heroMode && (
+          <div className="absolute left-1/2 top-2.5 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-border bg-card/90 px-1.5 py-1 backdrop-blur">
+            {heroBelts.map((b) => (
+              <button
+                key={b}
+                onClick={() => { setHeroBelt(b); focusBelt(b); }}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
+                  b === heroBelt ? "text-foreground" : "text-muted-foreground"
+                }`}
+                style={
+                  b === heroBelt
+                    ? { background: `${theme.belts[b]}33`, boxShadow: `inset 0 0 0 1px ${theme.belts[b]}66` }
+                    : undefined
+                }
+              >
+                {BELT_LABEL[b]}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="absolute bottom-3 right-3 z-20 flex flex-col gap-2">
           <button
-            onClick={fit}
-            className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-zinc-300 transition hover:bg-white/10"
+            onClick={toggleHero}
+            title="Режим пояса (мобильный)"
+            className={`grid h-10 w-10 place-items-center rounded-xl border backdrop-blur transition ${
+              heroMode
+                ? "border-ring bg-primary/20 text-foreground"
+                : "border-border bg-card/90 text-muted-foreground hover:text-foreground"
+            }`}
           >
-            По центру
+            <Smartphone className="h-4 w-4" />
+          </button>
+          <button
+            onClick={overviewFit}
+            title="По центру"
+            className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-card/90 text-muted-foreground backdrop-blur transition hover:text-foreground"
+          >
+            <Maximize2 className="h-4 w-4" />
           </button>
         </div>
-      </div>
 
-      {/* Filter chips */}
-      <div className="flex flex-wrap gap-1.5 border-b border-white/5 px-5 py-3">
-        <Chip active={filter === "all"} onClick={() => setFilter("all")}>
-          Все
-        </Chip>
-        <Chip active={filter === "myBelt"} onClick={() => setFilter("myBelt")}>
-          Мой пояс ({BELT_LABEL[profile.belt]})
-        </Chip>
-        <Chip active={filter === "mastered"} onClick={() => setFilter("mastered")}>
-          Освоенные
-        </Chip>
-        <Chip active={filter === "available"} onClick={() => setFilter("available")}>
-          Доступные сейчас
-        </Chip>
-      </div>
-
-      {/* Canvas + cluster glows */}
-      <div className="relative h-[520px] w-full bg-[radial-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:22px_22px]">
-        <div className="pointer-events-none absolute -top-10 right-10 h-56 w-56 rounded-full bg-blue-500/10 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 left-0 h-56 w-56 rounded-full bg-purple-500/10 blur-3xl" />
-        <div className="pointer-events-none absolute top-1/3 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-amber-500/[0.06] blur-3xl" />
-
-        <div ref={ref} className="absolute inset-0" />
-
-        {/* Focus hint */}
         {focusedId == null && (
-          <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-black/60 px-3 py-1.5 text-[10px] text-zinc-400 backdrop-blur">
-            <Focus className="mr-1 inline h-3 w-3" />
-            Нажмите на узел, чтобы включить фокус
+          <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-border bg-card/80 px-3 py-1.5 text-[10px] text-muted-foreground backdrop-blur">
+            Клик по узлу — связи · «Путь» — цепочка изучения
           </div>
         )}
       </div>
 
-      {/* Side panel — details of focused technique */}
+      {/* Панель фокуса */}
       {focusedTech && (
-        <FocusPanel tech={focusedTech} progress={progress} onClose={clearFocus} />
+        <FocusPanel
+          tech={focusedTech}
+          progress={progress}
+          dir={dir}
+          onClose={() => setFocusedId(null)}
+          onJump={jumpTo}
+        />
       )}
 
-      {/* Legend */}
-      <div className="space-y-3 border-t border-white/5 px-5 py-4">
-        <div className="flex flex-wrap gap-3">
-          {(["white", "blue", "purple", "brown", "black"] as Belt[]).map((b) => (
-            <div key={b} className="flex items-center gap-1.5">
-              <span
-                className="inline-block h-2 w-2 rounded-full ring-1 ring-white/10"
-                style={{ background: BELT_HEX[b] }}
-              />
-              <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
-                {b}
-              </span>
-            </div>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-3 text-[10px] text-zinc-500">
-          <LegendEdge color={EDGE_HL_PREREQ} label="Пререквизит" />
-          <LegendEdge color={EDGE_HL_CHAIN} label="Продолжение" />
-          <LegendEdge color={EDGE_HL_SETUP} label="Сетап" dashed />
-          <LegendDot color={STATUS_DONE} label="Изучено" />
-          <LegendDot color={STATUS_PROGRESS} label="В процессе" />
-        </div>
+      {/* Карточки: текущий фокус + следующая цель */}
+      <div className="grid grid-cols-1 gap-2 border-t border-border p-3 sm:grid-cols-2">
+        <MilestoneCard
+          icon={<Target className="h-4 w-4" />}
+          caption="Текущий фокус"
+          tech={focusTech}
+          empty="Отметьте технику «в процессе» — она появится здесь"
+          onClick={(t) => jumpTo(t.id)}
+        />
+        <MilestoneCard
+          icon={<Flag className="h-4 w-4" />}
+          caption="Следующая цель"
+          tech={recommendations[0] ?? null}
+          extra={recommendations.slice(1)}
+          empty="Всё доступное освоено!"
+          onClick={(t) => jumpTo(t.id)}
+          highlight
+        />
+      </div>
+
+      {/* Легенда */}
+      <div className="flex flex-wrap items-center gap-3 border-t border-border px-4 py-3 text-[10px] text-muted-foreground">
+        {heroBelts.map((b) => (
+          <span key={b} className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full ring-1 ring-border" style={{ background: theme.belts[b] }} />
+            {BELT_LABEL[b]}
+          </span>
+        ))}
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full" style={{ background: theme.done }} />
+          Изучено
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full" style={{ background: theme.prog }} />
+          В процессе
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-[2px] w-4" style={{ background: theme.edgeIn }} />
+          Что раньше
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-[2px] w-4" style={{ background: theme.edgeOut }} />
+          Продолжения
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full border border-dashed" style={{ borderColor: theme.risk }} />
+          Высокий риск
+        </span>
       </div>
     </div>
   );
@@ -460,105 +760,137 @@ export function TechniqueGraph({
 function FocusPanel({
   tech,
   progress,
+  dir,
   onClose,
+  onJump,
 }: {
   tech: Technique;
   progress: ProgressMap;
+  dir: FocusDir;
   onClose: () => void;
+  onJump: (id: number) => void;
 }) {
   const status = progress[tech.id] ?? "not_started";
-  const resolve = (ids: number[]) =>
-    ids
-      .map((i) => TECH_BY_ID[i])
-      .filter((x): x is Technique => Boolean(x))
-      .slice(0, 6);
-  const prereqs = resolve(tech.prerequisites);
-  const chains = resolve(tech.chain_to);
-  const setups = resolve(tech.common_setups);
+  const content = contentFor(tech, "ru");
+  const path = dir === "path" ? learningPath(tech, progress) : null;
+  const chains = tech.chain_to.map((i) => TECH_BY_ID[i]).filter(Boolean).slice(0, 6);
 
   return (
-    <div className="border-t border-white/10 bg-gradient-to-b from-white/[0.03] to-transparent px-5 py-4">
+    <div className="border-t border-border bg-muted/40 px-4 py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-block h-2.5 w-2.5 rounded-full ring-1 ring-white/10"
-              style={{ background: BELT_HEX[tech.belt] }}
-            />
-            <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
-              {GROUP_LABEL[tech.group]} · {BELT_LABEL[tech.belt]}
-            </span>
-          </div>
-          <h3 className="mt-1 truncate text-base font-semibold text-zinc-100">{tech.nameRu}</h3>
-          <p className="truncate text-[11px] text-zinc-500">{tech.nameEn}</p>
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            {GROUP_LABEL[tech.group]} · {BELT_LABEL[tech.belt]} ·{" "}
+            {status === "done" ? "Изучено" : status === "in_progress" ? "В процессе" : "Не начато"}
+          </p>
+          <h3 className="mt-0.5 truncate text-base font-semibold">{tech.nameRu}</h3>
+          {content && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{content.concept}</p>}
         </div>
         <button
           onClick={onClose}
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-zinc-400 transition hover:bg-white/10 hover:text-zinc-100"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-border text-muted-foreground hover:bg-muted"
           aria-label="Снять фокус"
         >
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-1.5 text-[10px]">
-        <MetaChip>Сложность {tech.difficulty}/5</MetaChip>
-        {tech.gi && <MetaChip>Gi</MetaChip>}
-        {tech.noGi && <MetaChip>No-Gi</MetaChip>}
-        {tech.legal_ibjjf_gi && <MetaChip>IBJJF</MetaChip>}
-        {tech.legal_adcc && <MetaChip>ADCC</MetaChip>}
-        <MetaChip>
-          {status === "done" ? "Изучено" : status === "in_progress" ? "В процессе" : "Не начато"}
-        </MetaChip>
-      </div>
-
-      {(prereqs.length > 0 || chains.length > 0 || setups.length > 0) && (
-        <div className="mt-3 grid grid-cols-1 gap-2 text-[11px]">
-          {prereqs.length > 0 && <MiniRow label="Пререквизиты" items={prereqs} tone="slate" />}
-          {chains.length > 0 && <MiniRow label="Продолжения" items={chains} tone="blue" />}
-          {setups.length > 0 && <MiniRow label="Сетапы" items={setups} tone="purple" />}
+      {path && path.length > 1 ? (
+        <div className="mt-2">
+          <p className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+            Путь изучения — {path.length} шагов
+          </p>
+          <div className="flex flex-wrap items-center gap-1">
+            {path.map((t, i) => (
+              <span key={t.id} className="flex items-center gap-1">
+                {i > 0 && <span className="text-muted-foreground">→</span>}
+                <button
+                  onClick={() => onJump(t.id)}
+                  className={`rounded-md border border-border px-2 py-0.5 text-[11px] transition hover:bg-muted ${
+                    t.id === tech.id ? "font-semibold" : ""
+                  }`}
+                >
+                  {t.label}
+                </button>
+              </span>
+            ))}
+          </div>
         </div>
+      ) : (
+        chains.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {chains.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => onJump(t.id)}
+                className="rounded-md border border-border px-2 py-0.5 text-[11px] text-muted-foreground transition hover:bg-muted"
+              >
+                → {t.label}
+              </button>
+            ))}
+          </div>
+        )
       )}
 
       <Link
         to="/technique/$id"
         params={{ id: String(tech.id) }}
-        className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-xs font-medium text-zinc-100 transition hover:bg-white/15"
+        className="mt-3 inline-flex w-full items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition hover:opacity-90"
       >
-        Открыть детали техники
+        Открыть технику
       </Link>
     </div>
   );
 }
 
-function MiniRow({
-  label,
-  items,
-  tone,
+function MilestoneCard({
+  icon,
+  caption,
+  tech,
+  extra,
+  empty,
+  onClick,
+  highlight,
 }: {
-  label: string;
-  items: Technique[];
-  tone: "slate" | "blue" | "purple";
+  icon: React.ReactNode;
+  caption: string;
+  tech: Technique | null;
+  extra?: Technique[];
+  empty: string;
+  onClick: (t: Technique) => void;
+  highlight?: boolean;
 }) {
-  const dotColor = tone === "blue" ? EDGE_HL_CHAIN : tone === "purple" ? EDGE_HL_SETUP : EDGE_HL_PREREQ;
   return (
-    <div>
-      <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-zinc-500">
-        <span className="inline-block h-[2px] w-3" style={{ background: dotColor }} />
-        {label}
-      </div>
-      <div className="flex flex-wrap gap-1">
-        {items.map((t) => (
-          <Link
-            key={t.id}
-            to="/technique/$id"
-            params={{ id: String(t.id) }}
-            className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-zinc-300 transition hover:bg-white/10"
-          >
-            {t.nameRu}
-          </Link>
-        ))}
-      </div>
+    <div className={`rounded-2xl border p-3 ${highlight ? "border-ring/50 bg-primary/5" : "border-border bg-background"}`}>
+      <p className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+        {icon}
+        {caption}
+      </p>
+      {tech ? (
+        <>
+          <button onClick={() => onClick(tech)} className="mt-1 block text-left text-sm font-semibold hover:underline">
+            {tech.nameRu}
+          </button>
+          <p className="text-[11px] text-muted-foreground">
+            {GROUP_LABEL[tech.group]} · {BELT_LABEL[tech.belt]} · сложность {tech.difficulty}/5
+          </p>
+          {extra && extra.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {extra.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => onClick(t)}
+                  className="rounded-md border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <p className="mt-1 text-xs text-muted-foreground">{empty}</p>
+      )}
     </div>
   );
 }
@@ -575,47 +907,13 @@ function Chip({
   return (
     <button
       onClick={onClick}
-      className={
-        "rounded-full border px-2.5 py-1 text-[11px] font-medium transition " +
-        (active
-          ? "border-white/40 bg-white/15 text-white"
-          : "border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-zinc-200")
-      }
+      className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+        active
+          ? "border-ring bg-primary/15 text-foreground"
+          : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+      }`}
     >
       {children}
     </button>
-  );
-}
-
-function MetaChip({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-zinc-400">
-      {children}
-    </span>
-  );
-}
-
-function LegendEdge({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span
-        className="inline-block h-[2px] w-6"
-        style={{
-          background: dashed
-            ? `repeating-linear-gradient(to right, ${color} 0 3px, transparent 3px 6px)`
-            : color,
-        }}
-      />
-      <span>{label}</span>
-    </div>
-  );
-}
-
-function LegendDot({ color, label }: { color: string; label: string }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="inline-block h-2 w-2 rounded-full" style={{ background: color }} />
-      <span>{label}</span>
-    </div>
   );
 }

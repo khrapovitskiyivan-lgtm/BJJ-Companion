@@ -1,11 +1,12 @@
 import { useEffect, type ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import { BottomNav } from "./BottomNav";
 import { Onboarding } from "./Onboarding";
 import { useProfile } from "@/lib/bjj/store";
-import { Moon, Sun } from "lucide-react";
+import { Info, Moon, Sun } from "lucide-react";
 
 // === APP SHELL ===
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
   const { profile, update, hydrated } = useProfile();
 
   useEffect(() => {
@@ -35,17 +36,26 @@ export function AppShell({ children }: { children: ReactNode }) {
               BJJ Companion
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => update({ theme: profile.theme === "dark" ? "light" : "dark" })}
-            className="rounded-full p-2 text-muted-foreground hover:bg-muted"
-            aria-label="Переключить тему"
-          >
-            {profile.theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
+          <div className="flex items-center gap-1">
+            <Link
+              to="/about"
+              className="rounded-full p-2 text-muted-foreground hover:bg-muted"
+              aria-label="О приложении"
+            >
+              <Info className="h-4 w-4" />
+            </Link>
+            <button
+              type="button"
+              onClick={() => update({ theme: profile.theme === "dark" ? "light" : "dark" })}
+              className="rounded-full p-2 text-muted-foreground hover:bg-muted"
+              aria-label="Переключить тему"
+            >
+              {profile.theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
       </header>
-      <main className="mx-auto max-w-xl px-4 py-4">{children}</main>
+      <main className={`mx-auto px-4 py-4 ${wide ? "max-w-6xl" : "max-w-xl"}`}>{children}</main>
       <BottomNav />
     </div>
   );

@@ -13,6 +13,7 @@ import { Route as WorkoutRouteImport } from './routes/workout'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as LibraryRouteImport } from './routes/library'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TechniqueIdRouteImport } from './routes/technique.$id'
 
@@ -36,6 +37,11 @@ const LibraryRoute = LibraryRouteImport.update({
   path: '/library',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -49,6 +55,7 @@ const TechniqueIdRoute = TechniqueIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
   '/progress': typeof ProgressRoute
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
   '/progress': typeof ProgressRoute
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
   '/progress': typeof ProgressRoute
@@ -75,12 +84,26 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/library' | '/map' | '/progress' | '/workout' | '/technique/$id'
+    | '/'
+    | '/about'
+    | '/library'
+    | '/map'
+    | '/progress'
+    | '/workout'
+    | '/technique/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/library' | '/map' | '/progress' | '/workout' | '/technique/$id'
+  to:
+    | '/'
+    | '/about'
+    | '/library'
+    | '/map'
+    | '/progress'
+    | '/workout'
+    | '/technique/$id'
   id:
     | '__root__'
     | '/'
+    | '/about'
     | '/library'
     | '/map'
     | '/progress'
@@ -90,6 +113,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
   LibraryRoute: typeof LibraryRoute
   MapRoute: typeof MapRoute
   ProgressRoute: typeof ProgressRoute
@@ -127,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LibraryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -146,6 +177,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
   LibraryRoute: LibraryRoute,
   MapRoute: MapRoute,
   ProgressRoute: ProgressRoute,
