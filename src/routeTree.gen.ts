@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkoutRouteImport } from './routes/workout'
+import { Route as SolutionsRouteImport } from './routes/solutions'
 import { Route as ProgressRouteImport } from './routes/progress'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as AboutRouteImport } from './routes/about'
@@ -22,9 +24,19 @@ const WorkoutRoute = WorkoutRouteImport.update({
   path: '/workout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SolutionsRoute = SolutionsRouteImport.update({
+  id: '/solutions',
+  path: '/solutions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProgressRoute = ProgressRouteImport.update({
   id: '/progress',
   path: '/progress',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapRoute = MapRouteImport.update({
@@ -58,7 +70,9 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
+  '/profile': typeof ProfileRoute
   '/progress': typeof ProgressRoute
+  '/solutions': typeof SolutionsRoute
   '/workout': typeof WorkoutRoute
   '/technique/$id': typeof TechniqueIdRoute
 }
@@ -67,7 +81,9 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
+  '/profile': typeof ProfileRoute
   '/progress': typeof ProgressRoute
+  '/solutions': typeof SolutionsRoute
   '/workout': typeof WorkoutRoute
   '/technique/$id': typeof TechniqueIdRoute
 }
@@ -77,7 +93,9 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
+  '/profile': typeof ProfileRoute
   '/progress': typeof ProgressRoute
+  '/solutions': typeof SolutionsRoute
   '/workout': typeof WorkoutRoute
   '/technique/$id': typeof TechniqueIdRoute
 }
@@ -88,7 +106,9 @@ export interface FileRouteTypes {
     | '/about'
     | '/library'
     | '/map'
+    | '/profile'
     | '/progress'
+    | '/solutions'
     | '/workout'
     | '/technique/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -97,7 +117,9 @@ export interface FileRouteTypes {
     | '/about'
     | '/library'
     | '/map'
+    | '/profile'
     | '/progress'
+    | '/solutions'
     | '/workout'
     | '/technique/$id'
   id:
@@ -106,7 +128,9 @@ export interface FileRouteTypes {
     | '/about'
     | '/library'
     | '/map'
+    | '/profile'
     | '/progress'
+    | '/solutions'
     | '/workout'
     | '/technique/$id'
   fileRoutesById: FileRoutesById
@@ -116,7 +140,9 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   LibraryRoute: typeof LibraryRoute
   MapRoute: typeof MapRoute
+  ProfileRoute: typeof ProfileRoute
   ProgressRoute: typeof ProgressRoute
+  SolutionsRoute: typeof SolutionsRoute
   WorkoutRoute: typeof WorkoutRoute
   TechniqueIdRoute: typeof TechniqueIdRoute
 }
@@ -130,11 +156,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/solutions': {
+      id: '/solutions'
+      path: '/solutions'
+      fullPath: '/solutions'
+      preLoaderRoute: typeof SolutionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/progress': {
       id: '/progress'
       path: '/progress'
       fullPath: '/progress'
       preLoaderRoute: typeof ProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/map': {
@@ -180,7 +220,9 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   LibraryRoute: LibraryRoute,
   MapRoute: MapRoute,
+  ProfileRoute: ProfileRoute,
   ProgressRoute: ProgressRoute,
+  SolutionsRoute: SolutionsRoute,
   WorkoutRoute: WorkoutRoute,
   TechniqueIdRoute: TechniqueIdRoute,
 }

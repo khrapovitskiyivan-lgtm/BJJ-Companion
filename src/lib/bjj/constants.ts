@@ -20,6 +20,7 @@ export const BELT_LABEL_EN: Record<Belt, string> = {
 };
 
 export const GROUP_LABEL: Record<Group, string> = {
+  fundamentals: "База",
   position: "Позиция",
   submission: "Сабмишн",
   sweep: "Свип",
@@ -27,11 +28,12 @@ export const GROUP_LABEL: Record<Group, string> = {
   takedown: "Тейкдаун",
   transition: "Переход",
   system: "Система",
-  escape: "Побег",
+  escape: "Выходы",
   retention: "Ретеншн",
 };
 
 export const GROUP_LABEL_EN: Record<Group, string> = {
+  fundamentals: "Fundamentals",
   position: "Position",
   submission: "Submission",
   sweep: "Sweep",
@@ -39,7 +41,7 @@ export const GROUP_LABEL_EN: Record<Group, string> = {
   takedown: "Takedown",
   transition: "Transition",
   system: "System",
-  escape: "Escape",
+  escape: "Escapes",
   retention: "Guard Retention",
 };
 

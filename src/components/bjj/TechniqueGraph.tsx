@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Network } from "vis-network";
 import { DataSet } from "vis-data";
 import { Link } from "@tanstack/react-router";
-import { X, Search, Maximize2, Smartphone, ShieldAlert, Target, Flag } from "lucide-react";
+import { X, Search, Maximize2, Smartphone, ShieldAlert, Target, Flag, SlidersHorizontal, HelpCircle } from "lucide-react";
 import { TECHNIQUES, TECH_BY_ID, contentFor } from "@/lib/bjj/data";
 import { BELT_ORDER, BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
 import {
@@ -119,6 +119,8 @@ export function TechniqueGraph({
   const [query, setQuery] = useState("");
   const [heroMode, setHeroMode] = useState(false);
   const [heroBelt, setHeroBelt] = useState<Belt>(profile.belt);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showLegend, setShowLegend] = useState(false);
 
   const theme: Palette = profile.theme === "dark" ? PALETTE.dark : PALETTE.light;
   const themeRef = useRef(theme);
@@ -280,16 +282,18 @@ export function TechniqueGraph({
               ctx.stroke();
               ctx.setLineDash([]);
             }
+            // подпись: только фокусный узел или крупный зум; длинные — обрезаем (без наслаивания)
             const scale = netRef.current?.getScale() ?? 1;
-            if (!d.dim && (d.showLabel || scale >= 1.35)) {
+            if (!d.dim && (d.focused || scale >= 1.6)) {
+              const text = t.label.length > 16 ? t.label.slice(0, 15) + "…" : t.label;
               ctx.font = `600 ${Math.max(9, 11 / Math.min(scale, 1.6))}px Manrope, sans-serif`;
               ctx.textAlign = "center";
               ctx.textBaseline = "top";
               ctx.lineWidth = 3;
               ctx.strokeStyle = pal.labelStroke;
-              ctx.strokeText(t.label, x, y + r + 5);
+              ctx.strokeText(text, x, y + r + 5);
               ctx.fillStyle = pal.label;
-              ctx.fillText(t.label, x, y + r + 5);
+              ctx.fillText(text, x, y + r + 5);
             }
             ctx.restore();
           },
@@ -396,6 +400,25 @@ export function TechniqueGraph({
         clamping = false;
       }
     });
+
+    // Ограничение панорамы: вид не уходит за границы контента
+    const clampPan = () => {
+      const L = layoutRef.current;
+      if (!L || clamping) return;
+      const pos = net.getViewPosition();
+      const margin = 120;
+      const yMin = L.bands[0].y0 - margin;
+      const yMax = L.bands[L.bands.length - 1].y1 + margin;
+      const x = Math.max(L.xMin - margin, Math.min(L.xMax + margin, pos.x));
+      const y = Math.max(yMin, Math.min(yMax, pos.y));
+      if (x !== pos.x || y !== pos.y) {
+        clamping = true;
+        net.moveTo({ position: { x, y }, animation: { duration: 200, easingFunction: "easeOutQuad" } as never });
+        clamping = false;
+      }
+    };
+    net.on("dragEnd", clampPan);
+    net.on("zoom", clampPan);
 
     const computeMinScale = () => {
       const before = { s: net.getScale(), p: net.getViewPosition() };
@@ -591,7 +614,7 @@ export function TechniqueGraph({
           </div>
         </div>
 
-        {/* Фильтры + направление фокуса */}
+        {/* Компактная строка фильтров: базовые + свёрнутые доп. фильтры + справка */}
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {(
             [
@@ -605,39 +628,41 @@ export function TechniqueGraph({
               {label}
             </Chip>
           ))}
-          <span className="mx-1 h-4 w-px bg-border" />
-          {(
-            [
-              ["all", "Gi+NoGi"],
-              ["gi", "Gi"],
-              ["nogi", "No-Gi"],
-            ] as [GiFilter, string][]
-          ).map(([f, label]) => (
-            <Chip key={f} active={giFilter === f} onClick={() => setGiFilter(f)}>
-              {label}
-            </Chip>
-          ))}
-          <Chip active={legalOnly} onClick={() => setLegalOnly(!legalOnly)}>
-            IBJJF
+          <span className="mx-0.5 h-4 w-px bg-border" />
+          <Chip
+            active={showFilters || giFilter !== "all" || legalOnly || safetyLens}
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <SlidersHorizontal className="mr-1 inline h-3 w-3" />
+            Фильтры
           </Chip>
-          <Chip active={safetyLens} onClick={() => setSafetyLens(!safetyLens)}>
-            <ShieldAlert className="mr-1 inline h-3 w-3" />
-            Риск
+          <Chip active={showLegend} onClick={() => setShowLegend(!showLegend)}>
+            <HelpCircle className="mr-1 inline h-3 w-3" />
           </Chip>
-          <span className="mx-1 h-4 w-px bg-border" />
-          {(
-            [
-              ["both", "Соседи"],
-              ["up", "← Раньше"],
-              ["down", "Дальше →"],
-              ["path", "Путь"],
-            ] as [FocusDir, string][]
-          ).map(([d, label]) => (
-            <Chip key={d} active={dir === d} onClick={() => setDir(d)}>
-              {label}
-            </Chip>
-          ))}
         </div>
+
+        {showFilters && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {(
+              [
+                ["all", "Gi+NoGi"],
+                ["gi", "Gi"],
+                ["nogi", "No-Gi"],
+              ] as [GiFilter, string][]
+            ).map(([f, label]) => (
+              <Chip key={f} active={giFilter === f} onClick={() => setGiFilter(f)}>
+                {label}
+              </Chip>
+            ))}
+            <Chip active={legalOnly} onClick={() => setLegalOnly(!legalOnly)}>
+              IBJJF
+            </Chip>
+            <Chip active={safetyLens} onClick={() => setSafetyLens(!safetyLens)}>
+              <ShieldAlert className="mr-1 inline h-3 w-3" />
+              Риск травмы
+            </Chip>
+          </div>
+        )}
       </div>
 
       {/* Канвас */}
@@ -693,12 +718,13 @@ export function TechniqueGraph({
         )}
       </div>
 
-      {/* Панель фокуса */}
+      {/* Панель фокуса (направление связей выбирается здесь — когда есть фокус) */}
       {focusedTech && (
         <FocusPanel
           tech={focusedTech}
           progress={progress}
           dir={dir}
+          onDir={setDir}
           onClose={() => setFocusedId(null)}
           onJump={jumpTo}
         />
@@ -724,35 +750,38 @@ export function TechniqueGraph({
         />
       </div>
 
-      {/* Легенда */}
-      <div className="flex flex-wrap items-center gap-3 border-t border-border px-4 py-3 text-[10px] text-muted-foreground">
-        {heroBelts.map((b) => (
-          <span key={b} className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full ring-1 ring-border" style={{ background: theme.belts[b] }} />
-            {BELT_LABEL[b]}
+      {/* Легенда — по кнопке «?» */}
+      {showLegend && (
+        <div className="flex flex-wrap items-center gap-3 border-t border-border px-4 py-3 text-[10px] text-muted-foreground">
+          <span>Обводка узла = пояс · заливка = статус · кольцо = готовность пререквизитов:</span>
+          {heroBelts.map((b) => (
+            <span key={b} className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full ring-1 ring-border" style={{ background: theme.belts[b] }} />
+              {BELT_LABEL[b]}
+            </span>
+          ))}
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full" style={{ background: theme.done }} />
+            Изучено
           </span>
-        ))}
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full" style={{ background: theme.done }} />
-          Изучено
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full" style={{ background: theme.prog }} />
-          В процессе
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-[2px] w-4" style={{ background: theme.edgeIn }} />
-          Что раньше
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-[2px] w-4" style={{ background: theme.edgeOut }} />
-          Продолжения
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full border border-dashed" style={{ borderColor: theme.risk }} />
-          Высокий риск
-        </span>
-      </div>
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full" style={{ background: theme.prog }} />
+            В процессе
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-[2px] w-4" style={{ background: theme.edgeIn }} />
+            Ведёт к технике
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-[2px] w-4" style={{ background: theme.edgeOut }} />
+            Продолжения
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full border border-dashed" style={{ borderColor: theme.risk }} />
+            Высокий риск
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -761,12 +790,14 @@ function FocusPanel({
   tech,
   progress,
   dir,
+  onDir,
   onClose,
   onJump,
 }: {
   tech: Technique;
   progress: ProgressMap;
   dir: FocusDir;
+  onDir: (d: FocusDir) => void;
   onClose: () => void;
   onJump: (id: number) => void;
 }) {
@@ -793,6 +824,30 @@ function FocusPanel({
         >
           <X className="h-3.5 w-3.5" />
         </button>
+      </div>
+
+      {/* Что показывать на карте для этой техники */}
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {(
+          [
+            ["both", "Соседи"],
+            ["up", "← Что раньше"],
+            ["down", "Дальше →"],
+            ["path", "Путь изучения"],
+          ] as [FocusDir, string][]
+        ).map(([d, label]) => (
+          <button
+            key={d}
+            onClick={() => onDir(d)}
+            className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+              dir === d
+                ? "border-ring bg-primary/15 text-foreground"
+                : "border-border bg-background text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {path && path.length > 1 ? (

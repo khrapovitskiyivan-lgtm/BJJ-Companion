@@ -3,6 +3,7 @@
 export type Belt = "white" | "blue" | "purple" | "brown" | "black";
 
 export type Group =
+  | "fundamentals"
   | "position"
   | "submission"
   | "sweep"

@@ -10,7 +10,7 @@ import { BELT_ORDER } from "./constants";
 export type Orientation = "horizontal" | "vertical";
 
 export const GROUP_ORDER: Group[] = [
-  "takedown", "guard_pass", "position", "transition",
+  "fundamentals", "takedown", "guard_pass", "position", "transition",
   "escape", "retention", "sweep", "submission", "system",
 ];
 
