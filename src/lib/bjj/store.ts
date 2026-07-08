@@ -81,6 +81,7 @@ export function useProgress() {
     trySyncFromCloud().then((remote) => {
       if (remote) {
         setProgress((prev) => {
+          // Merge стратегия: облако + локальное (локальное имеет приоритет)
           const merged = { ...remote, ...prev };
           writeJSON(PROGRESS_KEY, merged);
           return merged;
@@ -122,30 +123,59 @@ async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
 
 async function trySyncFromCloud(): Promise<ProgressMap | null> {
   try {
-    const deviceId = getDeviceId();
-    // Таблица bjj_progress пока не создана — блок оставлен как точка расширения.
-    const query = (supabase as unknown as {
-      from: (t: string) => {
-        select: (c: string) => {
-          eq: (col: string, v: string) => Promise<{ data?: Array<{ technique_id: number; status: ProgressStatus }>; error?: unknown }>;
-        };
-      };
-    })
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const query = supabase
       .from("bjj_progress")
-      .select("technique_id, status")
-      .eq("device_id", deviceId);
+      .select("progress_data")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
     const result = await withTimeout(query, 3000);
     if (!result || result.error || !result.data) return null;
-    const map: ProgressMap = {};
-    for (const r of result.data) map[Number(r.technique_id)] = r.status;
-    return map;
-  } catch {
+
+    // Преобразуем JSONB в ProgressMap
+    const progressMap: ProgressMap = {};
+    const data = (result.data.progress_data ?? {}) as Record<string, ProgressStatus>;
+    for (const [key, value] of Object.entries(data)) {
+      const numKey = Number(key);
+      if (!isNaN(numKey) && value) {
+        progressMap[numKey] = value;
+      }
+    }
+
+    return progressMap;
+  } catch (e) {
+    console.warn("Ошибка синхронизации из облака:", e);
     return null;
   }
 }
 
-async function trySyncToCloud(_progress: ProgressMap): Promise<void> {
-  // Placeholder — таблица не создаётся автоматически. localStorage — источник истины.
-  // При включении таблицы bjj_progress здесь можно делать upsert.
-  return;
+async function trySyncToCloud(progress: ProgressMap): Promise<void> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Преобразуем ProgressMap в Record<string, ProgressStatus> для JSONB
+    const progressData: Record<string, ProgressStatus> = {};
+    for (const [key, value] of Object.entries(progress)) {
+      progressData[String(key)] = value;
+    }
+
+    const query = supabase.from("bjj_progress").upsert(
+      {
+        user_id: user.id,
+        progress_data: progressData,
+      },
+      { onConflict: "user_id" }
+    );
+
+    const result = await withTimeout(query, 3000);
+    if (result && 'error' in result && result.error) {
+      console.warn("Ошибка сохранения в облако:", result.error.message);
+    }
+  } catch (e) {
+    console.warn("Ошибка синхронизации в облако:", e);
+  }
 }
