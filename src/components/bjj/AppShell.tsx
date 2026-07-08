@@ -1,65 +1,170 @@
-import { useEffect, type ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
-import { BottomNav } from "./BottomNav";
-import { Onboarding } from "./Onboarding";
-import { Logo } from "./Logo";
-import { useProfile } from "@/lib/bjj/store";
-import { BELT_LABEL } from "@/lib/bjj/constants";
-import { Moon, Sun } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
+import { AuthModal } from "@/components/AuthModal";
+import { LogIn, LogOut, User, Menu, X } from "lucide-react";
 
-// === APP SHELL ===
-// Шапка: тема слева · лого+название по центру · профиль справа.
-export function AppShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
-  const { profile, update, hydrated } = useProfile();
+interface AppShellProps {
+  children: React.ReactNode;
+}
 
+const NAV_ITEMS = [
+  { to: "/", label: "Главная" },
+  { to: "/map", label: "Карта" },
+  { to: "/library", label: "Библиотека" },
+  { to: "/progress", label: "Прогресс" },
+  { to: "/training", label: "Тренировка" },
+  { to: "/solutions", label: "Решения" },
+];
+
+export function AppShell({ children }: AppShellProps) {
+  const location = useLocation();
+  const [user, setUser] = useState<null | { id: string; email: string | undefined }>(null);
+  const [showAuth, setShowAuth] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Подписка на состояние аутентификации
   useEffect(() => {
-    if (!hydrated) return;
-    document.documentElement.classList.toggle("dark", profile.theme === "dark");
-  }, [profile.theme, hydrated]);
+    // Получаем текущего пользователя при монтировании
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUser({ id: user.id, email: user.email });
+      }
+    });
 
-  if (!hydrated) {
-    return <div className="min-h-screen bg-background" />;
-  }
+    // Подписываемся на изменения состояния
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser({ id: session.user.id, email: session.user.email });
+      } else {
+        setUser(null);
+      }
+    });
 
-  if (!profile.onboardingDone) {
-    return <Onboarding onDone={(p) => update({ ...p, onboardingDone: true })} />;
-  }
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    // Не перезагружаем страницу — просто обновляем UI
+  };
+
+  const isActive = (path: string) => {
+    if (path === "/") return location.pathname === "/";
+    return location.pathname.startsWith(path);
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-20">
-      <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
-        <div className="mx-auto grid max-w-xl grid-cols-[1fr_auto_1fr] items-center px-4 py-2.5">
-          {/* слева: тема */}
-          <div className="justify-self-start">
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Шапка */}
+      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+          {/* Логотип */}
+          <Link to="/" className="flex items-center gap-2">
+            <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
+              <span className="text-sm font-bold">B</span>
+            </div>
+            <span className="text-sm font-bold tracking-tight sm:text-base">BJJ Companion</span>
+          </Link>
+
+          {/* Навигация (десктоп) */}
+          <nav className="hidden items-center gap-1 md:flex">
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                  isActive(item.to)
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Блок аутентификации */}
+          <div className="flex items-center gap-2">
+            {user ? (
+              <div className="flex items-center gap-2">
+                <div className="hidden items-center gap-1.5 rounded-lg border border-border bg-muted/50 px-2.5 py-1.5 sm:flex">
+                  <User className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="max-w-[140px] truncate text-xs text-muted-foreground">
+                    {user.email}
+                  </span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                  title="Выйти"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Выйти</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAuth(true)}
+                className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:opacity-90"
+              >
+                <LogIn className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Войти</span>
+              </button>
+            )}
+
+            {/* Мобильное меню */}
             <button
-              type="button"
-              onClick={() => update({ theme: profile.theme === "dark" ? "light" : "dark" })}
-              className="rounded-full p-2 text-muted-foreground transition hover:bg-muted"
-              aria-label="Переключить тему"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="grid h-9 w-9 place-items-center rounded-lg border border-border text-muted-foreground hover:bg-muted md:hidden"
+              aria-label="Меню"
             >
-              {profile.theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
           </div>
-          {/* центр: лого + название */}
-          <Link to="/" className="flex items-center gap-2 justify-self-center">
-            <Logo size={26} />
-            <span className="text-sm font-bold tracking-tight">BJJ Companion</span>
-          </Link>
-          {/* справа: профиль (аватар-пояс) */}
-          <Link
-            to="/profile"
-            aria-label={`Профиль: ${BELT_LABEL[profile.belt]} пояс`}
-            className="justify-self-end rounded-full p-1 transition hover:bg-muted"
-          >
-            <span
-              className="block h-7 w-7 rounded-full ring-2 ring-border"
-              style={{ background: `var(--belt-${profile.belt})` }}
-            />
-          </Link>
         </div>
+
+        {/* Мобильная навигация */}
+        {mobileMenuOpen && (
+          <nav className="border-t border-border bg-card px-4 py-2 md:hidden">
+            <div className="flex flex-col gap-1">
+              {NAV_ITEMS.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                    isActive(item.to)
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </nav>
+        )}
       </header>
-      <main className={`mx-auto px-4 py-4 ${wide ? "max-w-6xl" : "max-w-xl"}`}>{children}</main>
-      <BottomNav />
+
+      {/* Основной контент */}
+      <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+
+      {/* Футер */}
+      <footer className="border-t border-border bg-card/50 py-6">
+        <div className="mx-auto max-w-6xl px-4 text-center text-xs text-muted-foreground">
+          <p>BJJ Companion · Интерактивная карта техник бразильского джиу-джитсу</p>
+          {user && (
+            <p className="mt-1 text-[10px]">
+              ✅ Прогресс синхронизируется с облаком
+            </p>
+          )}
+        </div>
+      </footer>
+
+      {/* Модальное окно аутентификации */}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
     </div>
   );
 }
