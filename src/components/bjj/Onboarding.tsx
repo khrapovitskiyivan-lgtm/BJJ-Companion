@@ -1,72 +1,97 @@
 import { useState } from "react";
-import type { Belt, StyleProfile } from "@/lib/bjj/types";
+import {
+  BookOpen,
+  Dumbbell,
+  HelpCircle,
+  ChevronRight,
+  ChevronLeft,
+  Shield,
+  Trophy,
+  Smile,
+  Check,
+  Sparkles,
+} from "lucide-react";
+import type { Belt, StyleProfile, Goal, Frequency } from "@/lib/bjj/types";
 import { BELT_LABEL, BELT_LABEL_EN, BELT_ORDER } from "@/lib/bjj/constants";
 
-// === ONBOARDING (выбор пояса + gi/no-gi) ===
+type Step = 0 | 1 | 2 | 3 | 4 | 5;
+
+// === ONBOARDING: 6 шагов ===
 export function Onboarding({ onDone }: { onDone: (p: Partial<StyleProfile>) => void }) {
+  const [step, setStep] = useState<Step>(0);
   const [belt, setBelt] = useState<Belt>("white");
   const [gi, setGi] = useState(true);
   const [noGi, setNoGi] = useState(true);
-  const [step, setStep] = useState<0 | 1>(0);
+  const [goal, setGoal] = useState<Goal | null>(null);
+  const [frequency, setFrequency] = useState<Frequency | null>(null);
+
+  const totalSteps = 6;
+  const progress = ((step + 1) / totalSteps) * 100;
+
+  const canProceed = () => {
+    if (step === 2) return gi || noGi;
+    if (step === 3) return goal !== null;
+    if (step === 4) return frequency !== null;
+    return true;
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* Прогресс-бар сверху */}
+      <div className="fixed top-0 left-0 right-0 h-1 bg-muted">
+        <div
+          className="h-full bg-primary transition-all duration-300"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
       <div className="mx-auto flex min-h-screen max-w-xl flex-col justify-between px-6 py-10">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Добро пожаловать в BJJ Companion</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Компаньон для бразильского джиу-джитсу: библиотека техник, умные тренировки и прогресс.
-          </p>
-        </div>
-
-        {step === 0 && (
-          <section aria-label="Выбор пояса" className="space-y-4">
-            <h2 className="text-lg font-semibold">Ваш пояс / Your belt</h2>
-            <div className="grid grid-cols-1 gap-2">
-              {BELT_ORDER.map((b) => (
-                <button
-                  key={b}
-                  type="button"
-                  onClick={() => setBelt(b)}
-                  className="flex items-center justify-between rounded-xl border-2 p-3 text-left transition-all"
-                  style={{
-                    borderColor: belt === b ? "var(--color-primary)" : "var(--color-border)",
-                    background: belt === b ? "color-mix(in oklch, var(--color-primary) 8%, var(--color-card))" : "var(--color-card)",
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="inline-block h-6 w-10 rounded-md ring-1 ring-black/10"
-                      style={{ background: `var(--belt-${b})` }}
-                    />
-                    <span className="font-medium">
-                      {BELT_LABEL[b]} <span className="text-muted-foreground">({BELT_LABEL_EN[b]})</span>
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {step === 1 && (
-          <section aria-label="Формат" className="space-y-4">
-            <h2 className="text-lg font-semibold">Формат тренировок</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <ToggleTile label="Gi (в кимоно)" active={gi} onClick={() => setGi((v) => !v)} />
-              <ToggleTile label="No-Gi" active={noGi} onClick={() => setNoGi((v) => !v)} />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Выберите один или оба режима. Библиотека и генератор будут учитывать этот фильтр.
-            </p>
-          </section>
-        )}
-
-        <div className="mt-8 flex gap-2">
-          {step === 1 && (
+        {/* Индикатор шага */}
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>Шаг {step + 1} из {totalSteps}</span>
+          {step > 0 && step < 5 && (
             <button
               type="button"
-              onClick={() => setStep(0)}
+              onClick={() => setStep((s) => (s - 1) as Step)}
+              className="flex items-center gap-1 hover:text-foreground transition-colors"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Назад
+            </button>
+          )}
+        </div>
+
+        {/* Контент шагов */}
+        <div className="flex-1 flex flex-col justify-center py-8">
+          {step === 0 && <WelcomeScreen />}
+
+          {step === 1 && (
+            <BeltStep belt={belt} setBelt={setBelt} />
+          )}
+
+          {step === 2 && (
+            <StyleStep gi={gi} setGi={setGi} noGi={noGi} setNoGi={setNoGi} />
+          )}
+
+          {step === 3 && (
+            <GoalStep goal={goal} setGoal={setGoal} />
+          )}
+
+          {step === 4 && (
+            <FrequencyStep frequency={frequency} setFrequency={setFrequency} />
+          )}
+
+          {step === 5 && (
+            <FinalScreen belt={belt} gi={gi} noGi={noGi} goal={goal} />
+          )}
+        </div>
+
+        {/* Навигация */}
+        <div className="mt-8 flex gap-2">
+          {step > 0 && step < 5 && (
+            <button
+              type="button"
+              onClick={() => setStep((s) => (s - 1) as Step)}
               className="flex-1 rounded-xl border border-border bg-card py-3 text-sm font-medium"
             >
               Назад
@@ -74,14 +99,24 @@ export function Onboarding({ onDone }: { onDone: (p: Partial<StyleProfile>) => v
           )}
           <button
             type="button"
-            disabled={step === 1 && !gi && !noGi}
+            disabled={!canProceed()}
             onClick={() => {
-              if (step === 0) setStep(1);
-              else onDone({ belt, gi, noGi });
+              if (step < 5) {
+                setStep((s) => (s + 1) as Step);
+              } else {
+                onDone({
+                  belt,
+                  gi,
+                  noGi,
+                  goal: goal || undefined,
+                  frequency: frequency || undefined,
+                  onboardedAt: new Date().toISOString(),
+                });
+              }
             }}
             className="flex-1 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
-            {step === 0 ? "Далее" : "Начать"}
+            {step === 5 ? "Начать" : "Далее"}
           </button>
         </div>
       </div>
@@ -89,18 +124,369 @@ export function Onboarding({ onDone }: { onDone: (p: Partial<StyleProfile>) => v
   );
 }
 
-function ToggleTile({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+// === ШАГ 0: Welcome-слайдер ===
+function WelcomeScreen() {
+  const [slide, setSlide] = useState(0);
+  const slides = [
+    {
+      icon: BookOpen,
+      title: "293 техники",
+      description: "С механикой, рисками и пререквизитами. От белого до чёрного пояса.",
+      accent: "var(--belt-blue)",
+    },
+    {
+      icon: Dumbbell,
+      title: "Умные тренировки",
+      description: "Генератор подбирает комплекс под твой уровень и время.",
+      accent: "var(--belt-purple)",
+    },
+    {
+      icon: HelpCircle,
+      title: "Что делать, если…",
+      description: "Быстрые решения для спарринга: escapes, sweeps, submissions.",
+      accent: "var(--belt-brown)",
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Добро пожаловать в<br />BJJ Companion
+        </h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Пройдём короткую настройку — это займёт 30 секунд.
+        </p>
+      </div>
+
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-6">
+        <div
+          className="flex transition-transform duration-300"
+          style={{ transform: `translateX(-${slide * 100}%)` }}
+        >
+          {slides.map((s, i) => {
+            const Icon = s.icon;
+            return (
+              <div key={i} className="min-w-full px-2">
+                <div
+                  className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl"
+                  style={{ background: `${s.accent}20` }}
+                >
+                  <Icon className="h-8 w-8" style={{ color: s.accent }} />
+                </div>
+                <h3 className="text-center text-xl font-semibold">{s.title}</h3>
+                <p className="mt-2 text-center text-sm text-muted-foreground">
+                  {s.description}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Индикаторы слайдов */}
+        <div className="mt-6 flex justify-center gap-2">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setSlide(i)}
+              className="h-2 rounded-full transition-all"
+              style={{
+                width: slide === i ? "24px" : "8px",
+                background: slide === i ? "var(--color-primary)" : "var(--color-border)",
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Кнопки-стрелки */}
+        <div className="mt-4 flex justify-between">
+          <button
+            type="button"
+            onClick={() => setSlide((s) => Math.max(0, s - 1))}
+            disabled={slide === 0}
+            className="rounded-lg p-2 disabled:opacity-30"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setSlide((s) => Math.min(slides.length - 1, s + 1))}
+            disabled={slide === slides.length - 1}
+            className="rounded-lg p-2 disabled:opacity-30"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// === ШАГ 1: Пояс ===
+function BeltStep({ belt, setBelt }: { belt: Belt; setBelt: (b: Belt) => void }) {
+  return (
+    <section aria-label="Выбор пояса" className="space-y-4">
+      <div>
+        <h2 className="text-2xl font-bold">Ваш пояс</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Мы покажем техники вашего уровня и следующие цели.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2">
+        {BELT_ORDER.map((b) => (
+          <button
+            key={b}
+            type="button"
+            onClick={() => setBelt(b)}
+            className="flex items-center justify-between rounded-xl border-2 p-3 text-left transition-all"
+            style={{
+              borderColor: belt === b ? "var(--color-primary)" : "var(--color-border)",
+              background:
+                belt === b
+                  ? "color-mix(in oklch, var(--color-primary) 8%, var(--color-card))"
+                  : "var(--color-card)",
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <span
+                className="inline-block h-6 w-10 rounded-md ring-1 ring-black/10"
+                style={{ background: `var(--belt-${b})` }}
+              />
+              <span className="font-medium">
+                {BELT_LABEL[b]}{" "}
+                <span className="text-muted-foreground">({BELT_LABEL_EN[b]})</span>
+              </span>
+            </div>
+            {belt === b && <Check className="h-5 w-5 text-primary" />}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// === ШАГ 2: Gi / No-Gi ===
+function StyleStep({
+  gi, setGi, noGi, setNoGi,
+}: {
+  gi: boolean; setGi: (v: boolean) => void;
+  noGi: boolean; setNoGi: (v: boolean) => void;
+}) {
+  return (
+    <section aria-label="Формат" className="space-y-4">
+      <div>
+        <h2 className="text-2xl font-bold">Формат тренировок</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Выберите один или оба режима. Можно изменить позже.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <ToggleTile
+          label="Gi"
+          sublabel="В кимоно"
+          active={gi}
+          onClick={() => setGi(!gi)}
+        />
+        <ToggleTile
+          label="No-Gi"
+          sublabel="Рашгард"
+          active={noGi}
+          onClick={() => setNoGi(!noGi)}
+        />
+      </div>
+
+      {!gi && !noGi && (
+        <p className="text-xs text-destructive">Выберите хотя бы один формат</p>
+      )}
+    </section>
+  );
+}
+
+// === ШАГ 3: Цель ===
+function GoalStep({
+  goal, setGoal,
+}: { goal: Goal | null; setGoal: (g: Goal) => void }) {
+  const options: { value: Goal; label: string; desc: string; Icon: any }[] = [
+    { value: "self-defense", label: "Самооборона", desc: "Защита на улице", Icon: Shield },
+    { value: "competition", label: "Соревнования", desc: "Готовлюсь к турнирам", Icon: Trophy },
+    { value: "hobby", label: "Для удовольствия", desc: "Тренируюсь в кайф", Icon: Smile },
+  ];
+
+  return (
+    <section aria-label="Цель" className="space-y-4">
+      <div>
+        <h2 className="text-2xl font-bold">Ваша цель</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Это повлияет на рекомендации в тренировках.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2">
+        {options.map(({ value, label, desc, Icon }) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setGoal(value)}
+            className="flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-all"
+            style={{
+              borderColor: goal === value ? "var(--color-primary)" : "var(--color-border)",
+              background:
+                goal === value
+                  ? "color-mix(in oklch, var(--color-primary) 8%, var(--color-card))"
+                  : "var(--color-card)",
+            }}
+          >
+            <div
+              className="flex h-10 w-10 items-center justify-center rounded-lg"
+              style={{
+                background:
+                  goal === value
+                    ? "color-mix(in oklch, var(--color-primary) 15%, transparent)"
+                    : "var(--color-muted)",
+              }}
+            >
+              <Icon className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <div className="font-semibold">{label}</div>
+              <div className="text-xs text-muted-foreground">{desc}</div>
+            </div>
+            {goal === value && <Check className="h-5 w-5 text-primary" />}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// === ШАГ 4: Частота ===
+function FrequencyStep({
+  frequency, setFrequency,
+}: { frequency: Frequency | null; setFrequency: (f: Frequency) => void }) {
+  const options: { value: Frequency; label: string; desc: string }[] = [
+    { value: 1, label: "1-2 раза", desc: "Поддерживаю форму" },
+    { value: 3, label: "3 раза", desc: "Стабильный прогресс" },
+    { value: 4, label: "4+ раз", desc: "Интенсивные тренировки" },
+  ];
+
+  return (
+    <section aria-label="Частота" className="space-y-4">
+      <div>
+        <h2 className="text-2xl font-bold">Как часто тренируетесь?</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Подберём оптимальную длину комплексов.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2">
+        {options.map(({ value, label, desc }) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setFrequency(value)}
+            className="flex items-center justify-between rounded-xl border-2 p-4 text-left transition-all"
+            style={{
+              borderColor:
+                frequency === value ? "var(--color-primary)" : "var(--color-border)",
+              background:
+                frequency === value
+                  ? "color-mix(in oklch, var(--color-primary) 8%, var(--color-card))"
+                  : "var(--color-card)",
+            }}
+          >
+            <div>
+              <div className="font-semibold">{label}</div>
+              <div className="text-xs text-muted-foreground">{desc}</div>
+            </div>
+            {frequency === value && <Check className="h-5 w-5 text-primary" />}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// === ШАГ 5: Финальный экран ===
+function FinalScreen({
+  belt, gi, noGi, goal,
+}: {
+  belt: Belt; gi: boolean; noGi: boolean; goal: Goal | null;
+}) {
+  const goalLabel = {
+    "self-defense": "самообороне",
+    competition: "соревнованиям",
+    hobby: "удовольствию",
+  }[goal || "hobby"];
+
+  return (
+    <section className="space-y-6 text-center">
+      <div
+        className="mx-auto flex h-20 w-20 items-center justify-center rounded-full"
+        style={{ background: "color-mix(in oklch, var(--color-primary) 15%, transparent)" }}
+      >
+        <Sparkles className="h-10 w-10 text-primary" />
+      </div>
+
+      <div>
+        <h2 className="text-2xl font-bold">Всё готово!</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Мы подготовили библиотеку под ваш уровень.
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-4 text-left space-y-2">
+        <SummaryRow label="Пояс" value={`${BELT_LABEL[belt]} (${BELT_LABEL_EN[belt]})`} />
+        <SummaryRow
+          label="Формат"
+          value={[gi && "Gi", noGi && "No-Gi"].filter(Boolean).join(" + ")}
+        />
+        <SummaryRow label="Фокус" value={goalLabel} />
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        Всё можно изменить в профиле в любой момент.
+      </p>
+    </section>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{value}</span>
+    </div>
+  );
+}
+
+// === Компонент плитки ===
+function ToggleTile({
+  label, sublabel, active, onClick,
+}: { label: string; sublabel?: string; active: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="rounded-xl border-2 p-4 text-sm font-medium transition-all"
+      className="relative rounded-xl border-2 p-4 text-left transition-all"
       style={{
         borderColor: active ? "var(--color-primary)" : "var(--color-border)",
-        background: active ? "color-mix(in oklch, var(--color-primary) 10%, var(--color-card))" : "var(--color-card)",
+        background: active
+          ? "color-mix(in oklch, var(--color-primary) 10%, var(--color-card))"
+          : "var(--color-card)",
       }}
     >
-      {label}
+      <div className="font-semibold">{label}</div>
+      {sublabel && (
+        <div className="mt-1 text-xs text-muted-foreground">{sublabel}</div>
+      )}
+      {active && (
+        <Check
+          className="absolute top-2 right-2 h-4 w-4 text-primary"
+        />
+      )}
     </button>
   );
 }
