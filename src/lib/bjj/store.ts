@@ -66,13 +66,14 @@ function getDateKey(date: Date = new Date()): string {
 // ============================================================================
 
 export function useProgress() {
-  const [progress, setProgressState] = useState<ProgressMap>(() =>
-    safeGetItem<ProgressMap>(STORAGE_KEYS.PROGRESS, {}),
+  const [progress, setProgressState] = useState(() =>
+    safeGetItem(STORAGE_KEYS.PROGRESS, {}),
   );
 
-  // Подписка на изменения из других вкладок/компонентов
+  // ✅ ИСПРАВЛЕНО: Подписка на изменения из других вкладок И внутри текущей вкладки
   useEffect(() => {
-    const handler = (e: StorageEvent) => {
+    // Обработчик для изменений из других вкладок
+    const storageHandler = (e: StorageEvent) => {
       if (e.key === STORAGE_KEYS.PROGRESS && e.newValue) {
         try {
           setProgressState(JSON.parse(e.newValue));
@@ -81,14 +82,37 @@ export function useProgress() {
         }
       }
     };
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
+
+    // Обработчик для изменений внутри текущей вкладки (кастомное событие)
+    const customHandler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as ProgressMap | { id: number; status: ProgressStatus } | undefined;
+      if (detail) {
+        // Если передан полный объект прогресса
+        if ("total" in detail || Object.keys(detail).some(k => !isNaN(Number(k)))) {
+          setProgressState(detail as ProgressMap);
+        } else {
+          // Если передано обновление одной техники
+          const update = detail as { id: number; status: ProgressStatus };
+          setProgressState(prev => ({ ...prev, [update.id]: update.status }));
+        }
+      } else {
+        setProgressState(safeGetItem(STORAGE_KEYS.PROGRESS, {}));
+      }
+    };
+
+    window.addEventListener("storage", storageHandler);
+    window.addEventListener(STORE_EVENTS.PROGRESS_CHANGED, customHandler);
+    
+    return () => {
+      window.removeEventListener("storage", storageHandler);
+      window.removeEventListener(STORE_EVENTS.PROGRESS_CHANGED, customHandler);
+    };
   }, []);
 
   // Записать активность при любом изменении прогресса
   const recordActivity = useCallback(() => {
     const today = getDateKey();
-    const history = safeGetItem<ActivityHistory>(STORAGE_KEYS.ACTIVITY, {});
+    const history = safeGetItem(STORAGE_KEYS.ACTIVITY, {});
     if (!history[today]) history[today] = [];
     history[today].push(Date.now());
     safeSetItem(STORAGE_KEYS.ACTIVITY, history);
@@ -181,13 +205,14 @@ const DEFAULT_PROFILE: StyleProfile = {
 };
 
 export function useProfile() {
-  const [profile, setProfileState] = useState<StyleProfile>(() =>
-    safeGetItem<StyleProfile>(STORAGE_KEYS.PROFILE, DEFAULT_PROFILE),
+  const [profile, setProfileState] = useState(() =>
+    safeGetItem(STORAGE_KEYS.PROFILE, DEFAULT_PROFILE),
   );
 
-  // Подписка на изменения из других вкладок
+  // ✅ ИСПРАВЛЕНО: Подписка на изменения из других вкладок И внутри текущей вкладки
   useEffect(() => {
-    const handler = (e: StorageEvent) => {
+    // Обработчик для изменений из других вкладок
+    const storageHandler = (e: StorageEvent) => {
       if (e.key === STORAGE_KEYS.PROFILE && e.newValue) {
         try {
           setProfileState(JSON.parse(e.newValue));
@@ -196,8 +221,24 @@ export function useProfile() {
         }
       }
     };
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
+
+    // Обработчик для изменений внутри текущей вкладки (кастомное событие)
+    const customHandler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as StyleProfile | undefined;
+      if (detail) {
+        setProfileState(detail);
+      } else {
+        setProfileState(safeGetItem(STORAGE_KEYS.PROFILE, DEFAULT_PROFILE));
+      }
+    };
+
+    window.addEventListener("storage", storageHandler);
+    window.addEventListener(STORE_EVENTS.PROFILE_CHANGED, customHandler);
+    
+    return () => {
+      window.removeEventListener("storage", storageHandler);
+      window.removeEventListener(STORE_EVENTS.PROFILE_CHANGED, customHandler);
+    };
   }, []);
 
   // Полное обновление профиля (после онбординга)
@@ -266,8 +307,8 @@ export function useProfile() {
 // ============================================================================
 
 export function useActivityHistory() {
-  const [history, setHistory] = useState<ActivityHistory>(() =>
-    safeGetItem<ActivityHistory>(STORAGE_KEYS.ACTIVITY, {}),
+  const [history, setHistory] = useState(() =>
+    safeGetItem(STORAGE_KEYS.ACTIVITY, {}),
   );
 
   // Подписка на события
@@ -275,7 +316,7 @@ export function useActivityHistory() {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail as ActivityHistory | undefined;
       if (detail) setHistory(detail);
-      else setHistory(safeGetItem<ActivityHistory>(STORAGE_KEYS.ACTIVITY, {}));
+      else setHistory(safeGetItem(STORAGE_KEYS.ACTIVITY, {}));
     };
     window.addEventListener(STORE_EVENTS.ACTIVITY_CHANGED, handler);
     return () => window.removeEventListener(STORE_EVENTS.ACTIVITY_CHANGED, handler);
@@ -378,14 +419,14 @@ export function useActivityHistory() {
 // ============================================================================
 
 export function usePracticeHistory(techniqueId?: number) {
-  const [history, setHistory] = useState<PracticeHistory>(() =>
-    safeGetItem<PracticeHistory>(STORAGE_KEYS.PRACTICE, {}),
+  const [history, setHistory] = useState(() =>
+    safeGetItem(STORAGE_KEYS.PRACTICE, {}),
   );
 
   // Подписка на события
   useEffect(() => {
     const handler = () => {
-      setHistory(safeGetItem<PracticeHistory>(STORAGE_KEYS.PRACTICE, {}));
+      setHistory(safeGetItem(STORAGE_KEYS.PRACTICE, {}));
     };
     window.addEventListener(STORE_EVENTS.PRACTICE_CHANGED, handler);
     return () => window.removeEventListener(STORE_EVENTS.PRACTICE_CHANGED, handler);
@@ -480,10 +521,10 @@ export function createBackup(): BackupData {
   return {
     version: 1,
     exportedAt: new Date().toISOString(),
-    progress: safeGetItem<ProgressMap>(STORAGE_KEYS.PROGRESS, {}),
-    profile: safeGetItem<StyleProfile>(STORAGE_KEYS.PROFILE, DEFAULT_PROFILE),
-    activity: safeGetItem<ActivityHistory>(STORAGE_KEYS.ACTIVITY, {}),
-    practice: safeGetItem<PracticeHistory>(STORAGE_KEYS.PRACTICE, {}),
+    progress: safeGetItem(STORAGE_KEYS.PROGRESS, {}),
+    profile: safeGetItem(STORAGE_KEYS.PROFILE, DEFAULT_PROFILE),
+    activity: safeGetItem(STORAGE_KEYS.ACTIVITY, {}),
+    practice: safeGetItem(STORAGE_KEYS.PRACTICE, {}),
   };
 }
 
