@@ -189,29 +189,46 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
 
       {videoUrl && <VideoBlock url={videoUrl} title={tech.nameRu} />}
 
-      {content && (content.injuryRisk !== "Низкий" || content.tapWarning !== "Нет") && (
-        <div
-          className={`flex gap-3 rounded-2xl border p-3 ${
-            riskCritical
-              ? "border-destructive/50 bg-destructive/10"
-              : "border-amber-500/40 bg-amber-500/10"
-          }`}
-        >
-          <ShieldAlert
-            className={`mt-0.5 h-5 w-5 shrink-0 ${riskCritical ? "text-destructive" : "text-amber-600"}`}
-          />
-          <div className="text-xs leading-relaxed">
-            <p>
-              <b>Риск травмы:</b> {content.injuryRisk}
-            </p>
-            {content.tapWarning !== "Нет" && (
-              <p className="mt-0.5">
-                <b>Когда стучать:</b> {content.tapWarning}
-              </p>
-            )}
-          </div>
-        </div>
+      {content && (content.injuryRisk || content.tapWarning !== "Нет") && (
+  <div
+    className={`flex gap-3 rounded-2xl border p-4 ${
+      riskCritical || content.injuryRisk === "Высокий"
+        ? "border-destructive/50 bg-destructive/10 text-destructive"
+        : content.injuryRisk === "Средний"
+        ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+        : "border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-400"
+    }`}
+  >
+    {riskCritical || content.injuryRisk === "Высокий" ? (
+      <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
+    ) : content.injuryRisk === "Средний" ? (
+      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+    ) : (
+      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+    )}
+    <div className="text-xs leading-relaxed flex-1">
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className="font-semibold text-sm">
+          {riskCritical || content.injuryRisk === "Высокий"
+            ? "⚠️ Опасная техника"
+            : content.injuryRisk === "Средний"
+            ? "Будьте осторожны"
+            : "Информация о технике"}
+        </span>
+      </div>
+      {content.injuryRisk && (
+        <p className="mb-1">
+          <b>Риск травмы:</b> {content.injuryRisk}
+        </p>
       )}
+      {content.tapWarning !== "Нет" && (
+        <p>
+          <b>Когда стучать:</b> {content.tapWarning}
+        </p>
+      )}
+    </div>
+  </div>
+)}
 
       {practiceHistory.length > 0 && (
         <section className="rounded-2xl border border-border bg-card p-4">
