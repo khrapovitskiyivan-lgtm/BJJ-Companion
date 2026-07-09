@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TECH_BY_ID, TECHNIQUES, contentFor } from "@/lib/bjj/data";
@@ -7,9 +7,31 @@ import { useProgress } from "@/lib/bjj/store";
 import { learningPath } from "@/lib/bjj/recommend";
 import type { ProgressStatus, Technique } from "@/lib/bjj/types";
 import {
-  ArrowLeft, Check, Circle, CircleDot, Link2, Share2,
-  ListOrdered, KeyRound, Clock3, AlertTriangle, Dumbbell, ShieldAlert, Route as RouteIcon,
+  ArrowLeft,
+  Check,
+  Circle,
+  CircleDot,
+  Share2,
+  ShieldAlert,
+  Sparkles,
+  History,
+  Link2,
 } from "lucide-react";
+
+// Новые компоненты
+import { Breadcrumbs } from "@/components/bjj/technique/Breadcrumbs";
+import { VideoBlock } from "@/components/bjj/technique/VideoBlock";
+import { InteractiveLearningPath } from "@/components/bjj/technique/InteractiveLearningPath";
+import {
+  MechanismSection,
+  InsightSection,
+  NeutralSection,
+  WarningSection,
+  PracticeSection,
+} from "@/components/bjj/technique/TechniqueSections";
+import { RelatedList } from "@/components/bjj/technique/RelatedList";
+
+import { Clock3, AlertTriangle, Dumbbell } from "lucide-react";
 
 export const Route = createFileRoute("/technique/$id")({
   component: TechniquePage,
@@ -58,6 +80,28 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
   const path = learningPath(tech, progress);
   const riskCritical = /КРИТИЧНО/i.test(content?.injuryRisk ?? "");
 
+  const videoUrl = (tech as any).videoUrl as string | undefined;
+
+  const practiceHistory = useMemo(() => {
+    const history: { date: string }[] = [];
+    try {
+      const raw = localStorage.getItem("bjj_practice_history");
+      if (raw) {
+        const all: Record<number, string[]> = JSON.parse(raw);
+        (all[tech.id] || []).forEach((date) => history.push({ date }));
+      }
+    } catch {
+      /* ignore */
+    }
+    return history.slice(-5).reverse();
+  }, [tech.id]);
+
+  const similar = useMemo(() => {
+    return TECHNIQUES.filter(
+      (t) => t.id !== tech.id && t.group === tech.group && t.belt === tech.belt,
+    ).slice(0, 6);
+  }, [tech]);
+
   const resolve = (ids: number[]) =>
     ids.map((i) => TECH_BY_ID[i]).filter((x): x is Technique => Boolean(x));
 
@@ -81,12 +125,14 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
         setTimeout(() => setShared(false), 2000);
       }
     } catch {
-      /* пользователь отменил шеринг */
+      /* ignore */
     }
   };
 
   return (
     <div className="space-y-5">
+      <Breadcrumbs tech={tech} />
+
       <div className="flex items-center justify-between">
         <button
           onClick={() => router.history.back()}
@@ -104,6 +150,7 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
         </button>
       </div>
 
+      {/* Шапка */}
       <header
         className="rounded-2xl border border-border bg-card p-4 shadow-sm"
         style={{ borderLeft: `4px solid var(--belt-${tech.belt})` }}
@@ -117,7 +164,7 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
             type="button"
             onClick={() => cycleStatus(tech.id)}
             aria-label={`Статус: ${STATUS_LABEL[status]}`}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 transition-transform active:scale-95"
             style={{ borderColor: STATUS_COLOR[status], color: STATUS_COLOR[status] }}
           >
             <Icon className="h-5 w-5" strokeWidth={2.4} />
@@ -140,70 +187,114 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
         )}
       </header>
 
-      {/* Предупреждение о риске — всегда на виду, это фишка продукта */}
-      {content && (content.injuryRisk !== "Низкий" || content.tapWarning !== "Нет") && (
-        <div
-          className={`flex gap-3 rounded-2xl border p-3 ${
-            riskCritical
-              ? "border-destructive/50 bg-destructive/10"
-              : "border-amber-500/40 bg-amber-500/10"
-          }`}
-        >
-          <ShieldAlert
-            className={`mt-0.5 h-5 w-5 shrink-0 ${riskCritical ? "text-destructive" : "text-amber-600"}`}
-          />
-          <div className="text-xs leading-relaxed">
-            <p>
-              <b>Риск травмы:</b> {content.injuryRisk}
-            </p>
-            {content.tapWarning !== "Нет" && (
-              <p className="mt-0.5">
-                <b>Когда стучать:</b> {content.tapWarning}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+      {videoUrl && <VideoBlock url={videoUrl} title={tech.nameRu} />}
 
-      {/* Контент из базы */}
-      {content && (
-        <>
-          <ContentSection icon={<ListOrdered className="h-4 w-4" />} title="Механика" html={content.mechanics} numbered />
-          <ContentSection icon={<KeyRound className="h-4 w-4" />} title="Ключевые моменты" html={content.keyPoints} />
-          <ContentSection icon={<Clock3 className="h-4 w-4" />} title="Когда применять" html={content.when} />
-          <ContentSection icon={<AlertTriangle className="h-4 w-4" />} title="Типичные ошибки" html={content.mistakes} />
-          <ContentSection icon={<Dumbbell className="h-4 w-4" />} title="Дриллы" html={content.drills} />
-        </>
+      {content && (content.injuryRisk || content.tapWarning !== "Нет") && (
+  <div
+    className={`flex gap-3 rounded-2xl border p-4 ${
+      riskCritical || content.injuryRisk === "Высокий"
+        ? "border-destructive/50 bg-destructive/10 text-destructive"
+        : content.injuryRisk === "Средний"
+        ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+        : "border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-400"
+    }`}
+  >
+    {riskCritical || content.injuryRisk === "Высокий" ? (
+      <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
+    ) : content.injuryRisk === "Средний" ? (
+      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+    ) : (
+      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+    )}
+    <div className="text-xs leading-relaxed flex-1">
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className="font-semibold text-sm">
+          {riskCritical || content.injuryRisk === "Высокий"
+            ? "⚠️ Опасная техника"
+            : content.injuryRisk === "Средний"
+            ? "Будьте осторожны"
+            : "Информация о технике"}
+        </span>
+      </div>
+      {content.injuryRisk && (
+        <p className="mb-1">
+          <b>Риск травмы:</b> {content.injuryRisk}
+        </p>
       )}
+      {content.tapWarning !== "Нет" && (
+        <p>
+          <b>Когда стучать:</b> {content.tapWarning}
+        </p>
+      )}
+    </div>
+  </div>
+)}
 
-      {/* Путь изучения */}
-      {path.length > 1 && (
+      {practiceHistory.length > 0 && (
         <section className="rounded-2xl border border-border bg-card p-4">
           <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-            <RouteIcon className="h-4 w-4 text-primary" />
-            Путь изучения — {path.length} шагов
+            <History className="h-4 w-4 text-primary" />
+            История практики
           </h2>
-          <div className="flex flex-wrap items-center gap-1">
-            {path.map((t, i) => (
-              <span key={t.id} className="flex items-center gap-1">
-                {i > 0 && <span className="text-xs text-muted-foreground">→</span>}
-                <Link
-                  to="/technique/$id"
-                  params={{ id: String(t.id) }}
-                  className={`rounded-md border border-border px-2 py-0.5 text-[11px] transition hover:bg-muted ${
-                    t.id === tech.id ? "bg-primary/10 font-semibold" : ""
-                  }`}
-                >
-                  {t.label}
-                </Link>
+          <div className="flex flex-wrap gap-2">
+            {practiceHistory.map((h, i) => (
+              <span
+                key={i}
+                className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground"
+              >
+                {new Date(h.date).toLocaleDateString("ru-RU", {
+                  day: "numeric",
+                  month: "short",
+                })}
               </span>
             ))}
           </div>
         </section>
       )}
 
+      {path.length > 1 && <InteractiveLearningPath path={path} currentId={tech.id} />}
+
+      {content && (
+        <>
+          <MechanismSection html={content.mechanics} />
+          <InsightSection html={content.keyPoints} />
+          <NeutralSection icon={<Clock3 className="h-4 w-4" />} title="Когда применять" html={content.when} />
+          <WarningSection html={content.mistakes} />
+          <PracticeSection html={content.drills} />
+        </>
+      )}
+
+      {similar.length > 0 && (
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Похожие техники
+          </h2>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {similar.map((t) => (
+              <Link
+                key={t.id}
+                to="/technique/$id"
+                params={{ id: String(t.id) }}
+                className="flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition hover:bg-muted"
+                style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium">{t.nameRu}</div>
+                  <div className="truncate text-[11px] text-muted-foreground">
+                    {GROUP_LABEL[t.group]} · сложность {t.difficulty}/5
+                  </div>
+                </div>
+                <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {tech.tags.length > 0 && (
-        <Section title="Теги">
+        <section>
+          <h2 className="mb-2 text-sm font-semibold">Теги</h2>
           <div className="flex flex-wrap gap-1.5">
             {tech.tags.map((t) => (
               <span key={t} className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
@@ -211,7 +302,7 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
               </span>
             ))}
           </div>
-        </Section>
+        </section>
       )}
 
       <RelatedList title="Пререквизиты" items={resolve(tech.prerequisites)} empty="Нет требований — можно изучать сразу." />
@@ -220,102 +311,6 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
       <RelatedList title="Продолжения (chain)" items={resolve(tech.chain_to)} />
       <RelatedList title="Используется в" items={usedBy} />
     </div>
-  );
-}
-
-// Секция контента: разбивает "1) ...<br>2) ..." / "• ...<br>• ..." на список
-function ContentSection({
-  icon,
-  title,
-  html,
-  numbered,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  html: string;
-  numbered?: boolean;
-}) {
-  if (!html || !html.trim()) return null;
-  const items = html
-    .split(/<br\s*\/?>/i)
-    .map((s) => s.replace(/^\s*(\d+\)|•)\s*/, "").trim())
-    .filter(Boolean);
-  return (
-    <section className="rounded-2xl border border-border bg-card p-4">
-      <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-        <span className="text-primary">{icon}</span>
-        {title}
-      </h2>
-      {items.length > 1 ? (
-        numbered ? (
-          <ol className="list-inside list-decimal space-y-1.5 text-sm leading-relaxed text-foreground/90">
-            {items.map((it, i) => (
-              <li key={i}>{it}</li>
-            ))}
-          </ol>
-        ) : (
-          <ul className="space-y-1.5 text-sm leading-relaxed text-foreground/90">
-            {items.map((it, i) => (
-              <li key={i} className="flex gap-2">
-                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
-                {it}
-              </li>
-            ))}
-          </ul>
-        )
-      ) : (
-        <p className="text-sm leading-relaxed text-foreground/90">{items[0]}</p>
-      )}
-    </section>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section>
-      <h2 className="mb-2 text-sm font-semibold">{title}</h2>
-      {children}
-    </section>
-  );
-}
-
-function RelatedList({
-  title,
-  items,
-  empty,
-}: {
-  title: string;
-  items: Technique[];
-  empty?: string;
-}) {
-  if (items.length === 0 && !empty) return null;
-  return (
-    <Section title={title}>
-      {items.length === 0 ? (
-        <p className="text-xs text-muted-foreground">{empty}</p>
-      ) : (
-        <ul className="space-y-1.5">
-          {items.map((t) => (
-            <li key={t.id}>
-              <Link
-                to="/technique/$id"
-                params={{ id: String(t.id) }}
-                className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card p-2.5 transition-colors hover:bg-muted"
-                style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
-              >
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium">{t.nameRu}</span>
-                  <span className="block truncate text-[11px] text-muted-foreground">
-                    {GROUP_LABEL[t.group]} · {BELT_LABEL[t.belt]}
-                  </span>
-                </span>
-                <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Section>
   );
 }
 

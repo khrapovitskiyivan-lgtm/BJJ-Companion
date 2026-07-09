@@ -4,6 +4,7 @@ import { AppShell } from "@/components/bjj/AppShell";
 import { TechniqueCard } from "@/components/bjj/TechniqueCard";
 import { useProfile, useProgress } from "@/lib/bjj/store";
 import { filterTechniques } from "@/lib/bjj/workout";
+import { TECHNIQUES } from "@/lib/bjj/data";
 import {
   BELT_LABEL,
   BELT_ORDER,
@@ -11,25 +12,20 @@ import {
 } from "@/lib/bjj/constants";
 import type { Belt, Group } from "@/lib/bjj/types";
 import { TechniquesTabs } from "@/components/bjj/TechniquesTabs";
-import { Search, X } from "lucide-react";
+import { ProgressPieChart } from "@/components/bjj/ProgressPieChart";
+import { Search, X, RotateCcw, Filter } from "lucide-react";
 
 export const Route = createFileRoute("/library")({
   component: LibraryPage,
 });
 
 const PAGE_SIZE = 40;
+
+// ✅ Динамическая генерация из GROUP_LABEL
+// Если добавите новую группу в constants.ts — она автоматически появится здесь
 const GROUPS: (Group | "all")[] = [
   "all",
-  "fundamentals",
-  "position",
-  "guard_pass",
-  "submission",
-  "sweep",
-  "takedown",
-  "transition",
-  "escape",
-  "retention",
-  "system",
+  ...(Object.keys(GROUP_LABEL) as Group[]),
 ];
 
 function LibraryPage() {
@@ -52,6 +48,11 @@ function Library() {
   const [group, setGroup] = useState<Group | "all">("all");
   const [page, setPage] = useState(1);
 
+  // Дефолтные значения из профиля (для сброса и сравнения)
+  const defaultGiMode: "both" | "gi" | "nogi" =
+    profile.gi && profile.noGi ? "both" : profile.gi ? "gi" : "nogi";
+
+  // ✅ Фильтрация техник
   const filtered = useMemo(
     () =>
       filterTechniques({
@@ -64,6 +65,37 @@ function Library() {
     [belt, giMode, group, search],
   );
 
+  // ✅ Данные для круговой диаграммы прогресса
+  const pieSegments = useMemo(() => {
+    const done = filtered.filter((t) => progress[t.id] === "done").length;
+    const inProgress = filtered.filter(
+      (t) => progress[t.id] === "in_progress",
+    ).length;
+    const notStarted = filtered.length - done - inProgress;
+
+    return [
+      {
+        label: "Изучено",
+        value: done,
+        color: "var(--status-done, #10b981)",
+        icon: "✓",
+      },
+      {
+        label: "В процессе",
+        value: inProgress,
+        color: "var(--status-progress, #3b82f6)",
+        icon: "◐",
+      },
+      {
+        label: "Не начато",
+        value: notStarted,
+        color: "var(--status-idle, #6b7280)",
+        icon: "○",
+      },
+    ];
+  }, [filtered, progress]);
+
+  // ✅ Пагинация
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pageItems = filtered.slice(
@@ -71,20 +103,114 @@ function Library() {
     currentPage * PAGE_SIZE,
   );
 
-  // Reset page when filters change
+  // ✅ Сброс страницы при изменении фильтров
   const resetPage = () => setPage(1);
+
+  // ✅ Сброс всех фильтров к значениям по умолчанию (из профиля)
+  const resetAllFilters = () => {
+    setSearch("");
+    setBelt(profile.belt);
+    setGiMode(defaultGiMode);
+    setGroup("all");
+    setPage(1);
+  };
+
+  // ✅ Подсчёт активных фильтров для индикатора
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (search) count++;
+    if (belt !== profile.belt) count++;
+    if (giMode !== defaultGiMode) count++;
+    if (group !== "all") count++;
+    return count;
+  }, [search, belt, giMode, group, profile.belt, defaultGiMode]);
+
+  const hasActiveFilters = activeFiltersCount > 0;
+
+  // ✅ Процент изученных техник (для центра диаграммы)
+  const donePercent =
+    filtered.length > 0
+      ? Math.round((pieSegments[0].value / filtered.length) * 100)
+      : 0;
 
   return (
     <div className="space-y-4">
-      <header className="flex items-end justify-between">
-        <div>
+      {/* Header с диаграммой */}
+      <header className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
           <h1 className="text-xl font-bold tracking-tight">Библиотека техник</h1>
           <p className="text-xs text-muted-foreground">
             {filtered.length} техник · страница {currentPage}/{totalPages}
+            {hasActiveFilters && (
+              <span className="ml-2 inline-flex items-center gap-1 text-primary">
+                <Filter className="h-3 w-3" />
+                {activeFiltersCount}{" "}
+                {activeFiltersCount === 1
+                  ? "фильтр"
+                  : activeFiltersCount < 5
+                    ? "фильтра"
+                    : "фильтров"}
+              </span>
+            )}
           </p>
         </div>
+
+        {/* ✅ Компактная круговая диаграмма в шапке */}
+        {filtered.length > 0 && (
+          <div className="hidden sm:block shrink-0">
+            <ProgressPieChart
+              segments={pieSegments}
+              size={88}
+              thickness={12}
+              centerLabel="изучено"
+              centerValue={`${donePercent}%`}
+              showLegend={false}
+            />
+          </div>
+        )}
+
         <TechniquesTabs />
       </header>
+
+      {/* ✅ Расширенная статистика с большой диаграммой */}
+      {filtered.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <ProgressPieChart
+              segments={pieSegments}
+              size={140}
+              thickness={18}
+              centerLabel="всего"
+              centerValue={filtered.length}
+              showLegend={false}
+            />
+            <div className="flex-1 grid grid-cols-3 gap-3 w-full">
+              {pieSegments.map((segment, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col items-center p-3 rounded-xl bg-muted/30 border border-border/50"
+                >
+                  <span
+                    className="text-2xl font-bold"
+                    style={{ color: segment.color }}
+                  >
+                    {segment.value}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground text-center mt-1">
+                    {segment.icon} {segment.label}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground/70 mt-0.5">
+                    {filtered.length > 0
+                      ? Math.round((segment.value / filtered.length) * 100)
+                      : 0}
+                    %
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative">
@@ -169,16 +295,89 @@ function Library() {
         ))}
       </FilterRow>
 
-      {/* List */}
+      {/* ✅ Панель быстрого сброса фильтров */}
+      {hasActiveFilters && (
+        <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5">
+          <span className="text-xs text-muted-foreground">
+            Применено фильтров:{" "}
+            <span className="font-semibold text-foreground">
+              {activeFiltersCount}
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={resetAllFilters}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Сбросить все
+          </button>
+        </div>
+      )}
+
+      {/* ✅ Умное пустое состояние */}
       {pageItems.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
-          Ничего не найдено. Попробуйте изменить фильтры.
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card py-16 px-6 text-center">
+          {/* Иконка */}
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted/50">
+            <Search className="h-8 w-8 text-muted-foreground" />
+          </div>
+
+          {/* Заголовок и описание */}
+          <h3 className="mb-1.5 text-lg font-semibold">Техники не найдены</h3>
+          <p className="mb-6 max-w-sm text-sm text-muted-foreground">
+            {hasActiveFilters
+              ? "Попробуйте изменить или сбросить фильтры, чтобы увидеть больше результатов."
+              : "В базе пока нет техник. Проверьте подключение к данным."}
+          </p>
+
+          {/* Кнопки действий */}
+          <div className="flex flex-wrap justify-center gap-3">
+            {hasActiveFilters && (
+              <>
+                <button
+                  type="button"
+                  onClick={resetAllFilters}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Сбросить все фильтры
+                </button>
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch("");
+                      resetPage();
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl bg-muted px-4 py-2.5 text-sm font-medium transition-colors hover:bg-muted/80"
+                  >
+                    <X className="h-4 w-4" />
+                    Очистить поиск
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Подсказка: сколько всего техник в базе */}
+          <p className="mt-6 text-xs text-muted-foreground">
+            Всего в базе:{" "}
+            <span className="font-semibold text-foreground">
+              {TECHNIQUES.length}
+            </span>{" "}
+            техник
+          </p>
         </div>
       ) : (
         <ul className="grid grid-cols-1 gap-2">
           {pageItems.map((t) => (
             <li key={t.id}>
-              <Link to="/technique/$id" params={{ id: String(t.id) }} className="block">
+              <Link
+                to="/technique/$id"
+                params={{ id: String(t.id) }}
+                className="block"
+              >
                 <TechniqueCard
                   technique={t}
                   status={progress[t.id] ?? "not_started"}
@@ -221,7 +420,13 @@ function Library() {
   );
 }
 
-function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
+function FilterRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
       <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
