@@ -1,11 +1,15 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { Network } from "vis-network";
 import { DataSet } from "vis-data";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import { BELT_LABEL, BELT_ORDER, GROUP_LABEL } from "@/lib/bjj/constants";
 import {
-  computeLayout, pickOrientation, pickCols, beltLanes,
-  type GraphLayout, type Orientation,
+  computeLayout,
+  pickOrientation,
+  pickCols,
+  beltLanes,
+  type GraphLayout,
+  type Orientation,
 } from "@/lib/bjj/graphLayout";
 import { readiness } from "@/lib/bjj/recommend";
 import type { ProgressMap } from "@/lib/bjj/store";
@@ -28,18 +32,29 @@ interface GraphCanvasProps {
 }
 
 export function GraphCanvas({
-  progress, profile, edges, focusedId, onNodeClick,
-  heroMode, heroBelt, focusMode, matchesFilter, focusSet, dir, dimmed,
+  progress,
+  profile,
+  edges,
+  focusedId,
+  onNodeClick,
+  heroMode,
+  heroBelt,
+  focusMode,
+  matchesFilter,
+  focusSet,
+  dir,
+  dimmed,
 }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const netRef = useRef<Network | null>(null);
-  const nodesDSRef = useRef<DataSet<Record<string, unknown>> | null>(null);
-  const edgesDSRef = useRef<DataSet<EdgeItem> | null>(null);
+  const nodesDSRef = useRef<DataSet<any> | null>(null);
+  const edgesDSRef = useRef<DataSet<any> | null>(null);
   const layoutRef = useRef<GraphLayout | null>(null);
   const renderRef = useRef<Map<number, RenderData>>(new Map());
   const minScaleRef = useRef(0.1);
   const paramsRef = useRef<{ orientation: Orientation; cols: number }>({
-    orientation: "horizontal", cols: 3,
+    orientation: "horizontal",
+    cols: 3,
   });
 
   const theme = profile.theme === "dark" ? PALETTE.dark : PALETTE.light;
@@ -49,6 +64,30 @@ export function GraphCanvas({
   heroModeRef.current = heroMode;
   const focusModeRef = useRef(focusMode);
   focusModeRef.current = focusMode;
+
+  // ✅ ИСПРАВЛЕНО: Функция rebuildLayout перенесена внутрь компонента
+  const rebuildLayout = useCallback(
+    (orientation: Orientation, cols: number) => {
+      const nodesDS = nodesDSRef.current;
+      const net = netRef.current;
+      if (!nodesDS || !net) return;
+
+      const layout = computeLayout(TECHNIQUES, orientation, cols);
+      layoutRef.current = layout;
+
+      // Обновляем позиции всех узлов
+      nodesDS.update(
+        TECHNIQUES.map((t) => {
+          const p = layout.positions.get(t.id)!;
+          return { id: t.id, x: p.x, y: p.y };
+        }),
+      );
+
+      net.redraw();
+      net.fit({ animation: false } as never);
+    },
+    [],
+  );
 
   // Инициализация сети (один раз)
   useEffect(() => {
@@ -66,7 +105,9 @@ export function GraphCanvas({
     TECHNIQUES.forEach((t) => {
       renderRef.current.set(t.id, {
         status: progress[t.id] ?? "not_started",
-        dim: false, focused: false, showLabel: false,
+        dim: false,
+        focused: false,
+        showLabel: false,
         readyFrac: readiness(t, progress).frac,
         risk: riskLevel(t),
       });
@@ -83,7 +124,12 @@ export function GraphCanvas({
           if (d.dim) ctx.globalAlpha = 0.14;
           ctx.beginPath();
           ctx.arc(x, y, r, 0, Math.PI * 2);
-          ctx.fillStyle = d.status === "done" ? pal.done : d.status === "in_progress" ? pal.prog : pal.nodeBg;
+          ctx.fillStyle =
+            d.status === "done"
+              ? pal.done
+              : d.status === "in_progress"
+              ? pal.prog
+              : pal.nodeBg;
           ctx.fill();
           ctx.lineWidth = 2.5;
           ctx.strokeStyle = d.focused ? pal.focusRing : pal.belts[t.belt];
@@ -91,7 +137,13 @@ export function GraphCanvas({
           // Кольцо готовности
           if (d.status !== "done" && d.readyFrac > 0 && d.readyFrac < 1) {
             ctx.beginPath();
-            ctx.arc(x, y, r + 4, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * d.readyFrac);
+            ctx.arc(
+              x,
+              y,
+              r + 4,
+              -Math.PI / 2,
+              -Math.PI / 2 + Math.PI * 2 * d.readyFrac,
+            );
             ctx.lineWidth = 2;
             ctx.strokeStyle = pal.prog;
             ctx.stroke();
@@ -99,7 +151,8 @@ export function GraphCanvas({
           // Подпись
           const scale = netRef.current?.getScale() ?? 1;
           if (!d.dim && (d.focused || scale >= 1.8)) {
-            const text = t.label.length > 14 ? t.label.slice(0, 13) + "…" : t.label;
+            const text =
+              t.label.length > 14 ? t.label.slice(0, 13) + "…" : t.label;
             ctx.font = `600 ${Math.max(10, 12 / Math.min(scale, 1.8))}px Manrope, sans-serif`;
             ctx.textAlign = "center";
             ctx.textBaseline = "top";
@@ -119,7 +172,9 @@ export function GraphCanvas({
       TECHNIQUES.map((t) => {
         const p = layout.positions.get(t.id)!;
         return {
-          id: t.id, x: p.x, y: p.y,
+          id: t.id,
+          x: p.x,
+          y: p.y,
           fixed: { x: true, y: true },
           shape: "custom",
           title: `${t.nameRu} · ${BELT_LABEL[t.belt]} · ${GROUP_LABEL[t.group]}`,
@@ -128,10 +183,14 @@ export function GraphCanvas({
       }),
     );
 
-    const edgesDS = new DataSet<EdgeItem>(
+    const edgesDS = new DataSet(
       edges.map((e) => ({
         ...e,
-        color: { color: theme.edgeBase, highlight: theme.edgeIn, hover: theme.edgeIn },
+        color: {
+          color: theme.edgeBase,
+          highlight: theme.edgeIn,
+          hover: theme.edgeIn,
+        },
         width: 0.6,
       })),
     );
@@ -139,18 +198,29 @@ export function GraphCanvas({
     nodesDSRef.current = nodesDS;
     edgesDSRef.current = edgesDS;
 
-    const net = new Network(el, { nodes: nodesDS as never, edges: edgesDS as never }, {
-      physics: false,
-      layout: { improvedLayout: false },
-      nodes: { shadow: false },
-      edges: { smooth: false, arrows: { to: { enabled: true, scaleFactor: 0.5 } } },
-      interaction: {
-        hover: true, tooltipDelay: 150,
-        hideEdgesOnDrag: true, hideEdgesOnZoom: true,
-        navigationButtons: false, keyboard: true,
-        zoomView: true, dragView: true,
+    const net = new Network(
+      el,
+      { nodes: nodesDS as never, edges: edgesDS as never },
+      {
+        physics: false,
+        layout: { improvedLayout: false },
+        nodes: { shadow: false },
+        edges: {
+          smooth: false,
+          arrows: { to: { enabled: true, scaleFactor: 0.5 } },
+        },
+        interaction: {
+          hover: true,
+          tooltipDelay: 150,
+          hideEdgesOnDrag: true,
+          hideEdgesOnZoom: true,
+          navigationButtons: false,
+          keyboard: true,
+          zoomView: true,
+          dragView: true,
+        },
       },
-    });
+    );
     netRef.current = net;
 
     // Фон с поясами
@@ -163,12 +233,25 @@ export function GraphCanvas({
       ctx.textBaseline = "middle";
       L.bands.forEach((bd, i) => {
         ctx.fillStyle = i % 2 === 0 ? pal.bandEven : pal.bandOdd;
-        ctx.fillRect(L.xMin - 30, bd.y0 - 24, L.xMax - L.xMin + 60, bd.y1 - bd.y0 + 48);
-        const label = bd.type === "belt" ? BELT_LABEL[bd.key as Belt] : GROUP_LABEL[bd.key as keyof typeof GROUP_LABEL];
-        ctx.fillStyle = bd.type === "belt" ? pal.belts[bd.key as Belt] : pal.laneLabel;
+        ctx.fillRect(
+          L.xMin - 30,
+          bd.y0 - 24,
+          L.xMax - L.xMin + 60,
+          bd.y1 - bd.y0 + 48,
+        );
+        const label =
+          bd.type === "belt"
+            ? BELT_LABEL[bd.key as Belt]
+            : GROUP_LABEL[bd.key as keyof typeof GROUP_LABEL];
+        ctx.fillStyle =
+          bd.type === "belt" ? pal.belts[bd.key as Belt] : pal.laneLabel;
         ctx.globalAlpha = pal.watermarkAlpha;
         ctx.font = `800 ${Math.min((bd.y1 - bd.y0) * 0.7, 150)}px Manrope, sans-serif`;
-        ctx.fillText((label ?? bd.key).toUpperCase(), (L.xMin + L.xMax) / 2, (bd.y0 + bd.y1) / 2);
+        ctx.fillText(
+          (label ?? bd.key).toUpperCase(),
+          (L.xMin + L.xMax) / 2,
+          (bd.y0 + bd.y1) / 2,
+        );
         ctx.globalAlpha = 1;
       });
       ctx.restore();
@@ -183,8 +266,12 @@ export function GraphCanvas({
       const topY = L.bands[0].y0 - 26;
       L.lanes.forEach((l) => {
         const fs = Math.max(11, Math.min((l.x1 - l.x0) * 0.16, 22));
-        const label = l.type === "belt" ? BELT_LABEL[l.key as Belt] : GROUP_LABEL[l.key as keyof typeof GROUP_LABEL];
-        ctx.fillStyle = l.type === "belt" ? pal.belts[l.key as Belt] : pal.laneLabel;
+        const label =
+          l.type === "belt"
+            ? BELT_LABEL[l.key as Belt]
+            : GROUP_LABEL[l.key as keyof typeof GROUP_LABEL];
+        ctx.fillStyle =
+          l.type === "belt" ? pal.belts[l.key as Belt] : pal.laneLabel;
         ctx.globalAlpha = l.type === "belt" ? 0.85 : 1;
         ctx.font = `700 ${fs}px Manrope, sans-serif`;
         ctx.textAlign = "center";
@@ -199,8 +286,13 @@ export function GraphCanvas({
       const id = params.nodes?.[0] ?? null;
       onNodeClick(id);
       if (id != null) {
-        const sc = heroModeRef.current ? Math.max(net.getScale(), 0.9) : 1.0;
-        net.focus(id, { scale: sc, animation: { duration: 500, easingFunction: "easeInOutCubic" } });
+        const sc = heroModeRef.current
+          ? Math.max(net.getScale(), 0.9)
+          : 1.0;
+        net.focus(id, {
+          scale: sc,
+          animation: { duration: 500, easingFunction: "easeInOutCubic" },
+        });
       }
     });
 
@@ -225,11 +317,20 @@ export function GraphCanvas({
       const s = net.getScale();
       const halfVW = elc.offsetWidth / 2 / s;
       const halfVH = elc.offsetHeight / 2 / s;
-      const cMinX = L.xMin, cMaxX = L.xMax;
-      const cMinY = L.bands[0].y0 - 30, cMaxY = L.bands[L.bands.length - 1].y1 + 30;
+      const cMinX = L.xMin,
+        cMaxX = L.xMax;
+      const cMinY = L.bands[0].y0 - 30,
+        cMaxY = L.bands[L.bands.length - 1].y1 + 30;
       const pos = net.getViewPosition();
-      const clampAxis = (p: number, cMin: number, cMax: number, half: number) =>
-        cMax - cMin <= half * 2 ? (cMin + cMax) / 2 : Math.max(cMin + half, Math.min(cMax - half, p));
+      const clampAxis = (
+        p: number,
+        cMin: number,
+        cMax: number,
+        half: number,
+      ) =>
+        cMax - cMin <= half * 2
+          ? (cMin + cMax) / 2
+          : Math.max(cMin + half, Math.min(cMax - half, p));
       const x = clampAxis(pos.x, cMinX, cMaxX, halfVW);
       const y = clampAxis(pos.y, cMinY, cMaxY, halfVH);
       if (Math.abs(x - pos.x) > 0.5 || Math.abs(y - pos.y) > 0.5) {
@@ -256,7 +357,10 @@ export function GraphCanvas({
         if (lane) {
           const scale = Math.max(0.7, minScaleRef.current);
           net.moveTo({
-            position: { x: (lane.x0 + lane.x1) / 2, y: layout.bands[0].y0 + el.offsetHeight / 2 / scale },
+            position: {
+              x: (lane.x0 + lane.x1) / 2,
+              y: layout.bands[0].y0 + el.offsetHeight / 2 / scale,
+            },
             scale,
             animation: { duration: 600, easingFunction: "easeOutCubic" },
           });
@@ -270,11 +374,17 @@ export function GraphCanvas({
     const ro = new ResizeObserver(() => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
-        const W = el.offsetWidth, H = el.offsetHeight;
+        const W = el.offsetWidth,
+          H = el.offsetHeight;
         if (!W || !H) return;
-        const wantO: Orientation = heroModeRef.current ? "vertical" : pickOrientation(W, H);
+        const wantO: Orientation = heroModeRef.current
+          ? "vertical"
+          : pickOrientation(W, H);
         const wantC = pickCols(wantO, W, H);
-        if (wantO !== paramsRef.current.orientation || wantC !== paramsRef.current.cols) {
+        if (
+          wantO !== paramsRef.current.orientation ||
+          wantC !== paramsRef.current.cols
+        ) {
           rebuildLayout(wantO, wantC);
         } else {
           net.redraw();
@@ -319,8 +429,14 @@ export function GraphCanvas({
 
     edgesDS.update(
       edges.map((e) => {
-        const related = focusedId != null && (e.from === focusedId || e.to === focusedId);
-        const inPath = dir === "path" && focusSet != null && focusSet.has(e.from) && focusSet.has(e.to) && e.kind === "prereq";
+        const related =
+          focusedId != null && (e.from === focusedId || e.to === focusedId);
+        const inPath =
+          dir === "path" &&
+          focusSet != null &&
+          focusSet.has(e.from) &&
+          focusSet.has(e.to) &&
+          e.kind === "prereq";
         const bothVisible = visible.has(e.from) && visible.has(e.to);
         if (!dimmed || ((related || inPath) && bothVisible)) {
           let col = pal.edgeBase;
@@ -328,13 +444,21 @@ export function GraphCanvas({
           if (inPath) col = pal.edgeOut;
           return {
             id: e.id,
-            color: { color: col, highlight: pal.edgeIn, hover: pal.edgeIn },
+            color: {
+              color: col,
+              highlight: pal.edgeIn,
+              hover: pal.edgeIn,
+            },
             width: related || inPath ? 1.6 : 0.6,
           };
         }
         return {
           id: e.id,
-          color: { color: pal.edgeDim, highlight: pal.edgeDim, hover: pal.edgeDim },
+          color: {
+            color: pal.edgeDim,
+            highlight: pal.edgeDim,
+            hover: pal.edgeDim,
+          },
           width: 0.3,
         };
       }),
@@ -346,14 +470,11 @@ export function GraphCanvas({
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0"
-      data-net-ref={(el) => {
+      className="w-full h-full"
+      // @ts-expect-error - кастомное свойство для доступа из родителя
+      setNetRef={(el: HTMLDivElement | null) => {
         if (el) (el as any).__netRef = netRef;
       }}
     />
   );
-}
-
-function rebuildLayout(orientation: Orientation, cols: number) {
-  // Реализация перестройки раскладки
 }
