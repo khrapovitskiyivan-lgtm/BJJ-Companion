@@ -66,6 +66,9 @@ export interface StyleProfile {
   belt: Belt;
   gi: boolean;
   noGi: boolean;
+  goal?: Goal;           // ← новое
+  frequency?: Frequency; // ← новое
+  onboardedAt?: string;  // ← новое
   theme: "light" | "dark";
   locale: Locale;
   onboardingDone: boolean;
