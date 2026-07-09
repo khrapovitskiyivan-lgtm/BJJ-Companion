@@ -6,15 +6,15 @@ import type { ProgressMap } from "@/lib/bjj/store";
 import type { Belt, StyleProfile, Technique } from "@/lib/bjj/types";
 import { Target, Flag } from "lucide-react";
 
-import { PALETTE, type EdgeItem, type FocusDir, type BaseFilter, type GiFilter, type FocusMode } from "./graphUtils";
-import { GraphCanvas } from "./GraphCanvas";
-import { GraphControls } from "./GraphControls";
-import { GraphSearchBar } from "./GraphSearchBar";
-import { GraphFilters } from "./GraphFilters";
-import { FocusPanel } from "./FocusPanel";
-import { MilestoneCard } from "./MilestoneCard";
-import { Minimap } from "./Minimap";
-import { Legend } from "./Legend";
+import { PALETTE, type EdgeItem, type FocusDir, type BaseFilter, type GiFilter, type FocusMode } from "./graph/graphUtils";
+import { GraphCanvas } from "./graph/GraphCanvas";
+import { GraphControls } from "./graph/GraphControls";
+import { GraphSearchBar } from "./graph/GraphSearchBar";
+import { GraphFilters } from "./graph/GraphFilters";
+import { FocusPanel } from "./graph/FocusPanel";
+import { MilestoneCard } from "./graph/MilestoneCard";
+import { Minimap } from "./graph/Minimap";
+import { Legend } from "./graph/Legend";
 
 export function TechniqueGraph({
   progress, profile,

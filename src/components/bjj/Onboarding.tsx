@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { Belt, StyleProfile, Goal, Frequency } from "@/lib/bjj/types";
 import { BELT_LABEL, BELT_LABEL_EN, BELT_ORDER } from "@/lib/bjj/constants";
+import { BrandLogo } from "./Logo";
 
 type Step = 0 | 1 | 2 | 3 | 4 | 5;
 
@@ -151,10 +152,9 @@ function WelcomeScreen() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Добро пожаловать в<br />BJJ Companion
-        </h1>
-        <p className="mt-3 text-sm text-muted-foreground">
+        <BrandLogo className="mb-4" />
+        <h1 className="text-center text-2xl font-bold tracking-tight">Добро пожаловать</h1>
+        <p className="mt-2 text-center text-sm text-muted-foreground">
           Пройдём короткую настройку — это займёт 30 секунд.
         </p>
       </div>
