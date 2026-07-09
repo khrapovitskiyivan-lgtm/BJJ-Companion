@@ -11,25 +11,18 @@ import {
 } from "@/lib/bjj/constants";
 import type { Belt, Group } from "@/lib/bjj/types";
 import { TechniquesTabs } from "@/components/bjj/TechniquesTabs";
-import { Search, X } from "lucide-react";
+import { Search, X, RotateCcw, Filter } from "lucide-react";
 
 export const Route = createFileRoute("/library")({
   component: LibraryPage,
 });
 
 const PAGE_SIZE = 40;
+// ✅ Динамическая генерация из GROUP_LABEL
+// Если добавите новую группу в constants.ts — она автоматически появится здесь
 const GROUPS: (Group | "all")[] = [
   "all",
-  "fundamentals",
-  "position",
-  "guard_pass",
-  "submission",
-  "sweep",
-  "takedown",
-  "transition",
-  "escape",
-  "retention",
-  "system",
+  ...(Object.keys(GROUP_LABEL) as Group[]),
 ];
 
 function LibraryPage() {
@@ -74,13 +67,40 @@ function Library() {
   // Reset page when filters change
   const resetPage = () => setPage(1);
 
+    // ✅ Сброс всех фильтров к значениям по умолчанию (из профиля)
+  const resetAllFilters = () => {
+    setSearch("");
+    setBelt(profile.belt);
+    setGiMode(profile.gi && profile.noGi ? "both" : profile.gi ? "gi" : "nogi");
+    setGroup("all");
+    setPage(1);
+  };
+
+  // ✅ Подсчёт активных фильтров для индикатора
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (search) count++;
+    if (belt !== profile.belt) count++;
+    if (giMode !== (profile.gi && profile.noGi ? "both" : profile.gi ? "gi" : "nogi")) count++;
+    if (group !== "all") count++;
+    return count;
+  }, [search, belt, giMode, group, profile]);
+
+  const hasActiveFilters = activeFiltersCount > 0;
+
   return (
     <div className="space-y-4">
       <header className="flex items-end justify-between">
         <div>
           <h1 className="text-xl font-bold tracking-tight">Библиотека техник</h1>
-          <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
             {filtered.length} техник · страница {currentPage}/{totalPages}
+            {hasActiveFilters && (
+              <span className="ml-2 inline-flex items-center gap-1 text-primary">
+                <Filter className="h-3 w-3" />
+                {activeFiltersCount} {activeFiltersCount === 1 ? "фильтр" : activeFiltersCount < 5 ? "фильтра" : "фильтров"}
+              </span>
+            )}
           </p>
         </div>
         <TechniquesTabs />
@@ -169,10 +189,81 @@ function Library() {
         ))}
       </FilterRow>
 
+            {/* ✅ Панель быстрого сброса фильтров */}
+      {hasActiveFilters && (
+        <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5">
+          <span className="text-xs text-muted-foreground">
+            Применено фильтров: <span className="font-semibold text-foreground">{activeFiltersCount}</span>
+          </span>
+          <button
+            type="button"
+            onClick={resetAllFilters}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Сбросить все
+          </button>
+        </div>
+      )}
       {/* List */}
-      {pageItems.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
-          Ничего не найдено. Попробуйте изменить фильтры.
+            {pageItems.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card py-16 px-6 text-center">
+          {/* Иконка */}
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted/50">
+            <Search className="h-8 w-8 text-muted-foreground" />
+          </div>
+
+          {/* Заголовок и описание */}
+          <h3 className="mb-1.5 text-lg font-semibold">Техники не найдены</h3>
+          <p className="mb-6 max-w-sm text-sm text-muted-foreground">
+            {hasActiveFilters
+              ? "Попробуйте изменить или сбросить фильтры, чтобы увидеть больше результатов."
+              : "В базе пока нет техник. Проверьте подключение к данным."}
+          </p>
+
+          {/* Кнопки действий */}
+          <div className="flex flex-wrap justify-center gap-3">
+            {hasActiveFilters && (
+              <>
+                <button
+                  type="button"
+                  onClick={resetAllFilters}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Сбросить все фильтры
+                </button>
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch("");
+                      resetPage();
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl bg-muted px-4 py-2.5 text-sm font-medium transition-colors hover:bg-muted/80"
+                  >
+                    <X className="h-4 w-4" />
+                    Очистить поиск
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Подсказка: сколько всего техник в базе */}
+          <p className="mt-6 text-xs text-muted-foreground">
+            Всего в базе:{" "}
+            <span className="font-semibold text-foreground">
+              {filterTechniques({
+                belt: "white" as Belt,
+                gi: true,
+                noGi: true,
+                group: "all",
+                search: "",
+              }).length}
+            </span>{" "}
+            техник
+          </p>
         </div>
       ) : (
         <ul className="grid grid-cols-1 gap-2">
