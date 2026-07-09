@@ -174,6 +174,24 @@ export type TechniqueContentMap = Partial<Record<Lang, TechniqueContent>>;
  */
 export type ProgressStatus = "not_started" | "in_progress" | "done";
 
+export type PrerequisiteLevel = 'required' | 'recommended' | 'optional';
+
+export interface Technique {
+  id: number;
+  nameEn: string;
+  nameRu: string;
+  category: string;
+  subcategory?: string;
+  difficulty: number;
+  description: string;
+  keyPoints: string[];
+  commonMistakes: string[];
+  prerequisites: number[];
+  prerequisiteLevels?: Record<number, PrerequisiteLevel>; // НОВОЕ ПОЛЕ
+  beltLevel?: 'white' | 'blue' | 'purple' | 'brown' | 'black';
+  giSpecific?: boolean;
+}
+
 /**
  * Карта прогресса: techniqueId → статус.
  * Хранится в localStorage под ключом STORAGE_KEYS.PROGRESS.
