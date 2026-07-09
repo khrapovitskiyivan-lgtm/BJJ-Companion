@@ -1,8 +1,24 @@
 // === ЛОГОТИП BJJ COMPANION ===
-// Знак в стиле присланного лого: фигура грэпплера в круге, тёмно-синий + золотой пояс.
-// Используется в шапке (компактно). Полноразмерный лого-PNG (public/logo.png) — для сплэша.
+// Logo — компактный SVG-знак для шапки (грэпплер в круге, navy+gold).
+// BrandLogo — полноразмерный PNG (public/logo.png) в белой карточке для заставок.
 const NAVY = "#2b2f6b";
 const GOLD = "#c79a4e";
+
+// Полный лого-локап (заставка): онбординг, «О приложении».
+export function BrandLogo({ className = "" }: { className?: string }) {
+  return (
+    <div className={`mx-auto w-full max-w-xs overflow-hidden rounded-2xl bg-white p-2 shadow-sm ${className}`}>
+      <img
+        src="/logo.png"
+        alt="BJJ Companion"
+        width={1200}
+        height={686}
+        loading="eager"
+        className="h-auto w-full"
+      />
+    </div>
+  );
+}
 
 export function Logo({ size = 28 }: { size?: number }) {
   return (

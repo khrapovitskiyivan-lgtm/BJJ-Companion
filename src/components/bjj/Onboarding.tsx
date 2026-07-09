@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Belt, StyleProfile } from "@/lib/bjj/types";
 import { BELT_LABEL, BELT_LABEL_EN, BELT_ORDER } from "@/lib/bjj/constants";
+import { BrandLogo } from "./Logo";
 
 // === ONBOARDING (выбор пояса + gi/no-gi) ===
 export function Onboarding({ onDone }: { onDone: (p: Partial<StyleProfile>) => void }) {
@@ -13,9 +14,10 @@ export function Onboarding({ onDone }: { onDone: (p: Partial<StyleProfile>) => v
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex min-h-screen max-w-xl flex-col justify-between px-6 py-10">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Добро пожаловать в BJJ Companion</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Компаньон для бразильского джиу-джитсу: библиотека техник, умные тренировки и прогресс.
+          <BrandLogo className="mb-4" />
+          <h1 className="text-center text-xl font-bold tracking-tight">Добро пожаловать</h1>
+          <p className="mt-2 text-center text-sm text-muted-foreground">
+            Компаньон для бразильского джиу-джитсу: карта техник, умные тренировки и прогресс.
           </p>
         </div>
 
