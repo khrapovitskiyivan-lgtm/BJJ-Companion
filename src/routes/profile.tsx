@@ -1,10 +1,13 @@
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
+import { AuthModal } from "@/components/AuthModal";
+import { supabase } from "@/lib/supabase";
 import { useProfile, useProgress } from "@/lib/bjj/store";
 import { TECHNIQUES } from "@/lib/bjj/data";
 import { BELT_LABEL, BELT_ORDER } from "@/lib/bjj/constants";
 import type { Belt } from "@/lib/bjj/types";
-import { Info, ChevronRight } from "lucide-react";
+import { Info, ChevronRight, LogIn, LogOut, Cloud, CloudOff } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
   component: ProfilePage,
@@ -13,6 +16,23 @@ export const Route = createFileRoute("/profile")({
 function ProfilePage() {
   const { profile, update } = useProfile();
   const { progress } = useProgress();
+  const [user, setUser] = useState<{ email?: string } | null>(null);
+  const [showAuth, setShowAuth] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setUser({ email: data.user.email });
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ? { email: session.user.email } : null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
 
   const done = TECHNIQUES.filter((t) => progress[t.id] === "done").length;
   const inProgress = TECHNIQUES.filter((t) => progress[t.id] === "in_progress").length;
@@ -20,6 +40,45 @@ function ProfilePage() {
   return (
     <AppShell>
       <div className="space-y-5">
+        {/* Аккаунт: вход/выход + статус синхронизации */}
+        <section className="rounded-2xl border border-border bg-card p-4">
+          {user ? (
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="flex items-center gap-1.5 text-[11px] text-status-done">
+                  <Cloud className="h-3.5 w-3.5" />
+                  Прогресс синхронизируется
+                </p>
+                <p className="mt-0.5 truncate text-sm font-medium">{user.email}</p>
+              </div>
+              <button
+                onClick={logout}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Выйти
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <CloudOff className="h-3.5 w-3.5" />
+                  Прогресс только на этом устройстве
+                </p>
+                <p className="mt-0.5 text-sm font-medium">Войдите, чтобы синхронизировать</p>
+              </div>
+              <button
+                onClick={() => setShowAuth(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
+              >
+                <LogIn className="h-3.5 w-3.5" />
+                Войти
+              </button>
+            </div>
+          )}
+        </section>
+
         {/* Карточка профиля */}
         <section className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4">
           <span
@@ -106,6 +165,7 @@ function ProfilePage() {
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </Link>
       </div>
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
     </AppShell>
   );
 }

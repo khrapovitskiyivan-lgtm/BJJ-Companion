@@ -10,6 +10,7 @@ import {
   GROUP_LABEL,
 } from "@/lib/bjj/constants";
 import type { Belt, Group } from "@/lib/bjj/types";
+import { TechniquesTabs } from "@/components/bjj/TechniquesTabs";
 import { Search, X } from "lucide-react";
 
 export const Route = createFileRoute("/library")({
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/library")({
 const PAGE_SIZE = 40;
 const GROUPS: (Group | "all")[] = [
   "all",
+  "fundamentals",
   "position",
   "guard_pass",
   "submission",
@@ -26,6 +28,7 @@ const GROUPS: (Group | "all")[] = [
   "takedown",
   "transition",
   "escape",
+  "retention",
   "system",
 ];
 
@@ -73,11 +76,14 @@ function Library() {
 
   return (
     <div className="space-y-4">
-      <header>
-        <h1 className="text-xl font-bold tracking-tight">Библиотека техник</h1>
-        <p className="text-xs text-muted-foreground">
-          {filtered.length} техник · страница {currentPage}/{totalPages}
-        </p>
+      <header className="flex items-end justify-between">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Библиотека техник</h1>
+          <p className="text-xs text-muted-foreground">
+            {filtered.length} техник · страница {currentPage}/{totalPages}
+          </p>
+        </div>
+        <TechniquesTabs />
       </header>
 
       {/* Search */}

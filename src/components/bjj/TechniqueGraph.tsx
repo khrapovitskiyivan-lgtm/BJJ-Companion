@@ -425,22 +425,30 @@ const net = new Network(
       }
     });
 
-    // Ограничение панорамы: вид не уходит за границы контента
+    // Ограничение панорамы: край графа упирается в край экрана — нельзя уйти за рамки.
+    // По горизонтали жёстко (пользователь может только зумить), по вертикали в пределах контента.
     const clampPan = () => {
       const L = layoutRef.current;
-      if (!L || clamping) return;
+      const elc = containerRef.current;
+      if (!L || !elc || clamping) return;
+      const s = net.getScale();
+      const halfVW = elc.offsetWidth / 2 / s;
+      const halfVH = elc.offsetHeight / 2 / s;
+      const cMinX = L.xMin, cMaxX = L.xMax;
+      const cMinY = L.bands[0].y0 - 30, cMaxY = L.bands[L.bands.length - 1].y1 + 30;
       const pos = net.getViewPosition();
-      const margin = 120;
-      const yMin = L.bands[0].y0 - margin;
-      const yMax = L.bands[L.bands.length - 1].y1 + margin;
-      const x = Math.max(L.xMin - margin, Math.min(L.xMax + margin, pos.x));
-      const y = Math.max(yMin, Math.min(yMax, pos.y));
-      if (x !== pos.x || y !== pos.y) {
+      // если контент уже окна — центрируем ось, иначе держим край у края
+      const clampAxis = (p: number, cMin: number, cMax: number, half: number) =>
+        cMax - cMin <= half * 2 ? (cMin + cMax) / 2 : Math.max(cMin + half, Math.min(cMax - half, p));
+      const x = clampAxis(pos.x, cMinX, cMaxX, halfVW);
+      const y = clampAxis(pos.y, cMinY, cMaxY, halfVH);
+      if (Math.abs(x - pos.x) > 0.5 || Math.abs(y - pos.y) > 0.5) {
         clamping = true;
-        net.moveTo({ position: { x, y }, animation: { duration: 200, easingFunction: "easeOutQuad" } as never });
+        net.moveTo({ position: { x, y } });
         clamping = false;
       }
     };
+    net.on("dragging", clampPan);
     net.on("dragEnd", clampPan);
     net.on("zoom", clampPan);
 

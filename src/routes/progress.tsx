@@ -5,10 +5,10 @@ import { TechniqueCard } from "@/components/bjj/TechniqueCard";
 import { Progress } from "@/components/ui/progress";
 import { exportProgress, importProgress } from "@/lib/progress";
 import { BELT_LABEL, BELT_ORDER, GROUP_LABEL } from "@/lib/bjj/constants";
+import { TECHNIQUES } from "@/lib/bjj/data";
 import { useProgress } from "@/lib/bjj/store";
 import type { Belt, Group, ProgressStatus } from "@/lib/bjj/types";
 import { Check, CircleDot, Circle, Trophy, Download, Upload } from "lucide-react";
-import { exportProgress, importProgress } from "~/lib/progress";
 
 export const Route = createFileRoute("/progress")({
   component: ProgressPage,

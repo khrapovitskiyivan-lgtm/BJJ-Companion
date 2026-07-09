@@ -1,7 +1,7 @@
 // === STORE (localStorage + optional Cloud sync с 3s timeout) ===
 import { useEffect, useState, useCallback } from "react";
 import type { ProgressStatus, StyleProfile } from "./types";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 
 const PROFILE_KEY = "bjj.profile.v1";
 const PROGRESS_KEY = "bjj.progress.v1";

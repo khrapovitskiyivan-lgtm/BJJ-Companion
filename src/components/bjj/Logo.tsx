@@ -1,35 +1,31 @@
 // === ЛОГОТИП BJJ COMPANION ===
-// Узел пояса (belt knot) + узлы графа: две идеи продукта в одном знаке.
+// Знак в стиле присланного лого: фигура грэпплера в круге, тёмно-синий + золотой пояс.
+// Используется в шапке (компактно). Полноразмерный лого-PNG (public/logo.png) — для сплэша.
+const NAVY = "#2b2f6b";
+const GOLD = "#c79a4e";
+
 export function Logo({ size = 28 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 48 48"
-      fill="none"
-      aria-hidden
-      className="shrink-0"
-    >
-      {/* лента пояса */}
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" aria-hidden className="shrink-0">
+      {/* круг-бейдж */}
+      <circle cx="24" cy="24" r="21" stroke={NAVY} strokeWidth="2.5" opacity="0.9" />
+      {/* корпус грэпплера (склонённая фигура) */}
       <path
-        d="M6 20 C14 16, 34 16, 42 20 L42 26 C34 22, 14 22, 6 26 Z"
-        fill="var(--color-primary)"
-        opacity="0.25"
+        d="M14 30 C15 22, 20 17, 26 17 C31 17, 34 20, 34 24 C34 27, 31 29, 27 29 C24 29, 22 27, 22 25"
+        stroke={NAVY}
+        strokeWidth="4"
+        strokeLinecap="round"
+        fill="none"
       />
-      {/* узел пояса */}
+      {/* голова */}
+      <circle cx="29" cy="15.5" r="3.4" fill={NAVY} />
+      {/* золотой пояс — лента */}
       <path
-        d="M20 17 L28 17 L30 24 L28 31 L20 31 L18 24 Z"
-        fill="var(--color-primary)"
+        d="M16 28 C20 31, 28 32, 33 30 L34 33 C29 35, 20 34, 15 31 Z"
+        fill={GOLD}
       />
-      {/* хвосты пояса */}
-      <path d="M21 31 L17 42 L22 42 L25 33 Z" fill="var(--color-primary)" opacity="0.8" />
-      <path d="M27 31 L31 42 L26 42 L23.5 33 Z" fill="var(--color-primary)" opacity="0.55" />
-      {/* узлы графа — карта техник */}
-      <circle cx="10" cy="10" r="3" fill="var(--color-primary)" opacity="0.5" />
-      <circle cx="24" cy="7" r="3.5" fill="var(--color-primary)" />
-      <circle cx="38" cy="10" r="3" fill="var(--color-primary)" opacity="0.5" />
-      <path d="M12.5 11 L21 8.2 M27 8.2 L35.5 11" stroke="var(--color-primary)" strokeWidth="1.6" opacity="0.5" />
-      <path d="M24 10.5 L24 16" stroke="var(--color-primary)" strokeWidth="1.6" opacity="0.7" />
+      {/* хвост пояса */}
+      <path d="M33 31 L35 38 L31.5 37 L30.5 32 Z" fill={GOLD} opacity="0.85" />
     </svg>
   );
 }
