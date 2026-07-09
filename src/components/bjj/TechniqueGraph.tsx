@@ -2,25 +2,39 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Network } from "vis-network";
 import { DataSet } from "vis-data";
 import { Link } from "@tanstack/react-router";
-import { X, Search, Maximize2, Smartphone, ShieldAlert, Target, Flag, SlidersHorizontal, HelpCircle } from "lucide-react";
+import {
+  X,
+  Search,
+  Maximize2,
+  Smartphone,
+  ShieldAlert,
+  Target,
+  Flag,
+  SlidersHorizontal,
+  HelpCircle,
+  User,
+} from "lucide-react";
 import { TECHNIQUES, TECH_BY_ID, contentFor } from "@/lib/bjj/data";
 import { BELT_ORDER, BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
 import {
-  computeLayout, pickOrientation, pickCols, beltLanes,
-  type GraphLayout, type Orientation,
+  computeLayout,
+  pickOrientation,
+  pickCols,
+  beltLanes,
+  type GraphLayout,
+  type Orientation,
 } from "@/lib/bjj/graphLayout";
 import { readiness, currentFocus, nextToLearn, learningPath } from "@/lib/bjj/recommend";
 import type { ProgressMap } from "@/lib/bjj/store";
 import type { Belt, StyleProfile, Technique } from "@/lib/bjj/types";
 
 // === TECHNIQUE GRAPH — иерархия по поясам, статичная раскладка, физика ВЫКЛ ===
-// Портировано из проверенного прототипа (graph-hier). Кодировка: пояс = обводка,
-// статус = заливка, размер = сложность, кольцо = готовность пререквизитов,
-// пунктирное кольцо = риск травмы (линза безопасности).
+// Добавлено: режим "Мой уровень", миникарта, улучшенная анимация
 
 type FocusDir = "both" | "up" | "down" | "path";
 type BaseFilter = "all" | "myBelt" | "mastered" | "available";
 type GiFilter = "all" | "gi" | "nogi";
+type FocusMode = "all" | "my-level";
 
 interface EdgeItem {
   id: string;
@@ -49,7 +63,13 @@ const PALETTE = {
     label: "#c9c9d1",
     labelStroke: "#0a0b0e",
     focusRing: "#ffffff",
-    belts: { white: "#e8e6df", blue: "#4c8bf5", purple: "#a855f7", brown: "#8a5a2b", black: "#3f3f46" } as Record<Belt, string>,
+    belts: {
+      white: "#e8e6df",
+      blue: "#4c8bf5",
+      purple: "#a855f7",
+      brown: "#8a5a2b",
+      black: "#3f3f46",
+    } as Record<Belt, string>,
     done: "#34d399",
     prog: "#fbbf24",
     risk: "#ef4444",
@@ -69,7 +89,13 @@ const PALETTE = {
     label: "#3f3f46",
     labelStroke: "#f7f7f5",
     focusRing: "#111111",
-    belts: { white: "#b8b6ac", blue: "#3b82f6", purple: "#9333ea", brown: "#92561f", black: "#27272a" } as Record<Belt, string>,
+    belts: {
+      white: "#b8b6ac",
+      blue: "#3b82f6",
+      purple: "#9333ea",
+      brown: "#92561f",
+      black: "#27272a",
+    } as Record<Belt, string>,
     done: "#10b981",
     prog: "#d97706",
     risk: "#dc2626",
@@ -90,7 +116,7 @@ interface RenderData {
   dim: boolean;
   focused: boolean;
   showLabel: boolean;
-  readyFrac: number; // готовность пререквизитов 0..1
+  readyFrac: number;
   risk: "critical" | "medium" | "low";
 }
 
@@ -108,7 +134,14 @@ export function TechniqueGraph({
   const layoutRef = useRef<GraphLayout | null>(null);
   const renderRef = useRef<Map<number, RenderData>>(new Map());
   const minScaleRef = useRef(0.1);
-  const paramsRef = useRef<{ orientation: Orientation; cols: number }>({ orientation: "horizontal", cols: 3 });
+  const paramsRef = useRef<{ orientation: Orientation; cols: number }>({
+    orientation: "horizontal",
+    cols: 3,
+  });
+
+  // Миникарта
+  const minimapRef = useRef<HTMLDivElement>(null);
+  const minimapNetRef = useRef<Network | null>(null);
 
   const [focusedId, setFocusedId] = useState<number | null>(null);
   const [dir, setDir] = useState<FocusDir>("both");
@@ -121,6 +154,8 @@ export function TechniqueGraph({
   const [heroBelt, setHeroBelt] = useState<Belt>(profile.belt);
   const [showFilters, setShowFilters] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
+  const [focusMode, setFocusMode] = useState<FocusMode>("my-level"); // ← новое
+  const [showMinimap, setShowMinimap] = useState(true); // ← новое
 
   const theme: Palette = profile.theme === "dark" ? PALETTE.dark : PALETTE.light;
   const themeRef = useRef(theme);
@@ -131,6 +166,8 @@ export function TechniqueGraph({
   heroModeRef.current = heroMode;
   const profileThemeRef = useRef(profile.theme);
   profileThemeRef.current = profile.theme;
+  const focusModeRef = useRef(focusMode);
+  focusModeRef.current = focusMode;
 
   // --- рёбра (стабильны на всю жизнь графа) ---
   const edges = useMemo<EdgeItem[]>(() => {
@@ -138,11 +175,14 @@ export function TechniqueGraph({
     const arrow = { to: { enabled: true, scaleFactor: 0.35 } };
     for (const t of TECHNIQUES) {
       for (const p of t.prerequisites)
-        if (TECH_BY_ID[p]) out.push({ id: `p${p}-${t.id}`, from: p, to: t.id, kind: "prereq", arrows: arrow });
+        if (TECH_BY_ID[p])
+          out.push({ id: `p${p}-${t.id}`, from: p, to: t.id, kind: "prereq", arrows: arrow });
       for (const c of t.chain_to)
-        if (TECH_BY_ID[c]) out.push({ id: `c${t.id}-${c}`, from: t.id, to: c, kind: "chain", arrows: arrow });
+        if (TECH_BY_ID[c])
+          out.push({ id: `c${t.id}-${c}`, from: t.id, to: c, kind: "chain", arrows: arrow });
       for (const s of t.common_setups)
-        if (TECH_BY_ID[s]) out.push({ id: `s${t.id}-${s}`, from: t.id, to: s, kind: "setup", dashes: true });
+        if (TECH_BY_ID[s])
+          out.push({ id: `s${t.id}-${s}`, from: t.id, to: s, kind: "setup", dashes: true });
     }
     return out;
   }, []);
@@ -174,6 +214,14 @@ export function TechniqueGraph({
       if (giFilter === "gi" && !t.gi) return false;
       if (giFilter === "nogi" && !t.noGi) return false;
       if (legalOnly && !t.legal_ibjjf_gi && !t.legal_ibjjf_nogi) return false;
+
+      // Режим "Мой уровень" — показываем пояс пользователя ± 1
+      if (focusMode === "my-level") {
+        const userBeltIdx = beltIdx(profile.belt);
+        const techBeltIdx = beltIdx(t.belt);
+        if (Math.abs(techBeltIdx - userBeltIdx) > 1) return false;
+      }
+
       if (filter === "myBelt") return beltIdx(t.belt) <= beltIdx(profile.belt);
       if (filter === "mastered") return s === "done";
       if (filter === "available") {
@@ -182,7 +230,7 @@ export function TechniqueGraph({
       }
       return true;
     },
-    [filter, giFilter, legalOnly, progress, profile.belt],
+    [filter, giFilter, legalOnly, progress, profile.belt, focusMode],
   );
 
   // --- фокус: направленный + режим «путь» ---
@@ -261,7 +309,8 @@ export function TechniqueGraph({
             if (d.dim) ctx.globalAlpha = 0.14;
             ctx.beginPath();
             ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.fillStyle = d.status === "done" ? pal.done : d.status === "in_progress" ? pal.prog : pal.nodeBg;
+            ctx.fillStyle =
+              d.status === "done" ? pal.done : d.status === "in_progress" ? pal.prog : pal.nodeBg;
             ctx.fill();
             ctx.lineWidth = 2.5;
             ctx.strokeStyle = d.focused ? pal.focusRing : pal.belts[t.belt];
@@ -282,21 +331,18 @@ export function TechniqueGraph({
               ctx.stroke();
               ctx.setLineDash([]);
             }
-            // подпись: только фокусный узел или крупный зум; длинные — обрезаем (без наслаивания)
-            // подпись: только фокусный узел или крупный зум; длинные — обрезаем (без наслаивания)
-const scale = netRef.current?.getScale() ?? 1;
-// Оптимизация: показываем подписи только при зуме >= 1.8 (было 1.6)
-if (!d.dim && (d.focused || scale >= 1.8)) {
-  const text = t.label.length > 14 ? t.label.slice(0, 13) + "…" : t.label; // было 16/15
-  ctx.font = `600 ${Math.max(10, 12 / Math.min(scale, 1.8))}px Manrope, sans-serif`; // было 9/11/1.6
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = pal.labelStroke;
-  ctx.strokeText(text, x, y + r + 5);
-  ctx.fillStyle = pal.label;
-  ctx.fillText(text, x, y + r + 5);
-}
+            const scale = netRef.current?.getScale() ?? 1;
+            if (!d.dim && (d.focused || scale >= 1.8)) {
+              const text = t.label.length > 14 ? t.label.slice(0, 13) + "…" : t.label;
+              ctx.font = `600 ${Math.max(10, 12 / Math.min(scale, 1.8))}px Manrope, sans-serif`;
+              ctx.textAlign = "center";
+              ctx.textBaseline = "top";
+              ctx.lineWidth = 3;
+              ctx.strokeStyle = pal.labelStroke;
+              ctx.strokeText(text, x, y + r + 5);
+              ctx.fillStyle = pal.label;
+              ctx.fillText(text, x, y + r + 5);
+            }
             ctx.restore();
           },
           nodeDimensions: { width: r * 2, height: r * 2 },
@@ -328,39 +374,39 @@ if (!d.dim && (d.focused || scale >= 1.8)) {
     nodesDSRef.current = nodesDS;
     edgesDSRef.current = edgesDS;
 
-const net = new Network(
-  el,
-  { nodes: nodesDS as never, edges: edgesDS as never },
-  {
-    physics: false,
-    layout: { improvedLayout: false },
-    nodes: { 
-      shadow: false,
-      font: {
-        size: 12,
-        color: theme.label,
-        strokeWidth: 3,
-        strokeColor: theme.labelStroke,
+    const net = new Network(
+      el,
+      { nodes: nodesDS as never, edges: edgesDS as never },
+      {
+        physics: false,
+        layout: { improvedLayout: false },
+        nodes: {
+          shadow: false,
+          font: {
+            size: 12,
+            color: theme.label,
+            strokeWidth: 3,
+            strokeColor: theme.labelStroke,
+          },
+        },
+        edges: {
+          smooth: false,
+          arrows: {
+            to: { enabled: true, scaleFactor: 0.5 },
+          },
+        },
+        interaction: {
+          hover: true,
+          tooltipDelay: 150,
+          hideEdgesOnDrag: true,
+          hideEdgesOnZoom: true,
+          navigationButtons: false,
+          keyboard: true,
+          zoomView: true,
+          dragView: true,
+        },
       },
-    },
-    edges: { 
-      smooth: false,
-      arrows: {
-        to: { enabled: true, scaleFactor: 0.5 },
-      },
-    },
-    interaction: { 
-      hover: true, 
-      tooltipDelay: 150, 
-      hideEdgesOnDrag: true, 
-      hideEdgesOnZoom: true,
-      navigationButtons: false, // отключено — у тебя свои кнопки
-      keyboard: true,           // управление с клавиатуры
-      zoomView: true,
-      dragView: true,
-    },
-  },
-);
+    );
     netRef.current = net;
 
     net.on("beforeDrawing", (ctx: CanvasRenderingContext2D) => {
@@ -374,7 +420,9 @@ const net = new Network(
         ctx.fillStyle = i % 2 === 0 ? pal.bandEven : pal.bandOdd;
         ctx.fillRect(L.xMin - 30, bd.y0 - 24, L.xMax - L.xMin + 60, bd.y1 - bd.y0 + 48);
         const label =
-          bd.type === "belt" ? BELT_LABEL[bd.key as Belt] : GROUP_LABEL[bd.key as keyof typeof GROUP_LABEL];
+          bd.type === "belt"
+            ? BELT_LABEL[bd.key as Belt]
+            : GROUP_LABEL[bd.key as keyof typeof GROUP_LABEL];
         ctx.fillStyle = bd.type === "belt" ? pal.belts[bd.key as Belt] : pal.laneLabel;
         ctx.globalAlpha = pal.watermarkAlpha;
         ctx.font = `800 ${Math.min((bd.y1 - bd.y0) * 0.7, 150)}px Manrope, sans-serif`;
@@ -392,7 +440,9 @@ const net = new Network(
       L.lanes.forEach((l) => {
         const fs = Math.max(11, Math.min((l.x1 - l.x0) * 0.16, 22));
         const label =
-          l.type === "belt" ? BELT_LABEL[l.key as Belt] : GROUP_LABEL[l.key as keyof typeof GROUP_LABEL];
+          l.type === "belt"
+            ? BELT_LABEL[l.key as Belt]
+            : GROUP_LABEL[l.key as keyof typeof GROUP_LABEL];
         ctx.fillStyle = l.type === "belt" ? pal.belts[l.key as Belt] : pal.laneLabel;
         ctx.globalAlpha = l.type === "belt" ? 0.85 : 1;
         ctx.font = `700 ${fs}px Manrope, sans-serif`;
@@ -409,7 +459,7 @@ const net = new Network(
       setFocusedId(id);
       if (id != null) {
         const sc = heroModeRef.current ? Math.max(net.getScale(), 0.9) : 1.0;
-        net.focus(id, { scale: sc, animation: { duration: 400, easingFunction: "easeInOutQuad" } });
+        net.focus(id, { scale: sc, animation: { duration: 500, easingFunction: "easeInOutCubic" } });
       }
     });
 
@@ -425,8 +475,6 @@ const net = new Network(
       }
     });
 
-    // Ограничение панорамы: край графа упирается в край экрана — нельзя уйти за рамки.
-    // По горизонтали жёстко (пользователь может только зумить), по вертикали в пределах контента.
     const clampPan = () => {
       const L = layoutRef.current;
       const elc = containerRef.current;
@@ -434,10 +482,11 @@ const net = new Network(
       const s = net.getScale();
       const halfVW = elc.offsetWidth / 2 / s;
       const halfVH = elc.offsetHeight / 2 / s;
-      const cMinX = L.xMin, cMaxX = L.xMax;
-      const cMinY = L.bands[0].y0 - 30, cMaxY = L.bands[L.bands.length - 1].y1 + 30;
+      const cMinX = L.xMin,
+        cMaxX = L.xMax;
+      const cMinY = L.bands[0].y0 - 30,
+        cMaxY = L.bands[L.bands.length - 1].y1 + 30;
       const pos = net.getViewPosition();
-      // если контент уже окна — центрируем ось, иначе держим край у края
       const clampAxis = (p: number, cMin: number, cMax: number, half: number) =>
         cMax - cMin <= half * 2 ? (cMin + cMax) / 2 : Math.max(cMin + half, Math.min(cMax - half, p));
       const x = clampAxis(pos.x, cMinX, cMaxX, halfVW);
@@ -461,7 +510,18 @@ const net = new Network(
 
     net.once("afterDrawing", () => {
       computeMinScale();
-      if ((el.offsetWidth || 0) < 640) {
+      // Если режим "Мой уровень" — центрируем на поясе пользователя
+      if (focusModeRef.current === "my-level") {
+        const lane = beltLanes(layout).find((l) => l.key === profile.belt);
+        if (lane) {
+          const scale = Math.max(0.7, minScaleRef.current);
+          net.moveTo({
+            position: { x: (lane.x0 + lane.x1) / 2, y: layout.bands[0].y0 + el.offsetHeight / 2 / scale },
+            scale,
+            animation: { duration: 600, easingFunction: "easeOutCubic" },
+          });
+        }
+      } else if ((el.offsetWidth || 0) < 640) {
         const lane = beltLanes(layout).find((l) => l.key === profile.belt);
         if (lane) {
           const scale = Math.max(0.7, minScaleRef.current);
@@ -476,21 +536,22 @@ const net = new Network(
     });
 
     let resizeTimer: ReturnType<typeof setTimeout> | undefined;
-const ro = new ResizeObserver(() => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => {
-    const W = el.offsetWidth, H = el.offsetHeight;
-    if (!W || !H) return;
-    const wantO: Orientation = heroModeRef.current ? "vertical" : pickOrientation(W, H);
-    const wantC = pickCols(wantO, W, H);
-    if (wantO !== paramsRef.current.orientation || wantC !== paramsRef.current.cols) {
-      rebuildLayout(wantO, wantC);
-    } else {
-      net.redraw();
-      computeMinScale();
-    }
-  }, 250); // ← было 150, стало 250 (меньше перерисовок)
-});
+    const ro = new ResizeObserver(() => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const W = el.offsetWidth,
+          H = el.offsetHeight;
+        if (!W || !H) return;
+        const wantO: Orientation = heroModeRef.current ? "vertical" : pickOrientation(W, H);
+        const wantC = pickCols(wantO, W, H);
+        if (wantO !== paramsRef.current.orientation || wantC !== paramsRef.current.cols) {
+          rebuildLayout(wantO, wantC);
+        } else {
+          net.redraw();
+          computeMinScale();
+        }
+      }, 250);
+    });
     ro.observe(el);
 
     return () => {
@@ -501,9 +562,73 @@ const ro = new ResizeObserver(() => {
       nodesDSRef.current = null;
       edgesDSRef.current = null;
     };
-    // Сеть строится один раз; прогресс/фильтры/тема применяются отдельным эффектом ниже.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // --- миникарта ---
+  useEffect(() => {
+    if (!showMinimap || !minimapRef.current) return;
+    const el = minimapRef.current;
+    const layout = layoutRef.current;
+    if (!layout) return;
+
+    const minimapNodes = new DataSet(
+      TECHNIQUES.map((t) => {
+        const p = layout.positions.get(t.id)!;
+        return {
+          id: t.id,
+          x: p.x,
+          y: p.y,
+          shape: "dot",
+          size: 3,
+          color: { background: theme.belts[t.belt], border: theme.belts[t.belt] },
+        };
+      }),
+    );
+
+    const minimapEdges = new DataSet(
+      edges.map((e) => ({
+        ...e,
+        color: { color: theme.edgeBase, highlight: theme.edgeBase, hover: theme.edgeBase },
+        width: 0.3,
+      })),
+    );
+
+    const minimapNet = new Network(
+      el,
+      { nodes: minimapNodes, edges: minimapEdges },
+      {
+        physics: false,
+        interaction: {
+          dragView: false,
+          zoomView: false,
+          dragNodes: false,
+          hover: false,
+        },
+        nodes: { shape: "dot" },
+        edges: { smooth: false },
+      },
+    );
+    minimapNetRef.current = minimapNet;
+
+    minimapNet.fit({ animation: false });
+
+    // Синхронизация с основным графом
+    const mainNet = netRef.current;
+    if (mainNet) {
+      const syncMinimap = () => {
+        const pos = mainNet.getViewPosition();
+        const scale = mainNet.getScale();
+        minimapNet.moveTo({ position: pos, scale: scale * 0.3, animation: false });
+      };
+      mainNet.on("viewChanged", syncMinimap);
+    }
+
+    return () => {
+      minimapNet.destroy();
+      minimapNetRef.current = null;
+    };
+  }, [showMinimap, theme, edges]);
 
   // --- применение прогресса/фильтров/фокуса/темы БЕЗ пересоздания сети ---
   useEffect(() => {
@@ -546,7 +671,11 @@ const ro = new ResizeObserver(() => {
             width: related || inPath ? 1.6 : 0.6,
           };
         }
-        return { id: e.id, color: { color: pal.edgeDim, highlight: pal.edgeDim, hover: pal.edgeDim }, width: 0.3 };
+        return {
+          id: e.id,
+          color: { color: pal.edgeDim, highlight: pal.edgeDim, hover: pal.edgeDim },
+          width: 0.3,
+        };
       }),
     );
     net.redraw();
@@ -564,7 +693,7 @@ const ro = new ResizeObserver(() => {
     net.moveTo({
       position: { x: (lane.x0 + lane.x1) / 2, y: L.bands[0].y0 - 20 + el.offsetHeight / 2 / scale },
       scale,
-      animation: animate ? ({ duration: 350, easingFunction: "easeInOutQuad" } as never) : false,
+      animation: animate ? ({ duration: 500, easingFunction: "easeOutCubic" } as never) : false,
     });
   }, []);
 
@@ -585,7 +714,10 @@ const ro = new ResizeObserver(() => {
 
   const jumpTo = useCallback((id: number) => {
     setFocusedId(id);
-    netRef.current?.focus(id, { scale: 1.1, animation: { duration: 400, easingFunction: "easeInOutQuad" } });
+    netRef.current?.focus(id, {
+      scale: 1.1,
+      animation: { duration: 500, easingFunction: "easeOutCubic" },
+    });
   }, []);
 
   const selectFromSearch = useCallback(
@@ -597,8 +729,21 @@ const ro = new ResizeObserver(() => {
   );
 
   const overviewFit = useCallback(() => {
-    netRef.current?.fit({ animation: { duration: 400, easingFunction: "easeInOutQuad" } } as never);
+    netRef.current?.fit({ animation: { duration: 500, easingFunction: "easeOutCubic" } } as never);
   }, []);
+
+  const focusMyLevel = useCallback(() => {
+    setFocusMode("my-level");
+    const lane = beltLanes(layoutRef.current!).find((l) => l.key === profile.belt);
+    if (lane) {
+      const scale = Math.max(0.7, minScaleRef.current);
+      netRef.current?.moveTo({
+        position: { x: (lane.x0 + lane.x1) / 2, y: layoutRef.current!.bands[0].y0 + containerRef.current!.offsetHeight / 2 / scale },
+        scale,
+        animation: { duration: 600, easingFunction: "easeOutCubic" },
+      });
+    }
+  }, [profile.belt]);
 
   const focusedTech = focusedId != null ? TECH_BY_ID[focusedId] : null;
   const stats = useMemo(() => {
@@ -636,9 +781,14 @@ const ro = new ResizeObserver(() => {
                     onClick={() => selectFromSearch(t)}
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted"
                   >
-                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: theme.belts[t.belt] }} />
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ background: theme.belts[t.belt] }}
+                    />
                     <span className="min-w-0 flex-1 truncate">{t.nameRu}</span>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">{GROUP_LABEL[t.group]}</span>
+                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                      {GROUP_LABEL[t.group]}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -646,7 +796,7 @@ const ro = new ResizeObserver(() => {
           </div>
         </div>
 
-        {/* Компактная строка фильтров: базовые + свёрнутые доп. фильтры + справка */}
+        {/* Компактная строка фильтров */}
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {(
             [
@@ -701,6 +851,14 @@ const ro = new ResizeObserver(() => {
       <div className="relative h-[520px] w-full" style={{ background: theme.canvasBg }}>
         <div ref={containerRef} className="absolute inset-0" />
 
+        {/* Миникарта */}
+        {showMinimap && (
+          <div
+            ref={minimapRef}
+            className="absolute top-3 right-3 z-20 h-32 w-40 overflow-hidden rounded-lg border border-border bg-card/90 backdrop-blur shadow-lg"
+          />
+        )}
+
         {heroMode && (
           <div className="absolute left-1/2 top-2.5 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-border bg-card/90 px-1.5 py-1 backdrop-blur">
             {heroBelts.map((b) => (
@@ -712,7 +870,10 @@ const ro = new ResizeObserver(() => {
                 }`}
                 style={
                   b === heroBelt
-                    ? { background: `${theme.belts[b]}33`, boxShadow: `inset 0 0 0 1px ${theme.belts[b]}66` }
+                    ? {
+                        background: `${theme.belts[b]}33`,
+                        boxShadow: `inset 0 0 0 1px ${theme.belts[b]}66`,
+                      }
                     : undefined
                 }
               >
@@ -723,6 +884,17 @@ const ro = new ResizeObserver(() => {
         )}
 
         <div className="absolute bottom-3 right-3 z-20 flex flex-col gap-2">
+          <button
+            onClick={focusMyLevel}
+            title="Мой уровень"
+            className={`grid h-10 w-10 place-items-center rounded-xl border backdrop-blur transition ${
+              focusMode === "my-level"
+                ? "border-ring bg-primary/20 text-foreground"
+                : "border-border bg-card/90 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <User className="h-4 w-4" />
+          </button>
           <button
             onClick={toggleHero}
             title="Режим пояса (мобильный)"
@@ -741,6 +913,20 @@ const ro = new ResizeObserver(() => {
           >
             <Maximize2 className="h-4 w-4" />
           </button>
+          <button
+            onClick={() => setShowMinimap(!showMinimap)}
+            title="Миникарта"
+            className={`grid h-10 w-10 place-items-center rounded-xl border backdrop-blur transition ${
+              showMinimap
+                ? "border-ring bg-primary/20 text-foreground"
+                : "border-border bg-card/90 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <rect x="7" y="7" width="10" height="10" rx="1" />
+            </svg>
+          </button>
         </div>
 
         {focusedId == null && (
@@ -750,7 +936,7 @@ const ro = new ResizeObserver(() => {
         )}
       </div>
 
-      {/* Панель фокуса (направление связей выбирается здесь — когда есть фокус) */}
+      {/* Панель фокуса */}
       {focusedTech && (
         <FocusPanel
           tech={focusedTech}
@@ -782,13 +968,16 @@ const ro = new ResizeObserver(() => {
         />
       </div>
 
-      {/* Легенда — по кнопке «?» */}
+      {/* Легенда */}
       {showLegend && (
         <div className="flex flex-wrap items-center gap-3 border-t border-border px-4 py-3 text-[10px] text-muted-foreground">
           <span>Обводка узла = пояс · заливка = статус · кольцо = готовность пререквизитов:</span>
           {heroBelts.map((b) => (
             <span key={b} className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full ring-1 ring-border" style={{ background: theme.belts[b] }} />
+              <span
+                className="h-2 w-2 rounded-full ring-1 ring-border"
+                style={{ background: theme.belts[b] }}
+              />
               {BELT_LABEL[b]}
             </span>
           ))}
@@ -858,7 +1047,6 @@ function FocusPanel({
         </button>
       </div>
 
-      {/* Что показывать на карте для этой техники */}
       <div className="mt-2 flex flex-wrap gap-1.5">
         {(
           [
@@ -948,7 +1136,11 @@ function MilestoneCard({
   highlight?: boolean;
 }) {
   return (
-    <div className={`rounded-2xl border p-3 ${highlight ? "border-ring/50 bg-primary/5" : "border-border bg-background"}`}>
+    <div
+      className={`rounded-2xl border p-3 ${
+        highlight ? "border-ring/50 bg-primary/5" : "border-border bg-background"
+      }`}
+    >
       <p className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground">
         {icon}
         {caption}
