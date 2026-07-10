@@ -16,7 +16,7 @@ export function SplashScreen() {
     if (typeof window === "undefined") return;
     if (sessionStorage.getItem(SESSION_KEY)) return; // уже показывали в этой сессии
     setShow(true);
-    const t = setTimeout(dismiss, 9000); // подстраховка (видео ~8с)
+    const t = setTimeout(dismiss, 2500); // заставка ~2.5с (ролик длиннее — обрезаем)
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

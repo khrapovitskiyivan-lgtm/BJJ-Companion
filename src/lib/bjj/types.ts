@@ -93,6 +93,17 @@ export interface WorkoutConfig {
   focus: Group | "all";
 }
 
+// Запись дневника тренировок — сердце «ежедневного» цикла.
+export interface DiaryEntry {
+  id: string;
+  date: string;              // ISO (yyyy-mm-dd)
+  techniqueIds: number[];    // отработанные техники (выбор из поиска)
+  note?: string;             // заметка / как прошло
+  durationMin?: number;      // длительность, мин
+  location?: string;         // зал / секция
+  intensity?: Intensity;     // интенсивность
+}
+
 export interface WarmupItem {
   name: string;
   desc: string;

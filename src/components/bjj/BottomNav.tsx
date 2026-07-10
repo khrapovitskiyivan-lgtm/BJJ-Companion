@@ -1,14 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LineChart, Layers, Dumbbell, Lightbulb } from "lucide-react";
+import { NotebookPen, Swords, Layers, Dumbbell } from "lucide-react";
 
-// === BOTTOM NAV ===
-// 4 вкладки. «Техники» объединяют Карту и Список (переключатель внутри).
-// Прогресс — первый; профиль/настройки — в шапке (аватар).
+// === BOTTOM NAV — 4 вкладки ===
+// 1 Дневник · 2 Моя игра (бывш. прогресс) · 3 Техники (граф/список/что-если) · 4 Тренировка (генератор/сценарии)
 const items = [
-  { to: "/progress", label: "Прогресс", icon: LineChart, match: ["/progress"] },
-  { to: "/map", label: "Техники", icon: Layers, match: ["/map", "/library", "/technique"] },
-  { to: "/workout", label: "Тренировка", icon: Dumbbell, match: ["/workout"] },
-  { to: "/solutions", label: "Решения", icon: Lightbulb, match: ["/solutions"] },
+  { to: "/diary", label: "Дневник", icon: NotebookPen, match: ["/diary"] },
+  { to: "/progress", label: "Моя игра", icon: Swords, match: ["/progress"] },
+  { to: "/map", label: "Техники", icon: Layers, match: ["/map", "/library", "/technique", "/situations"] },
+  { to: "/workout", label: "Тренировка", icon: Dumbbell, match: ["/workout", "/scenarios"] },
 ] as const;
 
 export function BottomNav() {

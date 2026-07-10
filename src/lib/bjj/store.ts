@@ -1,10 +1,11 @@
 // === STORE (localStorage + optional Cloud sync с 3s timeout) ===
 import { useEffect, useState, useCallback } from "react";
-import type { ProgressStatus, StyleProfile } from "./types";
+import type { DiaryEntry, ProgressStatus, StyleProfile } from "./types";
 import { supabase } from "@/lib/supabase";
 
 const PROFILE_KEY = "bjj.profile.v1";
 const PROGRESS_KEY = "bjj.progress.v1";
+const DIARY_KEY = "bjj.diary.v1";
 const DEVICE_KEY = "bjj.device.v1";
 
 const DEFAULT_PROFILE: StyleProfile = {
@@ -125,6 +126,61 @@ export function useProgress() {
   }, []);
 
   return { progress, setStatus, cycleStatus, setProgress, clearProgress, hydrated };
+}
+
+// === DIARY HOOK ===
+// Дневник тренировок. Записи в localStorage (позже — облачная синхронизация).
+export function useDiary() {
+  const [entries, setEntries] = useState<DiaryEntry[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    const list = readJSON<DiaryEntry[]>(DIARY_KEY, []);
+    list.sort((a, b) => b.date.localeCompare(a.date));
+    setEntries(list);
+    setHydrated(true);
+  }, []);
+
+  const persist = useCallback((next: DiaryEntry[]) => {
+    next.sort((a, b) => b.date.localeCompare(a.date));
+    writeJSON(DIARY_KEY, next);
+    setEntries(next);
+  }, []);
+
+  const addEntry = useCallback(
+    (entry: Omit<DiaryEntry, "id">) => {
+      // id без Date.now()/random (SSR-safe): дата + счётчик из текущего списка
+      setEntries((prev) => {
+        const id = `${entry.date}-${prev.length + 1}-${prev.reduce((n, e) => n + e.techniqueIds.length, 0)}`;
+        const next = [{ ...entry, id }, ...prev];
+        next.sort((a, b) => b.date.localeCompare(a.date));
+        writeJSON(DIARY_KEY, next);
+        return next;
+      });
+    },
+    [],
+  );
+
+  const deleteEntry = useCallback(
+    (id: string) => setEntries((prev) => {
+      const next = prev.filter((e) => e.id !== id);
+      writeJSON(DIARY_KEY, next);
+      return next;
+    }),
+    [],
+  );
+
+  // Сколько раз каждая техника отработана (для рекомендаций «повтори»)
+  const practiceCount = useCallback(
+    () => {
+      const m: Record<number, number> = {};
+      for (const e of entries) for (const id of e.techniqueIds) m[id] = (m[id] ?? 0) + 1;
+      return m;
+    },
+    [entries],
+  );
+
+  return { entries, addEntry, deleteEntry, practiceCount, persist, hydrated };
 }
 
 // === CLOUD SYNC (best-effort, 3s timeout) ===
