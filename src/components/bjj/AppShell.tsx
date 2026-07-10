@@ -1,8 +1,9 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { BottomNav } from "./BottomNav";
 import { Onboarding } from "./Onboarding";
 import { Logo } from "./Logo";
+import { AvatarMenu } from "./AvatarMenu";
 import { useProfile } from "@/lib/bjj/store";
 import { BELT_LABEL } from "@/lib/bjj/constants";
 import { Moon, Sun } from "lucide-react";
@@ -12,6 +13,7 @@ import { Moon, Sun } from "lucide-react";
 // Авторизация и настройки живут на странице /profile.
 export function AppShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
   const { profile, update, hydrated } = useProfile();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -46,21 +48,23 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
             <Logo size={26} />
             <span className="text-sm font-bold tracking-tight">BJJ Companion</span>
           </Link>
-          {/* справа: профиль (аватар-пояс) */}
-          <Link
-            to="/profile"
-            aria-label={`Профиль: ${BELT_LABEL[profile.belt]} пояс`}
+          {/* справа: аватар — открывает меню (статистика · настройки · о приложении) */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            aria-label={`Меню профиля: ${BELT_LABEL[profile.belt]} пояс`}
             className="justify-self-end rounded-full p-1 transition hover:bg-muted"
           >
             <span
               className="block h-7 w-7 rounded-full ring-2 ring-border"
               style={{ background: `var(--belt-${profile.belt})` }}
             />
-          </Link>
+          </button>
         </div>
       </header>
       <main className={`mx-auto px-4 py-4 ${wide ? "max-w-6xl" : "max-w-xl"}`}>{children}</main>
       <BottomNav />
+      {menuOpen && <AvatarMenu onClose={() => setMenuOpen(false)} />}
     </div>
   );
 }
