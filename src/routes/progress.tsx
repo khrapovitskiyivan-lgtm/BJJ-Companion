@@ -4,24 +4,18 @@ import { AppShell } from "@/components/bjj/AppShell";
 import { useProgress } from "@/lib/bjj/store";
 import { TECHNIQUES } from "@/lib/bjj/data";
 import { BELT_ORDER, BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
-import type { Belt, ProgressStatus, Technique } from "@/lib/bjj/types";
 import {
   Flame,
   TrendingUp,
   Download,
   Upload,
   Trash2,
-  Filter,
-  Search,
   Award,
   Target,
-  CheckCircle2,
-  Circle,
   CircleDot,
   Calendar,
   BarChart3,
   BookOpen,
-  ChevronRight,
   AlertTriangle,
 } from "lucide-react";
 
@@ -30,9 +24,6 @@ export const Route = createFileRoute("/progress")({
 });
 
 // === Типы ===
-type StatusFilter = "all" | ProgressStatus;
-type BeltFilter = "all" | Belt;
-type GroupFilter = "all" | keyof typeof GROUP_LABEL;
 
 // === Вспомогательные утилиты ===
 const getDateKey = (date: Date): string => date.toISOString().split("T")[0];
@@ -75,11 +66,6 @@ function ProgressPage() {
   const { progress, setProgress, clearProgress } = useProgress();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [beltFilter, setBeltFilter] = useState<BeltFilter>("all");
-  const [groupFilter, setGroupFilter] = useState<GroupFilter>("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [visibleCount, setVisibleCount] = useState(30);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [importStatus, setImportStatus] = useState<"idle" | "success" | "error">("idle");
 
@@ -182,23 +168,6 @@ function ProgressPage() {
     return max;
   }, [heatmapData]);
 
-  // === Отфильтрованный список техник ===
-  const filteredTechniques = useMemo(() => {
-    return TECHNIQUES.filter((t) => {
-      const s = progress[t.id] ?? "not_started";
-      if (statusFilter !== "all" && s !== statusFilter) return false;
-      if (beltFilter !== "all" && t.belt !== beltFilter) return false;
-      if (groupFilter !== "all" && t.group !== groupFilter) return false;
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        if (!t.nameRu.toLowerCase().includes(q) && !t.nameEn.toLowerCase().includes(q)) return false;
-      }
-      return true;
-    });
-  }, [progress, statusFilter, beltFilter, groupFilter, searchQuery]);
-
-  const visibleTechniques = filteredTechniques.slice(0, visibleCount);
-
   // === Экспорт прогресса ===
   const exportProgress = useCallback(() => {
     const data = {
@@ -260,7 +229,7 @@ function ProgressPage() {
       <div className="space-y-6 pb-20">
         {/* Шапка */}
         <header>
-          <h1 className="text-2xl font-bold tracking-tight">Прогресс</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Моя игра</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Ваша статистика и путь от белого до чёрного пояса
           </p>
@@ -422,86 +391,6 @@ function ProgressPage() {
                 </div>
               </div>
             ))}
-          </div>
-        </section>
-
-        {/* Список техник с фильтрами */}
-        <section className="rounded-2xl border border-border bg-card">
-          <div className="border-b border-border p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Все техники</h2>
-              <span className="text-xs text-muted-foreground">
-                {filteredTechniques.length} из {TECHNIQUES.length}
-              </span>
-            </div>
-
-            {/* Поиск */}
-            <div className="relative mb-3">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Поиск техники…"
-                className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-xs outline-none focus:ring-1 focus:ring-ring"
-              />
-            </div>
-
-            {/* Фильтры */}
-            <div className="flex flex-wrap gap-1.5">
-              <FilterSelect
-                icon={<Filter className="h-3 w-3" />}
-                value={statusFilter}
-                onChange={(v) => setStatusFilter(v as StatusFilter)}
-                options={[
-                  { value: "all", label: "Все статусы" },
-                  { value: "done", label: "Изучено" },
-                  { value: "in_progress", label: "В процессе" },
-                  { value: "not_started", label: "Не начато" },
-                ]}
-              />
-              <FilterSelect
-                value={beltFilter}
-                onChange={(v) => setBeltFilter(v as BeltFilter)}
-                options={[
-                  { value: "all", label: "Все пояса" },
-                  ...BELT_ORDER.map((b) => ({ value: b, label: BELT_LABEL[b] })),
-                ]}
-              />
-              <FilterSelect
-                value={groupFilter}
-                onChange={(v) => setGroupFilter(v as GroupFilter)}
-                options={[
-                  { value: "all", label: "Все группы" },
-                  ...(Object.keys(GROUP_LABEL) as (keyof typeof GROUP_LABEL)[]).map((g) => ({
-                    value: g,
-                    label: GROUP_LABEL[g],
-                  })),
-                ]}
-              />
-            </div>
-          </div>
-
-          {/* Список */}
-          <div className="divide-y divide-border">
-            {visibleTechniques.length === 0 ? (
-              <div className="py-10 text-center">
-                <p className="text-sm text-muted-foreground">Ничего не найдено</p>
-              </div>
-            ) : (
-              <>
-                {visibleTechniques.map((t) => (
-                  <TechniqueRow key={t.id} tech={t} progress={progress} />
-                ))}
-                {visibleCount < filteredTechniques.length && (
-                  <button
-                    onClick={() => setVisibleCount((c) => c + 30)}
-                    className="w-full py-3 text-xs font-medium text-primary hover:bg-muted transition-colors"
-                  >
-                    Показать ещё ({filteredTechniques.length - visibleCount})
-                  </button>
-                )}
-              </>
-            )}
           </div>
         </section>
 
@@ -733,69 +622,3 @@ function Heatmap({ data, max }: { data: { date: string; count: number }[][]; max
 }
 
 // Строка техники в списке
-function TechniqueRow({ tech, progress }: { tech: Technique; progress: Record<number, ProgressStatus> }) {
-  const status = progress[tech.id] ?? "not_started";
-  const statusConfig = {
-    not_started: { icon: Circle, color: "var(--status-idle)", label: "Не начато" },
-    in_progress: { icon: CircleDot, color: "var(--status-progress)", label: "В процессе" },
-    done: { icon: CheckCircle2, color: "var(--status-done)", label: "Изучено" },
-  };
-  const { icon: Icon, color, label } = statusConfig[status];
-
-  return (
-    <Link
-      to="/technique/$id"
-      params={{ id: String(tech.id) }}
-      className="flex items-center gap-3 px-4 py-3 transition hover:bg-muted"
-    >
-      <div
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-        style={{ background: `${color}20`, color }}
-      >
-        <Icon className="h-4 w-4" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="truncate text-sm font-medium">{tech.nameRu}</span>
-          <span
-            className="inline-block h-2 w-4 shrink-0 rounded-sm ring-1 ring-black/10"
-            style={{ background: `var(--belt-${tech.belt})` }}
-          />
-        </div>
-        <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-          <span>{GROUP_LABEL[tech.group]}</span>
-          <span>·</span>
-          <span>{label}</span>
-        </div>
-      </div>
-      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-    </Link>
-  );
-}
-
-// Селектор фильтров
-function FilterSelect({
-  icon,
-  value,
-  onChange,
-  options,
-}: {
-  icon?: React.ReactNode;
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-foreground outline-none transition hover:bg-muted focus:ring-1 focus:ring-ring"
-    >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
-  );
-}

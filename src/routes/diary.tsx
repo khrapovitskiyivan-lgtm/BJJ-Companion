@@ -26,7 +26,6 @@ function Diary() {
   const [date, setDate] = useState("");
   const [picked, setPicked] = useState<number[]>([]);
   const [note, setNote] = useState("");
-  const [duration, setDuration] = useState("");
   const [query, setQuery] = useState("");
 
   // дата по умолчанию — сегодня (в effect, чтобы не ловить hydration mismatch)
@@ -52,7 +51,6 @@ function Diary() {
       date,
       techniqueIds: picked,
       note: note.trim() || undefined,
-      durationMin: duration ? parseInt(duration, 10) || undefined : undefined,
     });
     // ежедневный цикл: отмеченные техники минимум «в процессе»
     for (const id of picked) {
@@ -60,7 +58,6 @@ function Diary() {
     }
     setPicked([]);
     setNote("");
-    setDuration("");
     setQuery("");
     setAdding(false);
   };
@@ -93,14 +90,6 @@ function Diary() {
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-ring"
-            />
-            <input
-              type="number"
-              inputMode="numeric"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              placeholder="мин"
-              className="w-20 rounded-lg border border-border bg-background px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
 
@@ -194,7 +183,6 @@ function Diary() {
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold">{formatDate(e.date)}</span>
               <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                {e.durationMin ? <span>{e.durationMin} мин</span> : null}
                 <span>{e.techniqueIds.length} техн.</span>
                 <button onClick={() => deleteEntry(e.id)} aria-label="Удалить">
                   <Trash2 className="h-3.5 w-3.5 hover:text-destructive" />
