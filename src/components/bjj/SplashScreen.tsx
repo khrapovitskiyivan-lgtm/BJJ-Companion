@@ -16,7 +16,10 @@ export function SplashScreen() {
     if (typeof window === "undefined") return;
     if (sessionStorage.getItem(SESSION_KEY)) return; // уже показывали в этой сессии
     setShow(true);
-    const t = setTimeout(dismiss, 2500); // заставка ~2.5с (ролик длиннее — обрезаем)
+    // Заставка ~4с. Приложение монтируется ПОД оверлеем и всё это время греет данные
+    // (гидратация профиля/прогресса + облачная синхронизация Supabase, до 3с) — к снятию
+    // заставки экран уже наполнен.
+    const t = setTimeout(dismiss, 4000);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

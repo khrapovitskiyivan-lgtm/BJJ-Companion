@@ -4,7 +4,6 @@ import { AppShell } from "@/components/bjj/AppShell";
 import { TECH_BY_ID, TECHNIQUES, contentFor } from "@/lib/bjj/data";
 import { BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
 import { useProgress } from "@/lib/bjj/store";
-import { learningPath } from "@/lib/bjj/recommend";
 import type { ProgressStatus, Technique } from "@/lib/bjj/types";
 import {
   ArrowLeft,
@@ -21,7 +20,6 @@ import {
 // Новые компоненты
 import { Breadcrumbs } from "@/components/bjj/technique/Breadcrumbs";
 import { VideoBlock } from "@/components/bjj/technique/VideoBlock";
-import { InteractiveLearningPath } from "@/components/bjj/technique/InteractiveLearningPath";
 import {
   MechanismSection,
   InsightSection,
@@ -78,7 +76,6 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
   const status = progress[tech.id] ?? "not_started";
   const Icon = STATUS_ICON[status];
   const content = contentFor(tech, "ru");
-  const path = learningPath(tech, progress);
   const injury = content?.injuryRisk ?? "";
   // Уровень риска по вхождению (в данных бывает уточнение в скобках: «Средний (колено)»)
   const riskHigh = /КРИТИЧНО|Высок/i.test(injury);
@@ -197,7 +194,13 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
         )}
       </header>
 
+      {/* Под описанием: видео (платная) или фото (бесплатная — ассет добавится позже) */}
       {videoUrl && <VideoBlock url={videoUrl} title={tech.nameRu} />}
+
+      {/* «Когда применять» — сразу под описанием */}
+      {content?.when && (
+        <NeutralSection icon={<Clock3 className="h-4 w-4" />} title="Когда применять" html={content.when} />
+      )}
 
       {content && (content.injuryRisk || content.tapWarning !== "Нет") && (
   <div
@@ -262,13 +265,10 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
         </section>
       )}
 
-      {path.length > 1 && <InteractiveLearningPath path={path} currentId={tech.id} />}
-
       {content && (
         <>
           <MechanismSection html={content.mechanics} />
           <InsightSection html={content.keyPoints} />
-          <NeutralSection icon={<Clock3 className="h-4 w-4" />} title="Когда применять" html={content.when} />
           <WarningSection html={content.mistakes} />
           <PracticeSection html={content.drills} />
         </>
@@ -302,10 +302,10 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
         </section>
       )}
 
-      <RelatedList title="Что изучить сначала" items={resolve(tech.prerequisites)} empty="Нет требований — можно изучать сразу." />
+      <RelatedList title="Что изучить сначала" items={resolve(tech.prerequisites)} empty="Нет требований — можно изучать сразу." defaultOpen />
       <RelatedList title="Заходы из" items={resolve(tech.setup_from)} />
       <RelatedList title="Типичные сетапы" items={resolve(tech.common_setups)} />
-      <RelatedList title="Продолжения (chain)" items={resolve(tech.chain_to)} />
+      <RelatedList title="Продолжения" items={resolve(tech.chain_to)} />
       <RelatedList title="Используется в" items={usedBy} />
     </div>
   );
