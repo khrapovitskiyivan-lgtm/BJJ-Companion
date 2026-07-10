@@ -1,9 +1,11 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
-import { useProgress } from "@/lib/bjj/store";
+import { useProgress, useProfile } from "@/lib/bjj/store";
+import { currentFocus, nextToLearn } from "@/lib/bjj/recommend";
 import { TECHNIQUES } from "@/lib/bjj/data";
 import { BELT_ORDER, BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
+import type { Technique } from "@/lib/bjj/types";
 import {
   Flame,
   TrendingUp,
@@ -17,6 +19,7 @@ import {
   BarChart3,
   BookOpen,
   AlertTriangle,
+  Flag,
 } from "lucide-react";
 
 export const Route = createFileRoute("/progress")({
@@ -64,7 +67,15 @@ const calculateStreak = (history: Record<string, number[]>): number => {
 // === ГЛАВНЫЙ КОМПОНЕНТ ===
 function ProgressPage() {
   const { progress, setProgress, clearProgress } = useProgress();
+  const { profile } = useProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Текущий фокус (в процессе) + следующая цель (рекомендации)
+  const focusTech = useMemo(() => currentFocus(TECHNIQUES, progress), [progress]);
+  const recommendations = useMemo(
+    () => nextToLearn(TECHNIQUES, progress, profile.belt, 4),
+    [progress, profile.belt],
+  );
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [importStatus, setImportStatus] = useState<"idle" | "success" | "error">("idle");
@@ -262,6 +273,24 @@ function ProgressPage() {
             value={streak}
             suffix="дн."
             accent="#f97316"
+          />
+        </section>
+
+        {/* Текущий фокус + следующая цель (перенесено из графа) */}
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <FocusCard
+            icon={<Target className="h-4 w-4" />}
+            caption="Текущий фокус"
+            tech={focusTech}
+            empty="Отметьте технику «в процессе» — она появится здесь"
+          />
+          <FocusCard
+            icon={<Flag className="h-4 w-4" />}
+            caption="Следующая цель"
+            tech={recommendations[0] ?? null}
+            extra={recommendations.slice(1)}
+            empty="Всё доступное освоено!"
+            highlight
           />
         </section>
 
@@ -621,4 +650,62 @@ function Heatmap({ data, max }: { data: { date: string; count: number }[][]; max
   );
 }
 
-// Строка техники в списке
+// Карточка «Текущий фокус» / «Следующая цель» — клик открывает технику
+function FocusCard({
+  icon,
+  caption,
+  tech,
+  extra,
+  empty,
+  highlight,
+}: {
+  icon: React.ReactNode;
+  caption: string;
+  tech: Technique | null;
+  extra?: Technique[];
+  empty: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border p-4 ${
+        highlight ? "border-ring/50 bg-primary/5" : "border-border bg-card"
+      }`}
+    >
+      <p className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+        {icon}
+        {caption}
+      </p>
+      {tech ? (
+        <>
+          <Link
+            to="/technique/$id"
+            params={{ id: String(tech.id) }}
+            className="mt-1.5 block text-sm font-semibold hover:underline"
+          >
+            {tech.nameRu}
+          </Link>
+          <p className="text-[11px] text-muted-foreground">
+            {GROUP_LABEL[tech.group]} · {BELT_LABEL[tech.belt]} · сложность {tech.difficulty}/5
+          </p>
+          {extra && extra.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {extra.map((t) => (
+                <Link
+                  key={t.id}
+                  to="/technique/$id"
+                  params={{ id: String(t.id) }}
+                  className="rounded-md border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
+                >
+                  {t.label}
+                </Link>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <p className="mt-1.5 text-xs text-muted-foreground">{empty}</p>
+      )}
+    </div>
+  );
+}

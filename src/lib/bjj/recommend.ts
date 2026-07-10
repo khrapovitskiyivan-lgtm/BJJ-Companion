@@ -62,25 +62,29 @@ export function nextToLearn(
   return out;
 }
 
-// Путь обучения к цели: цепочка НЕосвоенных пререквизитов в порядке изучения.
-// Топологический обход вверх по prerequisites (циклы отсекаются посещённостью).
-// Ограничение глубины: prerequisites в базе перелинкованы (близко к циклам),
-// без лимита простая техника даёт путь на 20-30 шагов. Показываем ближайшие шаги.
-const MAX_PATH_DEPTH = 3;
+// Путь обучения к цели: ЛИНЕЙНАЯ цепочка «от фундамента к цели».
+// На каждом шаге поднимаемся к ОДНОМУ непройденному пререквизиту — самому
+// фундаментальному (ниже пояс, затем ниже сложность). Не собираем всё дерево:
+// граф пререквизитов плотный/цикличный, полный обход давал путь на 10-30 техник.
+// Циклы отсекаются visited. Длина ограничена MAX_PATH_LEN на всякий случай.
+const MAX_PATH_LEN = 6;
 export function learningPath(target: Technique, progress: ProgressMap): Technique[] {
+  const chain: Technique[] = [];
   const visited = new Set<number>();
-  const path: Technique[] = [];
-  const visit = (id: number, depth: number) => {
-    if (visited.has(id)) return;
-    visited.add(id);
-    const t = TECH_BY_ID[id];
-    if (!t) return;
-    if (progress[id] === "done") return; // освоенное — не в пути
-    if (depth < MAX_PATH_DEPTH) {
-      for (const p of t.prerequisites) visit(p, depth + 1);
-    }
-    path.push(t);
-  };
-  visit(target.id, 0);
-  return path; // target — последним
+  let current: Technique | undefined = target;
+
+  while (current && !visited.has(current.id) && chain.length < MAX_PATH_LEN) {
+    visited.add(current.id);
+    chain.push(current);
+    // непройденные пререквизиты, ещё не попавшие в цепочку
+    const prereqs = current.prerequisites
+      .map((id) => TECH_BY_ID[id])
+      .filter((p): p is Technique => !!p && progress[p.id] !== "done" && !visited.has(p.id));
+    if (!prereqs.length) break;
+    // самый фундаментальный — ниже пояс, затем ниже сложность
+    prereqs.sort((a, b) => beltIdx(a.belt) - beltIdx(b.belt) || a.difficulty - b.difficulty);
+    current = prereqs[0];
+  }
+
+  return chain.reverse(); // от фундамента к цели: target — последним
 }

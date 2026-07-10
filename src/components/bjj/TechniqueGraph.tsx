@@ -2,14 +2,14 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Network } from "vis-network";
 import { DataSet } from "vis-data";
 import { Link } from "@tanstack/react-router";
-import { X, Search, Maximize2, Smartphone, ShieldAlert, Target, Flag, SlidersHorizontal, HelpCircle } from "lucide-react";
+import { X, Search, Maximize2, Smartphone, ShieldAlert, SlidersHorizontal, HelpCircle } from "lucide-react";
 import { TECHNIQUES, TECH_BY_ID, contentFor } from "@/lib/bjj/data";
 import { BELT_ORDER, BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
 import {
   computeLayout, pickOrientation, pickCols, beltLanes,
   type GraphLayout, type Orientation,
 } from "@/lib/bjj/graphLayout";
-import { readiness, currentFocus, nextToLearn, learningPath } from "@/lib/bjj/recommend";
+import { readiness, learningPath } from "@/lib/bjj/recommend";
 import type { ProgressMap } from "@/lib/bjj/store";
 import type { Belt, StyleProfile, Technique } from "@/lib/bjj/types";
 
@@ -175,13 +175,6 @@ export function TechniqueGraph({
         t.label.toLowerCase().includes(q),
     ).slice(0, 8);
   }, [query]);
-
-  // --- рекомендации ---
-  const focusTech = useMemo(() => currentFocus(TECHNIQUES, progress), [progress]);
-  const recommendations = useMemo(
-    () => nextToLearn(TECHNIQUES, progress, profile.belt, 4),
-    [progress, profile.belt],
-  );
 
   // --- фильтры ---
   const beltIdx = (b: Belt) => BELT_ORDER.indexOf(b);
@@ -793,26 +786,6 @@ const ro = new ResizeObserver(() => {
         />
       )}
 
-      {/* Карточки: текущий фокус + следующая цель */}
-      <div className="grid grid-cols-1 gap-2 border-t border-border p-3 sm:grid-cols-2">
-        <MilestoneCard
-          icon={<Target className="h-4 w-4" />}
-          caption="Текущий фокус"
-          tech={focusTech}
-          empty="Отметьте технику «в процессе» — она появится здесь"
-          onClick={(t) => jumpTo(t.id)}
-        />
-        <MilestoneCard
-          icon={<Flag className="h-4 w-4" />}
-          caption="Следующая цель"
-          tech={recommendations[0] ?? null}
-          extra={recommendations.slice(1)}
-          empty="Всё доступное освоено!"
-          onClick={(t) => jumpTo(t.id)}
-          highlight
-        />
-      </div>
-
       {/* Легенда — по кнопке «?» */}
       {showLegend && (
         <div className="flex flex-wrap items-center gap-3 border-t border-border px-4 py-3 text-[10px] text-muted-foreground">
@@ -957,58 +930,6 @@ function FocusPanel({
       >
         Открыть технику
       </Link>
-    </div>
-  );
-}
-
-function MilestoneCard({
-  icon,
-  caption,
-  tech,
-  extra,
-  empty,
-  onClick,
-  highlight,
-}: {
-  icon: React.ReactNode;
-  caption: string;
-  tech: Technique | null;
-  extra?: Technique[];
-  empty: string;
-  onClick: (t: Technique) => void;
-  highlight?: boolean;
-}) {
-  return (
-    <div className={`rounded-2xl border p-3 ${highlight ? "border-ring/50 bg-primary/5" : "border-border bg-background"}`}>
-      <p className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground">
-        {icon}
-        {caption}
-      </p>
-      {tech ? (
-        <>
-          <button onClick={() => onClick(tech)} className="mt-1 block text-left text-sm font-semibold hover:underline">
-            {tech.nameRu}
-          </button>
-          <p className="text-[11px] text-muted-foreground">
-            {GROUP_LABEL[tech.group]} · {BELT_LABEL[tech.belt]} · сложность {tech.difficulty}/5
-          </p>
-          {extra && extra.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {extra.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => onClick(t)}
-                  className="rounded-md border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </>
-      ) : (
-        <p className="mt-1 text-xs text-muted-foreground">{empty}</p>
-      )}
     </div>
   );
 }
