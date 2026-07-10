@@ -46,6 +46,7 @@ const PALETTE = {
     bandOdd: "rgba(255,255,255,0.006)",
     laneLabel: "#71717a",
     watermarkAlpha: 0.07,
+    nodeBorder: "rgba(255,255,255,0.30)",
     label: "#c9c9d1",
     labelStroke: "#0a0b0e",
     focusRing: "#ffffff",
@@ -66,6 +67,7 @@ const PALETTE = {
     bandOdd: "rgba(0,0,0,0.008)",
     laneLabel: "#8a8a92",
     watermarkAlpha: 0.08,
+    nodeBorder: "rgba(0,0,0,0.32)",
     label: "#3f3f46",
     labelStroke: "#f7f7f5",
     focusRing: "#111111",
@@ -89,6 +91,7 @@ interface RenderData {
   status: "not_started" | "in_progress" | "done";
   dim: boolean;
   focused: boolean;
+  hovered: boolean;
   showLabel: boolean;
   readyFrac: number; // готовность пререквизитов 0..1
   risk: "critical" | "medium" | "low";
@@ -107,6 +110,7 @@ export function TechniqueGraph({
   const edgesDSRef = useRef<DataSet<EdgeItem> | null>(null);
   const layoutRef = useRef<GraphLayout | null>(null);
   const renderRef = useRef<Map<number, RenderData>>(new Map());
+  const hoveredIdRef = useRef<number | null>(null);
   const minScaleRef = useRef(0.1);
   const paramsRef = useRef<{ orientation: Orientation; cols: number }>({ orientation: "horizontal", cols: 3 });
 
@@ -242,6 +246,7 @@ export function TechniqueGraph({
         status: progress[t.id] ?? "not_started",
         dim: false,
         focused: false,
+        hovered: false,
         showLabel: false,
         readyFrac: readiness(t, progress).frac,
         risk: riskLevel(t),
@@ -263,6 +268,11 @@ export function TechniqueGraph({
             ctx.arc(x, y, r, 0, Math.PI * 2);
             ctx.fillStyle = d.status === "done" ? pal.done : d.status === "in_progress" ? pal.prog : pal.nodeBg;
             ctx.fill();
+            // базовая контрастная обводка — чтобы узлы белого пояса были видны на светлом фоне
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = pal.nodeBorder;
+            ctx.stroke();
+            // цветная обводка пояса
             ctx.lineWidth = 2.5;
             ctx.strokeStyle = d.focused ? pal.focusRing : pal.belts[t.belt];
             ctx.stroke();
@@ -282,21 +292,20 @@ export function TechniqueGraph({
               ctx.stroke();
               ctx.setLineDash([]);
             }
-            // подпись: только фокусный узел или крупный зум; длинные — обрезаем (без наслаивания)
-            // подпись: только фокусный узел или крупный зум; длинные — обрезаем (без наслаивания)
-const scale = netRef.current?.getScale() ?? 1;
-// Оптимизация: показываем подписи только при зуме >= 1.8 (было 1.6)
-if (!d.dim && (d.focused || scale >= 1.8)) {
-  const text = t.label.length > 14 ? t.label.slice(0, 13) + "…" : t.label; // было 16/15
-  ctx.font = `600 ${Math.max(10, 12 / Math.min(scale, 1.8))}px Manrope, sans-serif`; // было 9/11/1.6
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = pal.labelStroke;
-  ctx.strokeText(text, x, y + r + 5);
-  ctx.fillStyle = pal.label;
-  ctx.fillText(text, x, y + r + 5);
-}
+            // подпись: только при наведении (или на выбранном узле). При зуме НЕ показываем —
+            // иначе десятки подписей наслаиваются и сливаются.
+            if (!d.dim && (d.hovered || d.focused)) {
+              const scale = netRef.current?.getScale() ?? 1;
+              const text = t.label.length > 22 ? t.label.slice(0, 21) + "…" : t.label;
+              ctx.font = `600 ${Math.max(11, 13 / Math.min(Math.max(scale, 0.6), 1.6))}px Manrope, sans-serif`;
+              ctx.textAlign = "center";
+              ctx.textBaseline = "top";
+              ctx.lineWidth = 3.5;
+              ctx.strokeStyle = pal.labelStroke;
+              ctx.strokeText(text, x, y + r + 5);
+              ctx.fillStyle = pal.label;
+              ctx.fillText(text, x, y + r + 5);
+            }
             ctx.restore();
           },
           nodeDimensions: { width: r * 2, height: r * 2 },
@@ -370,16 +379,10 @@ const net = new Network(
       ctx.save();
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
+      // Только зебра-полосы поясов. Крупные подписи поясов на фоне убраны (и так понятно по цвету).
       L.bands.forEach((bd, i) => {
         ctx.fillStyle = i % 2 === 0 ? pal.bandEven : pal.bandOdd;
         ctx.fillRect(L.xMin - 30, bd.y0 - 24, L.xMax - L.xMin + 60, bd.y1 - bd.y0 + 48);
-        const label =
-          bd.type === "belt" ? BELT_LABEL[bd.key as Belt] : GROUP_LABEL[bd.key as keyof typeof GROUP_LABEL];
-        ctx.fillStyle = bd.type === "belt" ? pal.belts[bd.key as Belt] : pal.laneLabel;
-        ctx.globalAlpha = pal.watermarkAlpha;
-        ctx.font = `800 ${Math.min((bd.y1 - bd.y0) * 0.7, 150)}px Manrope, sans-serif`;
-        ctx.fillText((label ?? bd.key).toUpperCase(), (L.xMin + L.xMax) / 2, (bd.y0 + bd.y1) / 2);
-        ctx.globalAlpha = 1;
       });
       ctx.restore();
     });
@@ -402,6 +405,20 @@ const net = new Network(
         ctx.globalAlpha = 1;
       });
       ctx.restore();
+    });
+
+    // Подпись показываем только под курсором
+    net.on("hoverNode", (p: { node: number }) => {
+      hoveredIdRef.current = p.node;
+      const d = renderRef.current.get(p.node);
+      if (d) d.hovered = true;
+      net.redraw();
+    });
+    net.on("blurNode", (p: { node: number }) => {
+      const d = renderRef.current.get(p.node);
+      if (d) d.hovered = false;
+      if (hoveredIdRef.current === p.node) hoveredIdRef.current = null;
+      net.redraw();
     });
 
     net.on("click", (params: { nodes: number[] }) => {
@@ -527,6 +544,7 @@ const ro = new ResizeObserver(() => {
       d.readyFrac = readiness(t, progress).frac;
       d.dim = dimmed && !visible.has(t.id);
       d.focused = t.id === focusedId;
+      d.hovered = t.id === hoveredIdRef.current;
       d.showLabel = focusSet ? focusSet.has(t.id) : false;
     }
 
