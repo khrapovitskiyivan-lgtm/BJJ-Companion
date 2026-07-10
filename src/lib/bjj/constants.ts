@@ -1,5 +1,25 @@
 // === CONSTANTS === (перенесено 1-в-1 из bjj-map/index.html)
-import type { Belt, Group, WarmupItem } from "./types";
+import type { Belt, Group, Style, WarmupItem } from "./types";
+
+// === ИГРОВЫЕ СТИЛИ (архетипы) ===
+// icon — имя lucide-иконки (компонент подбирается в STYLE_ICONS, src/lib/bjj/styleIcons.ts)
+export const STYLE_ORDER: Style[] = [
+  "pressure_passer", "speed_passer", "closed_guard", "open_guard", "sweeper",
+  "leg_game", "back_hunter", "wrestler", "top_control", "defense_escape",
+];
+
+export const STYLE_META: Record<Style, { ru: string; en: string; desc: string; icon: string }> = {
+  pressure_passer: { ru: "Прессинг-пассер", en: "Pressure passer", desc: "Тяжёлый верх, продавливание", icon: "Anvil" },
+  speed_passer: { ru: "Скоростной пассер", en: "Speed passer", desc: "Обход, движение, торичесы", icon: "Wind" },
+  closed_guard: { ru: "Закрытый гард", en: "Closed guard", desc: "Атака снизу из-под соперника", icon: "Lock" },
+  open_guard: { ru: "Открытый гард", en: "Open guard", desc: "Рамки ногами, дистанция", icon: "Frame" },
+  sweeper: { ru: "Свипер", en: "Sweeper", desc: "Перевороты снизу наверх", icon: "RotateCw" },
+  leg_game: { ru: "Игра ног", en: "Leg game", desc: "Лег-локи, нижняя позиция", icon: "Footprints" },
+  back_hunter: { ru: "Бэк-хантер", en: "Back hunter", desc: "Выход на спину и удушения", icon: "Crosshair" },
+  wrestler: { ru: "Борец / тейкдауны", en: "Wrestler", desc: "Стойка, броски, свалка", icon: "Grab" },
+  top_control: { ru: "Контроль сверху", en: "Top control", desc: "Доминирование и сабмишны", icon: "Crown" },
+  defense_escape: { ru: "Защита и выход", en: "Defense & escape", desc: "Выживание, выходы", icon: "Shield" },
+};
 
 export const BELT_ORDER: Belt[] = ["white", "blue", "purple", "brown", "black"];
 

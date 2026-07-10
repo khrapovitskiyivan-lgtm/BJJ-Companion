@@ -30,8 +30,9 @@ import {
   PracticeSection,
 } from "@/components/bjj/technique/TechniqueSections";
 import { RelatedList } from "@/components/bjj/technique/RelatedList";
+import { StyleBadges } from "@/components/bjj/StyleBadges";
 
-import { Clock3, AlertTriangle, Dumbbell } from "lucide-react";
+import { Clock3, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/technique/$id")({
   component: TechniquePage,
@@ -78,7 +79,11 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
   const Icon = STATUS_ICON[status];
   const content = contentFor(tech, "ru");
   const path = learningPath(tech, progress);
-  const riskCritical = /КРИТИЧНО/i.test(content?.injuryRisk ?? "");
+  const injury = content?.injuryRisk ?? "";
+  // Уровень риска по вхождению (в данных бывает уточнение в скобках: «Средний (колено)»)
+  const riskHigh = /КРИТИЧНО|Высок/i.test(injury);
+  const riskCritical = /КРИТИЧНО/i.test(injury);
+  const riskMed = !riskHigh && /Средн/i.test(injury);
 
   const videoUrl = (tech as any).videoUrl as string | undefined;
 
@@ -182,6 +187,11 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
           {tech.legal_ibjjf_nogi && <Chip>IBJJF No-Gi</Chip>}
           {tech.legal_adcc && <Chip>ADCC</Chip>}
         </div>
+        {tech.styles?.length > 0 && (
+          <div className="mt-3">
+            <StyleBadges styles={tech.styles} />
+          </div>
+        )}
         {content && (
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{content.concept}</p>
         )}
@@ -192,26 +202,26 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
       {content && (content.injuryRisk || content.tapWarning !== "Нет") && (
   <div
     className={`flex gap-3 rounded-2xl border p-4 ${
-      riskCritical || content.injuryRisk === "Высокий"
+      riskHigh
         ? "border-destructive/50 bg-destructive/10 text-destructive"
-        : content.injuryRisk === "Средний"
+        : riskMed
         ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
-        : "border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-400"
+        : "border-border bg-muted text-muted-foreground"
     }`}
   >
-    {riskCritical || content.injuryRisk === "Высокий" ? (
+    {riskHigh ? (
       <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
-    ) : content.injuryRisk === "Средний" ? (
-      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
     ) : (
       <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
     )}
     <div className="text-xs leading-relaxed flex-1">
       <div className="flex items-center gap-2 mb-1.5">
         <span className="font-semibold text-sm">
-          {riskCritical || content.injuryRisk === "Высокий"
-            ? "⚠️ Опасная техника"
-            : content.injuryRisk === "Средний"
+          {riskCritical
+            ? "Опасная техника"
+            : riskHigh
+            ? "Высокий риск травмы"
+            : riskMed
             ? "Будьте осторожны"
             : "Информация о технике"}
         </span>
@@ -292,20 +302,7 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
         </section>
       )}
 
-      {tech.tags.length > 0 && (
-        <section>
-          <h2 className="mb-2 text-sm font-semibold">Теги</h2>
-          <div className="flex flex-wrap gap-1.5">
-            {tech.tags.map((t) => (
-              <span key={t} className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                {t}
-              </span>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <RelatedList title="Пререквизиты" items={resolve(tech.prerequisites)} empty="Нет требований — можно изучать сразу." />
+      <RelatedList title="Что изучить сначала" items={resolve(tech.prerequisites)} empty="Нет требований — можно изучать сразу." />
       <RelatedList title="Заходы из" items={resolve(tech.setup_from)} />
       <RelatedList title="Типичные сетапы" items={resolve(tech.common_setups)} />
       <RelatedList title="Продолжения (chain)" items={resolve(tech.chain_to)} />

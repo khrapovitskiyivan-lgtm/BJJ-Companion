@@ -16,6 +16,19 @@ export type Group =
 
 export type Locale = "ru" | "en";
 
+// Игровой стиль / архетип. Техника размечается 1–3 стилями (см. scripts/derive-styles.mjs).
+export type Style =
+  | "pressure_passer"
+  | "speed_passer"
+  | "closed_guard"
+  | "open_guard"
+  | "sweeper"
+  | "leg_game"
+  | "back_hunter"
+  | "wrestler"
+  | "top_control"
+  | "defense_escape";
+
 export type SafetyMode = "smart" | "safe" | "all";
 export type Intensity = "light" | "medium" | "hard";
 export type ProgressStatus = "not_started" | "in_progress" | "done";
@@ -41,6 +54,7 @@ export interface Technique {
   nameEn: string;
   group: Group;
   belt: Belt;
+  styles: Style[];
   gi: boolean;
   noGi: boolean;
   legal_ibjjf_gi: boolean;

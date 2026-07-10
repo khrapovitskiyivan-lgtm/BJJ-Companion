@@ -4,6 +4,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { deriveAllStyles } from './derive-styles.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -41,6 +42,7 @@ const techniques = recs.map((r) => {
   const nameRu = parts[0] || r.label;
   const nameEn = parts[1] || nameRu;
   const shortRu = parts[2] || nameRu;
+  const tags = r.tags ? r.tags.split(',').map((t) => t.trim()).filter(Boolean) : [];
   return {
     id: parseInt(r.id, 10),
     label: shortRu,
@@ -56,7 +58,7 @@ const techniques = recs.map((r) => {
     legal_adcc: bool(r.legal_adcc),
     points_ibjjf: parseInt(r.points_ibjjf, 10) || 0,
     points_adcc: parseInt(r.points_adcc, 10) || 0,
-    tags: r.tags ? r.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+    tags,
     prerequisites: ids(r.prerequisites),
     setup_from: ids(r.setup_from),
     common_setups: ids(r.common_setups),
@@ -79,6 +81,10 @@ const techniques = recs.map((r) => {
     // Монетизация (заполняется позже): videoUrl, isPremium
   };
 });
+
+// --- деривация игровых стилей (двухпроходно: self + наследование из setup_from) ---
+const styleMap = deriveAllStyles(techniques);
+for (const t of techniques) t.styles = styleMap.get(t.id) || [];
 
 // --- валидация перед записью ---
 const errs = [];
