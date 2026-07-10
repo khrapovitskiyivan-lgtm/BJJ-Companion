@@ -126,7 +126,20 @@ export function TechniqueGraph({
   const [showFilters, setShowFilters] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
 
-  const theme: Palette = profile.theme === "dark" ? PALETTE.dark : PALETTE.light;
+  // Тема берётся из реально применённого класса `dark` на <html> — единый источник правды.
+  // (useProfile — локальный стейт на компонент, поэтому profile.theme у графа не обновлялся
+  //  при переключении в шапке; класс же общий и меняется мгновенно.)
+  const [isDark, setIsDark] = useState<boolean>(profile.theme === "dark");
+  useEffect(() => {
+    const root = document.documentElement;
+    const sync = () => setIsDark(root.classList.contains("dark"));
+    sync();
+    const mo = new MutationObserver(sync);
+    mo.observe(root, { attributes: true, attributeFilter: ["class"] });
+    return () => mo.disconnect();
+  }, []);
+
+  const theme: Palette = isDark ? PALETTE.dark : PALETTE.light;
   const themeRef = useRef(theme);
   themeRef.current = theme;
   const safetyLensRef = useRef(safetyLens);
