@@ -72,15 +72,15 @@ export function useProfile() {
 export type ProgressMap = Record<number, ProgressStatus>;
 
 export function useProgress() {
-  const [progress, setProgress] = useState<ProgressMap>({});
+  const [progress, setProgressState] = useState<ProgressMap>({});
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setProgress(readJSON<ProgressMap>(PROGRESS_KEY, {}));
+    setProgressState(readJSON<ProgressMap>(PROGRESS_KEY, {}));
     setHydrated(true);
     trySyncFromCloud().then((remote) => {
       if (remote) {
-        setProgress((prev) => {
+        setProgressState((prev) => {
           // Merge стратегия: облако + локальное (локальное имеет приоритет)
           const merged = { ...remote, ...prev };
           writeJSON(PROGRESS_KEY, merged);
@@ -91,7 +91,7 @@ export function useProgress() {
   }, []);
 
   const setStatus = useCallback((techniqueId: number, status: ProgressStatus) => {
-    setProgress((prev) => {
+    setProgressState((prev) => {
       const next = { ...prev, [techniqueId]: status };
       writeJSON(PROGRESS_KEY, next);
       void trySyncToCloud(next);
@@ -110,7 +110,21 @@ export function useProgress() {
     [progress, setStatus],
   );
 
-  return { progress, setStatus, cycleStatus, hydrated };
+  // Массовая замена (импорт прогресса)
+  const setProgress = useCallback((map: ProgressMap) => {
+    writeJSON(PROGRESS_KEY, map);
+    void trySyncToCloud(map);
+    setProgressState(map);
+  }, []);
+
+  // Полный сброс прогресса
+  const clearProgress = useCallback(() => {
+    writeJSON(PROGRESS_KEY, {});
+    void trySyncToCloud({});
+    setProgressState({});
+  }, []);
+
+  return { progress, setStatus, cycleStatus, setProgress, clearProgress, hydrated };
 }
 
 // === CLOUD SYNC (best-effort, 3s timeout) ===
