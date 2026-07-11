@@ -5,7 +5,7 @@ import { Onboarding } from "./Onboarding";
 import { Logo } from "./Logo";
 import { AvatarMenu } from "./AvatarMenu";
 import { useProfile } from "@/lib/bjj/store";
-import { initTelegram } from "@/lib/telegram";
+import { initTelegram, haptic } from "@/lib/telegram";
 import { BELT_LABEL } from "@/lib/bjj/constants";
 import { Moon, Sun } from "lucide-react";
 
@@ -57,7 +57,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
           <div className="justify-self-start">
             <button
               type="button"
-              onClick={() => update({ theme: profile.theme === "dark" ? "light" : "dark" })}
+              onClick={() => { haptic("light"); update({ theme: profile.theme === "dark" ? "light" : "dark" }); }}
               className="rounded-full p-2 text-muted-foreground transition hover:bg-muted"
               aria-label="Переключить тему"
             >
@@ -72,7 +72,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
           {/* справа: аватар — открывает меню (статистика · настройки · о приложении) */}
           <button
             type="button"
-            onClick={() => setMenuOpen(true)}
+            onClick={() => { haptic("light"); setMenuOpen(true); }}
             aria-label={`Меню профиля: ${BELT_LABEL[profile.belt]} пояс`}
             className="justify-self-end rounded-full p-1 transition hover:bg-muted"
           >

@@ -4,6 +4,7 @@ import { AppShell } from "@/components/bjj/AppShell";
 import { TECH_BY_ID, TECHNIQUES, contentFor } from "@/lib/bjj/data";
 import { BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
 import { useProgress } from "@/lib/bjj/store";
+import { haptic } from "@/lib/telegram";
 import type { ProgressStatus, Technique } from "@/lib/bjj/types";
 import {
   ArrowLeft,
@@ -164,7 +165,7 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
           </div>
           <button
             type="button"
-            onClick={() => cycleStatus(tech.id)}
+            onClick={() => { haptic("medium"); cycleStatus(tech.id); }}
             aria-label={`Статус: ${STATUS_LABEL[status]}`}
             className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 transition-transform active:scale-95"
             style={{ borderColor: STATUS_COLOR[status], color: STATUS_COLOR[status] }}

@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
 import { ActivityHeatmap } from "@/components/bjj/ActivityHeatmap";
 import { useDiary, useProgress } from "@/lib/bjj/store";
+import { hapticSuccess } from "@/lib/telegram";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import { GROUP_LABEL } from "@/lib/bjj/constants";
 import type { Intensity } from "@/lib/bjj/types";
@@ -84,6 +85,7 @@ function Diary() {
     for (const id of picked) {
       if ((progress[id] ?? "not_started") === "not_started") setStatus(id, "in_progress");
     }
+    hapticSuccess();
     resetForm();
   };
 

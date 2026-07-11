@@ -13,6 +13,12 @@ interface TgUser {
   language_code?: string;
 }
 
+interface HapticFeedbackApi {
+  impactOccurred?(style: "light" | "medium" | "heavy" | "rigid" | "soft"): void;
+  notificationOccurred?(type: "error" | "success" | "warning"): void;
+  selectionChanged?(): void;
+}
+
 interface TgWebApp {
   ready(): void;
   expand(): void;
@@ -20,6 +26,7 @@ interface TgWebApp {
   initDataUnsafe?: { user?: TgUser };
   colorScheme?: "light" | "dark";
   isExpanded?: boolean;
+  HapticFeedback?: HapticFeedbackApi;
   disableVerticalSwipes?(): void;
   requestFullscreen?(): void;
   setHeaderColor?(color: string): void;
@@ -36,6 +43,37 @@ export function getTelegram(): TgWebApp | null {
 export function isTelegram(): boolean {
   const tg = getTelegram();
   return !!tg && typeof tg.initData === "string" && tg.initData.length > 0;
+}
+
+// === Тактильная отдача === (Telegram HapticFeedback, фоллбэк — navigator.vibrate)
+type HapticStyle = "light" | "medium" | "heavy" | "rigid" | "soft";
+
+export function haptic(style: HapticStyle = "light"): void {
+  const hf = getTelegram()?.HapticFeedback;
+  if (hf?.impactOccurred) {
+    try {
+      hf.impactOccurred(style);
+      return;
+    } catch {
+      /* ignore */
+    }
+  }
+  if (typeof navigator !== "undefined" && navigator.vibrate) {
+    navigator.vibrate(style === "heavy" ? 30 : style === "medium" ? 18 : 10);
+  }
+}
+
+export function hapticSuccess(): void {
+  const hf = getTelegram()?.HapticFeedback;
+  if (hf?.notificationOccurred) {
+    try {
+      hf.notificationOccurred("success");
+      return;
+    } catch {
+      /* ignore */
+    }
+  }
+  if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate([10, 40, 15]);
 }
 
 // Надёжное получение пользователя: три способа + кэш (как в bjj-map).

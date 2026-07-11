@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { NotebookPen, Swords, Layers, Dumbbell } from "lucide-react";
+import { haptic } from "@/lib/telegram";
 
 // === BOTTOM NAV — 4 вкладки ===
 // 1 Дневник · 2 Моя игра (бывш. прогресс) · 3 Техники (граф/список/что-если) · 4 Тренировка (генератор/сценарии)
@@ -25,6 +26,7 @@ export function BottomNav() {
             <li key={it.to}>
               <Link
                 to={it.to}
+                onClick={() => haptic("light")}
                 className="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors"
                 style={{ color: active ? "var(--color-primary)" : "var(--color-muted-foreground)" }}
               >
