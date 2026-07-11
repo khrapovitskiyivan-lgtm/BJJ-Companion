@@ -1,10 +1,12 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
-import { useProgress, useProfile } from "@/lib/bjj/store";
+import { useProgress, useProfile, useDiary } from "@/lib/bjj/store";
 import { currentFocus, nextToLearn } from "@/lib/bjj/recommend";
+import { computeStyleAffinity, type StyleScore } from "@/lib/bjj/styleProfile";
+import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
 import { TECHNIQUES } from "@/lib/bjj/data";
-import { BELT_ORDER, BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
+import { BELT_ORDER, BELT_LABEL, GROUP_LABEL, STYLE_META } from "@/lib/bjj/constants";
 import type { Technique } from "@/lib/bjj/types";
 import {
   TrendingUp,
@@ -30,6 +32,7 @@ const getDateKey = (date: Date): string => date.toISOString().split("T")[0];
 function ProgressPage() {
   const { progress, setProgress, clearProgress } = useProgress();
   const { profile } = useProfile();
+  const { practiceCount } = useDiary();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Текущий фокус (в процессе) + следующая цель (рекомендации)
@@ -37,6 +40,12 @@ function ProgressPage() {
   const recommendations = useMemo(
     () => nextToLearn(TECHNIQUES, progress, profile.belt, 4),
     [progress, profile.belt],
+  );
+
+  // «Твой стиль» — аффинити к 10 архетипам из прогресса + отработок дневника
+  const styleScores = useMemo(
+    () => computeStyleAffinity(progress, practiceCount()),
+    [progress, practiceCount],
   );
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -179,6 +188,8 @@ function ProgressPage() {
             highlight
           />
         </section>
+
+        <YourStyle scores={styleScores} />
 
         {/* Статистика по поясам */}
         <section className="rounded-2xl border border-border bg-card p-4">
@@ -330,6 +341,59 @@ function StatCard({
   );
 }
 
+
+// «Твой стиль» — аффинити к игровым архетипам
+function YourStyle({ scores }: { scores: StyleScore[] }) {
+  if (scores.length === 0) {
+    return (
+      <section className="rounded-2xl border border-border bg-card p-4">
+        <h2 className="mb-1 text-sm font-semibold">Твой стиль</h2>
+        <p className="text-xs text-muted-foreground">
+          Отмечай изученные техники и веди дневник — приложение определит твой игровой стиль.
+        </p>
+      </section>
+    );
+  }
+  const top = scores[0];
+  const TopIcon = STYLE_ICONS[top.style];
+  const bars = scores.slice(0, 5);
+  const max = bars[0]?.pct || 1;
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-4">
+      <h2 className="mb-3 text-sm font-semibold">Твой стиль</h2>
+      <div className="flex items-center gap-3">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+          <TopIcon className="h-6 w-6" strokeWidth={1.9} />
+        </span>
+        <div className="min-w-0">
+          <p className="text-base font-bold tracking-tight">{STYLE_META[top.style].ru}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {STYLE_META[top.style].desc} · {top.pct}% игры
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 space-y-2">
+        {bars.map((b) => {
+          const Icon = STYLE_ICONS[b.style];
+          return (
+            <div key={b.style} className="flex items-center gap-2">
+              <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" strokeWidth={1.9} />
+              <span className="w-24 shrink-0 truncate text-[11px]">{STYLE_META[b.style].ru}</span>
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary"
+                  style={{ width: `${Math.round((b.pct / max) * 100)}%` }}
+                />
+              </div>
+              <span className="w-8 text-right text-[11px] text-muted-foreground">{b.pct}%</span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
 
 // Карточка «Текущий фокус» / «Следующая цель» — клик открывает технику
 function FocusCard({
