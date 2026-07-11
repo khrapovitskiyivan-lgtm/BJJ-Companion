@@ -77,7 +77,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" },
       { title: "BJJ Companion — библиотека техник и умные тренировки" },
       {
         name: "description",
@@ -108,10 +108,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
-    scripts: [
-      // Telegram Mini App SDK — вне Telegram просто отдаёт пустой initData (безвредно)
-      { src: "https://telegram.org/js/telegram-web-app.js" },
-    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -123,6 +119,9 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        {/* Telegram Mini App SDK — синхронно в <head>, чтобы window.Telegram.WebApp
+            был готов как можно раньше (вне Telegram отдаёт пустой initData, безвредно). */}
+        <script src="https://telegram.org/js/telegram-web-app.js" />
         <HeadContent />
       </head>
       <body>

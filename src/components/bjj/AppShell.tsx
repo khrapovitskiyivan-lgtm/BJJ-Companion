@@ -48,7 +48,10 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20">
-      <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
+      <header
+        className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur"
+        style={{ paddingTop: "max(env(safe-area-inset-top), var(--tg-content-safe-area-inset-top, 0px))" }}
+      >
         <div className="mx-auto grid max-w-xl grid-cols-[1fr_auto_1fr] items-center px-4 py-2.5">
           {/* слева: тема */}
           <div className="justify-self-start">
