@@ -49,14 +49,26 @@ export function AvatarMenu({ onClose }: { onClose: () => void }) {
       <div className="relative z-10 flex max-h-[88vh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl border border-border bg-background shadow-2xl sm:rounded-3xl">
         {/* ручка + шапка */}
         <div className="flex items-center gap-3 border-b border-border p-4">
-          <span
-            className="block h-12 w-12 shrink-0 rounded-full ring-2 ring-border"
-            style={{ background: `var(--belt-${profile.belt})` }}
-            aria-hidden
-          />
+          {profile.avatarUrl ? (
+            <img
+              src={profile.avatarUrl}
+              alt=""
+              className="block h-12 w-12 shrink-0 rounded-full object-cover ring-2"
+              style={{ boxShadow: `0 0 0 2px var(--belt-${profile.belt})` }}
+            />
+          ) : (
+            <span
+              className="block h-12 w-12 shrink-0 rounded-full ring-2 ring-border"
+              style={{ background: `var(--belt-${profile.belt})` }}
+              aria-hidden
+            />
+          )}
           <div className="min-w-0 flex-1">
-            <p className="text-base font-bold tracking-tight">{BELT_LABEL[profile.belt]} пояс</p>
+            <p className="truncate text-base font-bold tracking-tight">
+              {profile.name || `${BELT_LABEL[profile.belt]} пояс`}
+            </p>
             <p className="text-xs text-muted-foreground">
+              {profile.name ? `${BELT_LABEL[profile.belt]} пояс · ` : ""}
               {profile.gi && profile.noGi ? "Gi + No-Gi" : profile.gi ? "Gi" : "No-Gi"}
               {user ? (
                 <span className="ml-1 inline-flex items-center gap-1 text-status-done">

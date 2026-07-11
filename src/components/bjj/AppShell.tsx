@@ -5,6 +5,7 @@ import { Onboarding } from "./Onboarding";
 import { Logo } from "./Logo";
 import { AvatarMenu } from "./AvatarMenu";
 import { useProfile } from "@/lib/bjj/store";
+import { initTelegram } from "@/lib/telegram";
 import { BELT_LABEL } from "@/lib/bjj/constants";
 import { Moon, Sun } from "lucide-react";
 
@@ -19,6 +20,13 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
     if (!hydrated) return;
     document.documentElement.classList.toggle("dark", profile.theme === "dark");
   }, [profile.theme, hydrated]);
+
+  // Telegram Mini App: подтянуть имя/фото/язык из Telegram (один раз после гидратации)
+  useEffect(() => {
+    if (!hydrated) return;
+    initTelegram(update);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
 
   if (!hydrated) {
     return <div className="min-h-screen bg-background" />;
@@ -55,10 +63,19 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
             aria-label={`Меню профиля: ${BELT_LABEL[profile.belt]} пояс`}
             className="justify-self-end rounded-full p-1 transition hover:bg-muted"
           >
-            <span
-              className="block h-7 w-7 rounded-full ring-2 ring-border"
-              style={{ background: `var(--belt-${profile.belt})` }}
-            />
+            {profile.avatarUrl ? (
+              <img
+                src={profile.avatarUrl}
+                alt=""
+                className="block h-7 w-7 rounded-full object-cover ring-2"
+                style={{ boxShadow: `0 0 0 2px var(--belt-${profile.belt})` }}
+              />
+            ) : (
+              <span
+                className="block h-7 w-7 rounded-full ring-2 ring-border"
+                style={{ background: `var(--belt-${profile.belt})` }}
+              />
+            )}
           </button>
         </div>
       </header>
