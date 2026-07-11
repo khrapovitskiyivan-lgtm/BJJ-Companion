@@ -38,9 +38,10 @@ export function SplashScreen() {
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center bg-black transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-black transition-opacity duration-300 ${
         fading ? "opacity-0" : "opacity-100"
       }`}
+      style={{ width: "100vw", height: "100dvh" }}
     >
       <video
         ref={videoRef}
@@ -50,7 +51,7 @@ export function SplashScreen() {
         playsInline
         onEnded={dismiss}
         onError={dismiss}
-        className="h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-cover"
       />
       <button
         onClick={dismiss}

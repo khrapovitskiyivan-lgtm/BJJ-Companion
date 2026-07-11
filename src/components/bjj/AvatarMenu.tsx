@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { supabase } from "@/lib/supabase";
 import { AuthModal } from "@/components/AuthModal";
 import { useProfile, useProgress } from "@/lib/bjj/store";
+import { initials } from "@/components/bjj/AppShell";
 import { TECHNIQUES } from "@/lib/bjj/data";
 import { BELT_LABEL, BELT_ORDER } from "@/lib/bjj/constants";
 import type { Belt, Locale } from "@/lib/bjj/types";
@@ -56,6 +57,13 @@ export function AvatarMenu({ onClose }: { onClose: () => void }) {
               className="block h-12 w-12 shrink-0 rounded-full object-cover ring-2"
               style={{ boxShadow: `0 0 0 2px var(--belt-${profile.belt})` }}
             />
+          ) : profile.name ? (
+            <span
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-base font-bold text-white ring-2 ring-border"
+              style={{ background: `var(--belt-${profile.belt})` }}
+            >
+              {initials(profile.name)}
+            </span>
           ) : (
             <span
               className="block h-12 w-12 shrink-0 rounded-full ring-2 ring-border"

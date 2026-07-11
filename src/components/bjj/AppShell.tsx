@@ -9,6 +9,16 @@ import { initTelegram } from "@/lib/telegram";
 import { BELT_LABEL } from "@/lib/bjj/constants";
 import { Moon, Sun } from "lucide-react";
 
+// Инициалы из имени для фоллбэк-аватара (когда фото из Telegram недоступно).
+export function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 // === APP SHELL ===
 // Шапка: тема слева · лого+название по центру · аватар справа.
 // Тап по аватару открывает меню (статистика · настройки · о приложении) — AvatarMenu.
@@ -70,6 +80,13 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
                 className="block h-7 w-7 rounded-full object-cover ring-2"
                 style={{ boxShadow: `0 0 0 2px var(--belt-${profile.belt})` }}
               />
+            ) : profile.name ? (
+              <span
+                className="grid h-7 w-7 place-items-center rounded-full text-[10px] font-bold text-white ring-2 ring-border"
+                style={{ background: `var(--belt-${profile.belt})` }}
+              >
+                {initials(profile.name)}
+              </span>
             ) : (
               <span
                 className="block h-7 w-7 rounded-full ring-2 ring-border"
