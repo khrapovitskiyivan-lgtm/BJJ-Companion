@@ -12,4 +12,8 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Деплой на Vercel: Nitro собирает вывод в .vercel/output (Build Output API v3),
+  // который Vercel подхватывает автоматически. Пресет закреплён явно, чтобы не зависеть
+  // от авто-детекта. (В Lovable-сборке это переопределение игнорируется и остаётся Cloudflare.)
+  nitro: { preset: "vercel" },
 });
