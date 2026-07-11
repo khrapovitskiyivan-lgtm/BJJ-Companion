@@ -113,9 +113,10 @@ export interface DiaryEntry {
   date: string;              // ISO (yyyy-mm-dd)
   techniqueIds: number[];    // отработанные техники (выбор из поиска)
   note?: string;             // заметка / как прошло
-  durationMin?: number;      // длительность, мин
-  location?: string;         // зал / секция
-  intensity?: Intensity;     // интенсивность
+  intensity?: Intensity;     // интенсивность (light | medium | hard)
+  wellbeing?: number;        // самочувствие 1..5
+  rounds?: number;           // раундов спарринга
+  injury?: string;           // заметка о травме / дискомфорте
 }
 
 export interface WarmupItem {

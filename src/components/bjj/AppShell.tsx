@@ -9,8 +9,8 @@ import { BELT_LABEL } from "@/lib/bjj/constants";
 import { Moon, Sun } from "lucide-react";
 
 // === APP SHELL ===
-// Шапка: тема слева · лого+название по центру · профиль (аватар-пояс) справа.
-// Авторизация и настройки живут на странице /profile.
+// Шапка: тема слева · лого+название по центру · аватар справа.
+// Тап по аватару открывает меню (статистика · настройки · о приложении) — AvatarMenu.
 export function AppShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
   const { profile, update, hydrated } = useProfile();
   const [menuOpen, setMenuOpen] = useState(false);

@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkoutRouteImport } from './routes/workout'
 import { Route as SolutionsRouteImport } from './routes/solutions'
 import { Route as ProgressRouteImport } from './routes/progress'
-import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as DiaryRouteImport } from './routes/diary'
@@ -33,11 +32,6 @@ const SolutionsRoute = SolutionsRouteImport.update({
 const ProgressRoute = ProgressRouteImport.update({
   id: '/progress',
   path: '/progress',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapRoute = MapRouteImport.update({
@@ -77,7 +71,6 @@ export interface FileRoutesByFullPath {
   '/diary': typeof DiaryRoute
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
-  '/profile': typeof ProfileRoute
   '/progress': typeof ProgressRoute
   '/solutions': typeof SolutionsRoute
   '/workout': typeof WorkoutRoute
@@ -89,7 +82,6 @@ export interface FileRoutesByTo {
   '/diary': typeof DiaryRoute
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
-  '/profile': typeof ProfileRoute
   '/progress': typeof ProgressRoute
   '/solutions': typeof SolutionsRoute
   '/workout': typeof WorkoutRoute
@@ -102,7 +94,6 @@ export interface FileRoutesById {
   '/diary': typeof DiaryRoute
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
-  '/profile': typeof ProfileRoute
   '/progress': typeof ProgressRoute
   '/solutions': typeof SolutionsRoute
   '/workout': typeof WorkoutRoute
@@ -116,7 +107,6 @@ export interface FileRouteTypes {
     | '/diary'
     | '/library'
     | '/map'
-    | '/profile'
     | '/progress'
     | '/solutions'
     | '/workout'
@@ -128,7 +118,6 @@ export interface FileRouteTypes {
     | '/diary'
     | '/library'
     | '/map'
-    | '/profile'
     | '/progress'
     | '/solutions'
     | '/workout'
@@ -140,7 +129,6 @@ export interface FileRouteTypes {
     | '/diary'
     | '/library'
     | '/map'
-    | '/profile'
     | '/progress'
     | '/solutions'
     | '/workout'
@@ -153,7 +141,6 @@ export interface RootRouteChildren {
   DiaryRoute: typeof DiaryRoute
   LibraryRoute: typeof LibraryRoute
   MapRoute: typeof MapRoute
-  ProfileRoute: typeof ProfileRoute
   ProgressRoute: typeof ProgressRoute
   SolutionsRoute: typeof SolutionsRoute
   WorkoutRoute: typeof WorkoutRoute
@@ -181,13 +168,6 @@ declare module '@tanstack/react-router' {
       path: '/progress'
       fullPath: '/progress'
       preLoaderRoute: typeof ProgressRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/map': {
@@ -241,7 +221,6 @@ const rootRouteChildren: RootRouteChildren = {
   DiaryRoute: DiaryRoute,
   LibraryRoute: LibraryRoute,
   MapRoute: MapRoute,
-  ProfileRoute: ProfileRoute,
   ProgressRoute: ProgressRoute,
   SolutionsRoute: SolutionsRoute,
   WorkoutRoute: WorkoutRoute,

@@ -7,7 +7,6 @@ import { TECHNIQUES } from "@/lib/bjj/data";
 import { BELT_ORDER, BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
 import type { Technique } from "@/lib/bjj/types";
 import {
-  Flame,
   TrendingUp,
   Download,
   Upload,
@@ -15,8 +14,6 @@ import {
   Award,
   Target,
   CircleDot,
-  Calendar,
-  BarChart3,
   BookOpen,
   AlertTriangle,
   Flag,
@@ -26,43 +23,8 @@ export const Route = createFileRoute("/progress")({
   component: ProgressPage,
 });
 
-// === Типы ===
-
 // === Вспомогательные утилиты ===
 const getDateKey = (date: Date): string => date.toISOString().split("T")[0];
-
-const formatDate = (dateStr: string): string => {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
-};
-
-// Расчёт streak (дни подряд с активностью)
-const calculateStreak = (history: Record<string, number[]>): number => {
-  const days = Object.keys(history)
-    .filter((k) => history[k].length > 0)
-    .sort()
-    .reverse();
-  if (days.length === 0) return 0;
-
-  let streak = 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  for (let i = 0; i < 365; i++) {
-    const expected = new Date(today);
-    expected.setDate(expected.getDate() - i);
-    const key = getDateKey(expected);
-    if (days.includes(key)) {
-      streak++;
-    } else if (i === 0) {
-      // Сегодня ещё не было активности — проверяем вчера
-      continue;
-    } else {
-      break;
-    }
-  }
-  return streak;
-};
 
 // === ГЛАВНЫЙ КОМПОНЕНТ ===
 function ProgressPage() {
@@ -80,16 +42,6 @@ function ProgressPage() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [importStatus, setImportStatus] = useState<"idle" | "success" | "error">("idle");
 
-  // === История активности (из localStorage) ===
-  const activityHistory = useMemo<Record<string, number[]>>(() => {
-    try {
-      const raw = localStorage.getItem("bjj_activity_history");
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
-  }, [progress]);
-
   // === Общая статистика ===
   const stats = useMemo(() => {
     const total = TECHNIQUES.length;
@@ -102,9 +54,6 @@ function ProgressPage() {
     }
     return { total, done, inProgress, notStarted, pct: Math.round((done / total) * 100) };
   }, [progress]);
-
-  // === Streak ===
-  const streak = useMemo(() => calculateStreak(activityHistory), [activityHistory]);
 
   // === Статистика по поясам ===
   const beltStats = useMemo(() => {
@@ -127,65 +76,12 @@ function ProgressPage() {
     }).filter((s) => s.total > 0);
   }, [progress]);
 
-  // === Данные для графика (последние 30 дней) ===
-  const chartData = useMemo(() => {
-    const data: { date: string; count: number }[] = [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const key = getDateKey(d);
-      data.push({
-        date: key,
-        count: activityHistory[key]?.length ?? 0,
-      });
-    }
-    return data;
-  }, [activityHistory]);
-
-  // === Тепловая карта (последние 20 недель) ===
-  const heatmapData = useMemo(() => {
-    const weeks: { date: string; count: number }[][] = [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Идём назад 140 дней (20 недель)
-    for (let i = 139; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const key = getDateKey(d);
-      const weekIndex = Math.floor(i / 7);
-      const dayIndex = 6 - (i % 7); // 0 = воскресенье, 6 = суббота
-
-      if (!weeks[19 - weekIndex]) weeks[19 - weekIndex] = [];
-      weeks[19 - weekIndex][dayIndex] = {
-        date: key,
-        count: activityHistory[key]?.length ?? 0,
-      };
-    }
-    return weeks;
-  }, [activityHistory]);
-
-  // === Максимальное значение для нормализации heatmap ===
-  const maxActivity = useMemo(() => {
-    let max = 1;
-    for (const week of heatmapData) {
-      for (const day of week) {
-        if (day && day.count > max) max = day.count;
-      }
-    }
-    return max;
-  }, [heatmapData]);
-
   // === Экспорт прогресса ===
   const exportProgress = useCallback(() => {
     const data = {
       version: 1,
       exportedAt: new Date().toISOString(),
       progress,
-      activityHistory,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -194,7 +90,7 @@ function ProgressPage() {
     a.download = `bjj-progress-${getDateKey(new Date())}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [progress, activityHistory]);
+  }, [progress]);
 
   // === Импорт прогресса ===
   const importProgress = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -207,9 +103,6 @@ function ProgressPage() {
         const data = JSON.parse(event.target?.result as string);
         if (data.progress && typeof data.progress === "object") {
           setProgress(data.progress);
-          if (data.activityHistory) {
-            localStorage.setItem("bjj_activity_history", JSON.stringify(data.activityHistory));
-          }
           setImportStatus("success");
           setTimeout(() => setImportStatus("idle"), 2000);
         } else {
@@ -267,13 +160,6 @@ function ProgressPage() {
             value={`${stats.pct}%`}
             accent="var(--color-primary)"
           />
-          <StatCard
-            icon={<Flame className="h-5 w-5" />}
-            label="Streak"
-            value={streak}
-            suffix="дн."
-            accent="#f97316"
-          />
         </section>
 
         {/* Текущий фокус + следующая цель (перенесено из графа) */}
@@ -292,74 +178,6 @@ function ProgressPage() {
             empty="Всё доступное освоено!"
             highlight
           />
-        </section>
-
-        {/* Streak-карточка */}
-        {streak > 0 && (
-          <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-transparent p-5">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg">
-                  <Flame className="h-8 w-8 text-white" />
-                </div>
-                <div className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-background text-xs font-bold text-orange-600 shadow">
-                  {streak}
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-bold">
-                  {streak} {streak === 1 ? "день" : streak < 5 ? "дня" : "дней"} подряд
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {streak >= 7
-                    ? "Отличная серия! Так держать 🔥"
-                    : "Продолжайте тренироваться каждый день"}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* График прогресса */}
-        <section className="rounded-2xl border border-border bg-card p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-semibold">Активность за 30 дней</h2>
-            </div>
-            <span className="text-xs text-muted-foreground">
-              Всего: {chartData.reduce((sum, d) => sum + d.count, 0)} действий
-            </span>
-          </div>
-          <ProgressChart data={chartData} />
-        </section>
-
-        {/* Тепловая карта */}
-        <section className="rounded-2xl border border-border bg-card p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-semibold">Тепловая карта</h2>
-            </div>
-            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-              <span>Меньше</span>
-              <div className="flex gap-0.5">
-                {[0, 0.25, 0.5, 0.75, 1].map((level, i) => (
-                  <div
-                    key={i}
-                    className="h-2.5 w-2.5 rounded-sm"
-                    style={{
-                      background: level === 0
-                        ? "var(--color-muted)"
-                        : `color-mix(in oklch, var(--color-primary) ${level * 100}%, var(--color-muted))`,
-                    }}
-                  />
-                ))}
-              </div>
-              <span>Больше</span>
-            </div>
-          </div>
-          <Heatmap data={heatmapData} max={maxActivity} />
         </section>
 
         {/* Статистика по поясам */}
@@ -512,143 +330,6 @@ function StatCard({
   );
 }
 
-// SVG-график прогресса
-function ProgressChart({ data }: { data: { date: string; count: number }[] }) {
-  const width = 600;
-  const height = 120;
-  const padding = { top: 10, right: 10, bottom: 20, left: 30 };
-  const chartWidth = width - padding.left - padding.right;
-  const chartHeight = height - padding.top - padding.bottom;
-
-  const maxCount = Math.max(1, ...data.map((d) => d.count));
-  const xStep = chartWidth / (data.length - 1);
-
-  const points = data.map((d, i) => ({
-    x: padding.left + i * xStep,
-    y: padding.top + chartHeight - (d.count / maxCount) * chartHeight,
-  }));
-
-  const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
-  const areaD = `${pathD} L ${points[points.length - 1].x} ${padding.top + chartHeight} L ${points[0].x} ${padding.top + chartHeight} Z`;
-
-  // Метки по X (каждые 5 дней)
-  const xLabels = data
-    .map((d, i) => ({ date: d.date, x: padding.left + i * xStep }))
-    .filter((_, i) => i % 5 === 0 || i === data.length - 1);
-
-  return (
-    <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ minWidth: 400 }}>
-        {/* Сетка */}
-        {[0, 0.25, 0.5, 0.75, 1].map((level) => (
-          <line
-            key={level}
-            x1={padding.left}
-            x2={width - padding.right}
-            y1={padding.top + chartHeight * (1 - level)}
-            y2={padding.top + chartHeight * (1 - level)}
-            stroke="currentColor"
-            strokeOpacity={0.08}
-            strokeDasharray="2 2"
-          />
-        ))}
-
-        {/* Область под графиком */}
-        <path d={areaD} fill="url(#progressGradient)" />
-
-        {/* Линия */}
-        <path d={pathD} fill="none" stroke="var(--color-primary)" strokeWidth={2} />
-
-        {/* Точки */}
-        {points.map((p, i) => (
-          <circle
-            key={i}
-            cx={p.x}
-            cy={p.y}
-            r={data[i].count > 0 ? 3 : 0}
-            fill="var(--color-primary)"
-          />
-        ))}
-
-        {/* Метки X */}
-        {xLabels.map((label, i) => (
-          <text
-            key={i}
-            x={label.x}
-            y={height - 4}
-            textAnchor="middle"
-            className="fill-muted-foreground text-[9px]"
-          >
-            {formatDate(label.date)}
-          </text>
-        ))}
-
-        {/* Метки Y */}
-        {[0, 0.5, 1].map((level) => (
-          <text
-            key={level}
-            x={padding.left - 6}
-            y={padding.top + chartHeight * (1 - level) + 3}
-            textAnchor="end"
-            className="fill-muted-foreground text-[9px]"
-          >
-            {Math.round(maxCount * level)}
-          </text>
-        ))}
-
-        <defs>
-          <linearGradient id="progressGradient" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-      </svg>
-    </div>
-  );
-}
-
-// Тепловая карта
-function Heatmap({ data, max }: { data: { date: string; count: number }[][]; max: number }) {
-  const cellSize = 12;
-  const gap = 2;
-  const weeks = data.length;
-  const days = 7;
-  const width = weeks * (cellSize + gap);
-  const height = days * (cellSize + gap);
-
-  return (
-    <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ minWidth: 280 }}>
-        {data.map((week, wi) =>
-          week.map((day, di) => {
-            if (!day) return null;
-            const intensity = day.count / max;
-            const color =
-              intensity === 0
-                ? "var(--color-muted)"
-                : `color-mix(in oklch, var(--color-primary) ${Math.max(20, intensity * 100)}%, var(--color-muted))`;
-
-            return (
-              <rect
-                key={`${wi}-${di}`}
-                x={wi * (cellSize + gap)}
-                y={di * (cellSize + gap)}
-                width={cellSize}
-                height={cellSize}
-                rx={2}
-                fill={color}
-              >
-                <title>
-                  {formatDate(day.date)}: {day.count} действий
-                </title>
-              </rect>
-            );
-          }),
-        )}
-      </svg>
-    </div>
-  );
-}
 
 // Карточка «Текущий фокус» / «Следующая цель» — клик открывает технику
 function FocusCard({

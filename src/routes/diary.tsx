@@ -1,10 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
+import { ActivityHeatmap } from "@/components/bjj/ActivityHeatmap";
 import { useDiary, useProgress } from "@/lib/bjj/store";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import { GROUP_LABEL } from "@/lib/bjj/constants";
-import { Plus, Search, X, CalendarDays, Trash2, NotebookPen } from "lucide-react";
+import type { Intensity } from "@/lib/bjj/types";
+import { Plus, Search, X, CalendarDays, Trash2, NotebookPen, HeartPulse } from "lucide-react";
+
+const INTENSITY: { key: Intensity; label: string }[] = [
+  { key: "light", label: "Лёгкая" },
+  { key: "medium", label: "Средняя" },
+  { key: "hard", label: "Жёсткая" },
+];
+const WELLBEING = ["😣", "😕", "😐", "🙂", "😄"];
 
 export const Route = createFileRoute("/diary")({
   component: DiaryPage,
@@ -27,6 +36,21 @@ function Diary() {
   const [picked, setPicked] = useState<number[]>([]);
   const [note, setNote] = useState("");
   const [query, setQuery] = useState("");
+  const [intensity, setIntensity] = useState<Intensity | null>(null);
+  const [wellbeing, setWellbeing] = useState<number | null>(null);
+  const [rounds, setRounds] = useState("");
+  const [injury, setInjury] = useState("");
+
+  const resetForm = () => {
+    setPicked([]);
+    setNote("");
+    setQuery("");
+    setIntensity(null);
+    setWellbeing(null);
+    setRounds("");
+    setInjury("");
+    setAdding(false);
+  };
 
   // дата по умолчанию — сегодня (в effect, чтобы не ловить hydration mismatch)
   useEffect(() => {
@@ -51,15 +75,16 @@ function Diary() {
       date,
       techniqueIds: picked,
       note: note.trim() || undefined,
+      intensity: intensity ?? undefined,
+      wellbeing: wellbeing ?? undefined,
+      rounds: rounds ? parseInt(rounds, 10) || undefined : undefined,
+      injury: injury.trim() || undefined,
     });
     // ежедневный цикл: отмеченные техники минимум «в процессе»
     for (const id of picked) {
       if ((progress[id] ?? "not_started") === "not_started") setStatus(id, "in_progress");
     }
-    setPicked([]);
-    setNote("");
-    setQuery("");
-    setAdding(false);
+    resetForm();
   };
 
   return (
@@ -79,6 +104,9 @@ function Diary() {
           </button>
         )}
       </header>
+
+      {/* Активность + тепловая карта — из записей дневника */}
+      {hydrated && entries.length > 0 && <ActivityHeatmap entries={entries} />}
 
       {/* Форма новой тренировки */}
       {adding && (
@@ -148,9 +176,72 @@ function Diary() {
             className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
           />
 
+          {/* Интенсивность + раунды */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">Интенсивность</span>
+            {INTENSITY.map((it) => (
+              <button
+                key={it.key}
+                onClick={() => setIntensity((v) => (v === it.key ? null : it.key))}
+                className="rounded-full border-2 px-3 py-1 text-xs font-medium transition-all"
+                style={{
+                  borderColor: intensity === it.key ? "var(--color-primary)" : "var(--color-border)",
+                  background: intensity === it.key ? "color-mix(in oklch, var(--color-primary) 10%, transparent)" : "transparent",
+                }}
+              >
+                {it.label}
+              </button>
+            ))}
+            <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+              Раунды
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={rounds}
+                onChange={(e) => setRounds(e.target.value)}
+                placeholder="0"
+                className="w-14 rounded-lg border border-border bg-background px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-ring"
+              />
+            </span>
+          </div>
+
+          {/* Самочувствие */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Самочувствие</span>
+            <div className="flex gap-1">
+              {WELLBEING.map((face, i) => (
+                <button
+                  key={i}
+                  onClick={() => setWellbeing((v) => (v === i + 1 ? null : i + 1))}
+                  className="grid h-8 w-8 place-items-center rounded-full border-2 text-base transition-all"
+                  style={{
+                    borderColor: wellbeing === i + 1 ? "var(--color-primary)" : "var(--color-border)",
+                    background: wellbeing === i + 1 ? "color-mix(in oklch, var(--color-primary) 12%, transparent)" : "transparent",
+                    filter: wellbeing && wellbeing !== i + 1 ? "grayscale(1) opacity(0.5)" : "none",
+                  }}
+                  aria-label={`Самочувствие ${i + 1}`}
+                >
+                  {face}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Травма / дискомфорт */}
+          <div className="relative">
+            <HeartPulse className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={injury}
+              onChange={(e) => setInjury(e.target.value)}
+              placeholder="Травма / дискомфорт — зона (необязательно)"
+              className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+            />
+          </div>
+
           <div className="flex gap-2">
             <button
-              onClick={() => { setAdding(false); setPicked([]); setNote(""); setQuery(""); }}
+              onClick={resetForm}
               className="flex-1 rounded-lg border border-border py-2 text-sm font-medium text-muted-foreground"
             >
               Отмена
@@ -183,6 +274,9 @@ function Diary() {
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold">{formatDate(e.date)}</span>
               <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                {e.intensity && <span>{INTENSITY.find((i) => i.key === e.intensity)?.label}</span>}
+                {e.rounds ? <span>{e.rounds} р.</span> : null}
+                {e.wellbeing ? <span className="text-sm leading-none">{WELLBEING[e.wellbeing - 1]}</span> : null}
                 <span>{e.techniqueIds.length} техн.</span>
                 <button onClick={() => deleteEntry(e.id)} aria-label="Удалить">
                   <Trash2 className="h-3.5 w-3.5 hover:text-destructive" />
@@ -207,6 +301,12 @@ function Diary() {
               })}
             </div>
             {e.note && <p className="mt-2 text-xs text-muted-foreground">{e.note}</p>}
+            {e.injury && (
+              <p className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+                <HeartPulse className="h-3.5 w-3.5" />
+                {e.injury}
+              </p>
+            )}
           </li>
         ))}
       </ul>
