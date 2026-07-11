@@ -89,6 +89,8 @@ export interface StyleProfile {
   onboardingDone: boolean;
   goal?: Goal;
   frequency?: Frequency;
+  preferredStyles?: Style[]; // выбранные игроком стили игры (заменяют «качества»)
+  // Устаревшее — «качества» (заменены на preferredStyles); поля оставлены для совместимости
   flexibility?: boolean;
   pressure?: boolean;
   long_limbs?: boolean;

@@ -51,7 +51,7 @@ export function SplashScreen() {
         playsInline
         onEnded={dismiss}
         onError={dismiss}
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-contain"
       />
       <button
         onClick={dismiss}

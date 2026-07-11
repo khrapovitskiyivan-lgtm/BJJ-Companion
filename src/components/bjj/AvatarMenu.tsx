@@ -5,9 +5,10 @@ import { AuthModal } from "@/components/AuthModal";
 import { useProfile, useProgress } from "@/lib/bjj/store";
 import { initials } from "@/components/bjj/AppShell";
 import { TECHNIQUES } from "@/lib/bjj/data";
-import { BELT_LABEL, BELT_ORDER } from "@/lib/bjj/constants";
-import type { Belt, Locale } from "@/lib/bjj/types";
-import { X, Cloud, CloudOff, LogIn, LogOut, Info, ChevronRight, BarChart3 } from "lucide-react";
+import { BELT_LABEL, BELT_ORDER, STYLE_ORDER, STYLE_META } from "@/lib/bjj/constants";
+import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
+import type { Belt, Locale, Style } from "@/lib/bjj/types";
+import { X, Cloud, CloudOff, LogIn, LogOut, Info, ChevronRight, BarChart3, Check } from "lucide-react";
 
 // Шторка по тапу на аватар: статистика · настройки · о приложении.
 export function AvatarMenu({ onClose }: { onClose: () => void }) {
@@ -174,14 +175,38 @@ export function AvatarMenu({ onClose }: { onClose: () => void }) {
             </div>
           </section>
 
-          {/* Настройки: стиль тела */}
+          {/* Настройки: стиль игры (выбор из 10 архетипов с описанием) */}
           <section>
-            <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Ваши качества</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <Toggle label="Гибкость" active={!!profile.flexibility} onClick={() => update({ flexibility: !profile.flexibility })} />
-              <Toggle label="Давление" active={!!profile.pressure} onClick={() => update({ pressure: !profile.pressure })} />
-              <Toggle label="Длинные рычаги" active={!!profile.long_limbs} onClick={() => update({ long_limbs: !profile.long_limbs })} />
-              <Toggle label="Скорость" active={!!profile.speed} onClick={() => update({ speed: !profile.speed })} />
+            <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Стиль игры</h3>
+            <p className="mb-2 text-[11px] text-muted-foreground">Отметь свои стили — приложение учтёт их в рекомендациях и «Моей игре».</p>
+            <div className="space-y-1.5">
+              {STYLE_ORDER.map((s) => {
+                const meta = STYLE_META[s];
+                const Icon = STYLE_ICONS[s];
+                const selected = profile.preferredStyles?.includes(s) ?? false;
+                const toggle = () => {
+                  const cur = profile.preferredStyles ?? [];
+                  update({ preferredStyles: selected ? cur.filter((x) => x !== s) : [...cur, s] });
+                };
+                return (
+                  <button
+                    key={s}
+                    onClick={toggle}
+                    className="flex w-full items-center gap-3 rounded-xl border-2 p-2.5 text-left transition-all"
+                    style={{
+                      borderColor: selected ? "var(--color-primary)" : "var(--color-border)",
+                      background: selected ? "color-mix(in oklch, var(--color-primary) 8%, var(--color-card))" : "var(--color-card)",
+                    }}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 text-foreground/80" strokeWidth={1.9} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium">{meta.ru}</span>
+                      <span className="block truncate text-[11px] text-muted-foreground">{meta.desc}</span>
+                    </span>
+                    {selected && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                  </button>
+                );
+              })}
             </div>
           </section>
 

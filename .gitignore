@@ -35,3 +35,4 @@ dist-ssr
 # локальные секреты
 .env.local
 .env.*.local
+.env*

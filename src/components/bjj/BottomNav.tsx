@@ -5,10 +5,10 @@ import { haptic } from "@/lib/telegram";
 // === BOTTOM NAV — 4 вкладки ===
 // 1 Моя игра · 2 Дневник · 3 Техники (граф/список/что-если) · 4 Тренировка (генератор/сценарии)
 const items = [
-  { to: "/progress", label: "Моя игра", icon: HandMetal, match: ["/progress"] },
-  { to: "/diary", label: "Дневник", icon: NotebookPen, match: ["/diary"] },
-  { to: "/map", label: "Техники", icon: Layers, match: ["/map", "/library", "/technique", "/situations"] },
-  { to: "/workout", label: "Тренировка", icon: Dumbbell, match: ["/workout"] },
+  { to: "/progress", label: "Моя игра", icon: HandMetal, match: ["/progress"], rotate: true },
+  { to: "/diary", label: "Дневник", icon: NotebookPen, match: ["/diary"], rotate: false },
+  { to: "/map", label: "Техники", icon: Layers, match: ["/map", "/library", "/technique", "/situations"], rotate: false },
+  { to: "/workout", label: "Тренировка", icon: Dumbbell, match: ["/workout"], rotate: false },
 ] as const;
 
 export function BottomNav() {
@@ -30,7 +30,7 @@ export function BottomNav() {
                 className="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors"
                 style={{ color: active ? "var(--color-primary)" : "var(--color-muted-foreground)" }}
               >
-                <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 1.8} />
+                <Icon className={`h-5 w-5 ${it.rotate ? "rotate-180" : ""}`} strokeWidth={active ? 2.4 : 1.8} />
                 <span>{it.label}</span>
               </Link>
             </li>

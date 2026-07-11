@@ -50,7 +50,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
     <div className="min-h-screen bg-background text-foreground pb-20">
       <header
         className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur"
-        style={{ paddingTop: "max(env(safe-area-inset-top), var(--tg-content-safe-area-inset-top, 0px))" }}
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="mx-auto grid max-w-xl grid-cols-[1fr_auto_1fr] items-center px-4 py-2.5">
           {/* слева: тема */}
@@ -58,6 +58,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
             <button
               type="button"
               onClick={() => { haptic("light"); update({ theme: profile.theme === "dark" ? "light" : "dark" }); }}
+              style={{ marginTop: "var(--tg-content-safe-area-inset-top, 0px)" }}
               className="rounded-full p-2 text-muted-foreground transition hover:bg-muted"
               aria-label="Переключить тему"
             >
@@ -74,6 +75,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
             type="button"
             onClick={() => { haptic("light"); setMenuOpen(true); }}
             aria-label={`Меню профиля: ${BELT_LABEL[profile.belt]} пояс`}
+            style={{ marginTop: "var(--tg-content-safe-area-inset-top, 0px)" }}
             className="justify-self-end rounded-full p-1 transition hover:bg-muted"
           >
             {profile.avatarUrl ? (
