@@ -7,7 +7,7 @@ const items = [
   { to: "/diary", label: "Дневник", icon: NotebookPen, match: ["/diary"] },
   { to: "/progress", label: "Моя игра", icon: Swords, match: ["/progress"] },
   { to: "/map", label: "Техники", icon: Layers, match: ["/map", "/library", "/technique", "/situations"] },
-  { to: "/workout", label: "Тренировка", icon: Dumbbell, match: ["/workout", "/scenarios"] },
+  { to: "/workout", label: "Тренировка", icon: Dumbbell, match: ["/workout"] },
 ] as const;
 
 export function BottomNav() {
