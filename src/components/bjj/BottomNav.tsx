@@ -30,7 +30,7 @@ export function BottomNav() {
                 className="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors"
                 style={{ color: active ? "var(--color-primary)" : "var(--color-muted-foreground)" }}
               >
-                <Icon className={`h-5 w-5 ${it.rotate ? "rotate-180" : ""}`} strokeWidth={active ? 2.4 : 1.8} />
+                <Icon className={`h-5 w-5 ${it.rotate ? "rotate-90" : ""}`} strokeWidth={active ? 2.4 : 1.8} />
                 <span>{it.label}</span>
               </Link>
             </li>

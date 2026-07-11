@@ -51,7 +51,8 @@ export function SplashScreen() {
         playsInline
         onEnded={dismiss}
         onError={dismiss}
-        className="absolute inset-0 h-full w-full object-contain"
+        className="absolute inset-0 h-full w-full object-cover"
+        style={{ transform: "scale(0.9)" }}
       />
       <button
         onClick={dismiss}
