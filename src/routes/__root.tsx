@@ -122,6 +122,13 @@ function RootShell({ children }: { children: ReactNode }) {
         {/* Telegram Mini App SDK — синхронно в <head>, чтобы window.Telegram.WebApp
             был готов как можно раньше (вне Telegram отдаёт пустой initData, безвредно). */}
         <script src="https://telegram.org/js/telegram-web-app.js" />
+        {/* Ранняя инициализация Telegram (как в рабочем bjj-map): ready→expand→fullscreen,
+            не зависит от React. Опрашивает window.Telegram.WebApp до готовности. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){function init(n){var tg=window.Telegram&&window.Telegram.WebApp;if(!tg){if(n>0)setTimeout(function(){init(n-1)},100);return;}try{tg.ready();tg.expand();if(tg.disableVerticalSwipes)tg.disableVerticalSwipes();}catch(e){}setTimeout(function(){try{if(tg.requestFullscreen)tg.requestFullscreen();}catch(e){}},120);}init(30);})();`,
+          }}
+        />
         <HeadContent />
       </head>
       <body>
