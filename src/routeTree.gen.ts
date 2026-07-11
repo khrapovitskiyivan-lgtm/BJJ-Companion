@@ -10,7 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkoutRouteImport } from './routes/workout'
-import { Route as SolutionsRouteImport } from './routes/solutions'
+import { Route as SituationsRouteImport } from './routes/situations'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as LibraryRouteImport } from './routes/library'
@@ -24,9 +24,9 @@ const WorkoutRoute = WorkoutRouteImport.update({
   path: '/workout',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SolutionsRoute = SolutionsRouteImport.update({
-  id: '/solutions',
-  path: '/solutions',
+const SituationsRoute = SituationsRouteImport.update({
+  id: '/situations',
+  path: '/situations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProgressRoute = ProgressRouteImport.update({
@@ -72,7 +72,7 @@ export interface FileRoutesByFullPath {
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
   '/progress': typeof ProgressRoute
-  '/solutions': typeof SolutionsRoute
+  '/situations': typeof SituationsRoute
   '/workout': typeof WorkoutRoute
   '/technique/$id': typeof TechniqueIdRoute
 }
@@ -83,7 +83,7 @@ export interface FileRoutesByTo {
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
   '/progress': typeof ProgressRoute
-  '/solutions': typeof SolutionsRoute
+  '/situations': typeof SituationsRoute
   '/workout': typeof WorkoutRoute
   '/technique/$id': typeof TechniqueIdRoute
 }
@@ -95,7 +95,7 @@ export interface FileRoutesById {
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
   '/progress': typeof ProgressRoute
-  '/solutions': typeof SolutionsRoute
+  '/situations': typeof SituationsRoute
   '/workout': typeof WorkoutRoute
   '/technique/$id': typeof TechniqueIdRoute
 }
@@ -108,7 +108,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/map'
     | '/progress'
-    | '/solutions'
+    | '/situations'
     | '/workout'
     | '/technique/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -119,7 +119,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/map'
     | '/progress'
-    | '/solutions'
+    | '/situations'
     | '/workout'
     | '/technique/$id'
   id:
@@ -130,7 +130,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/map'
     | '/progress'
-    | '/solutions'
+    | '/situations'
     | '/workout'
     | '/technique/$id'
   fileRoutesById: FileRoutesById
@@ -142,7 +142,7 @@ export interface RootRouteChildren {
   LibraryRoute: typeof LibraryRoute
   MapRoute: typeof MapRoute
   ProgressRoute: typeof ProgressRoute
-  SolutionsRoute: typeof SolutionsRoute
+  SituationsRoute: typeof SituationsRoute
   WorkoutRoute: typeof WorkoutRoute
   TechniqueIdRoute: typeof TechniqueIdRoute
 }
@@ -156,11 +156,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkoutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/solutions': {
-      id: '/solutions'
-      path: '/solutions'
-      fullPath: '/solutions'
-      preLoaderRoute: typeof SolutionsRouteImport
+    '/situations': {
+      id: '/situations'
+      path: '/situations'
+      fullPath: '/situations'
+      preLoaderRoute: typeof SituationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/progress': {
@@ -222,7 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   LibraryRoute: LibraryRoute,
   MapRoute: MapRoute,
   ProgressRoute: ProgressRoute,
-  SolutionsRoute: SolutionsRoute,
+  SituationsRoute: SituationsRoute,
   WorkoutRoute: WorkoutRoute,
   TechniqueIdRoute: TechniqueIdRoute,
 }

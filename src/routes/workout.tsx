@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TechniqueCard } from "@/components/bjj/TechniqueCard";
+import { Scenarios } from "@/components/bjj/Scenarios";
 import { useProfile, useProgress } from "@/lib/bjj/store";
 import { generateWorkout } from "@/lib/bjj/workout";
 import { GROUP_LABEL } from "@/lib/bjj/constants";
@@ -12,7 +13,7 @@ import type {
   Workout,
   WorkoutConfig,
 } from "@/lib/bjj/types";
-import { Flame, Snowflake, Sparkles, Timer } from "lucide-react";
+import { Flame, Snowflake, Sparkles, Timer, Dumbbell, Swords } from "lucide-react";
 
 export const Route = createFileRoute("/workout")({
   component: WorkoutPage,
@@ -41,10 +42,53 @@ const FOCUSES: (Group | "all")[] = [
 ];
 
 function WorkoutPage() {
+  const [tab, setTab] = useState<"generator" | "scenarios">("generator");
   return (
     <AppShell>
-      <WorkoutGenerator />
+      <div className="space-y-4">
+        <header className="px-1">
+          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Тренировка</p>
+          <h1 className="text-xl font-bold tracking-tight">
+            {tab === "generator" ? "Умная тренировка" : "Отработка сценариев"}
+          </h1>
+        </header>
+
+        <div className="grid grid-cols-2 gap-2">
+          <SubTab active={tab === "generator"} onClick={() => setTab("generator")} icon={<Dumbbell className="h-4 w-4" />}>
+            Генератор
+          </SubTab>
+          <SubTab active={tab === "scenarios"} onClick={() => setTab("scenarios")} icon={<Swords className="h-4 w-4" />}>
+            Сценарии
+          </SubTab>
+        </div>
+
+        {tab === "generator" ? <WorkoutGenerator /> : <Scenarios />}
+      </div>
     </AppShell>
+  );
+}
+
+function SubTab({
+  active,
+  onClick,
+  icon,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm font-medium transition-all ${
+        active ? "border-ring bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground"
+      }`}
+    >
+      {icon}
+      {children}
+    </button>
   );
 }
 
@@ -66,13 +110,6 @@ function WorkoutGenerator() {
 
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="text-xl font-bold tracking-tight">Умная тренировка</h1>
-        <p className="text-xs text-muted-foreground">
-          План под ваш пояс, формат и цели
-        </p>
-      </header>
-
       <section className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
         <Row label="Длительность" icon={<Timer className="h-4 w-4" />}>
           {DURATIONS.map((d) => (
