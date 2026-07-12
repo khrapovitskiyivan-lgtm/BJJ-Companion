@@ -24,6 +24,18 @@ export function SplashScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Принудительный запуск: в webview Telegram muted-autoplay иногда не стартует сам
+  // и показывает статичный кадр с кнопкой play. Дёргаем play() после появления.
+  useEffect(() => {
+    if (!show) return;
+    const v = videoRef.current;
+    if (!v) return;
+    v.play?.().catch(() => {
+      // повтор через кадр — некоторые webview готовы чуть позже
+      setTimeout(() => v.play?.().catch(() => {}), 150);
+    });
+  }, [show]);
+
   const dismiss = () => {
     try {
       sessionStorage.setItem(SESSION_KEY, "1");
@@ -51,6 +63,7 @@ export function SplashScreen() {
         autoPlay
         muted
         playsInline
+        preload="auto"
         onEnded={dismiss}
         onError={dismiss}
         className="absolute inset-0 h-full w-full object-contain"
