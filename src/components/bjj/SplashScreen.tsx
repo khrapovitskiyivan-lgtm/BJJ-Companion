@@ -38,23 +38,13 @@ export function SplashScreen() {
 
   return (
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-black transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-white transition-opacity duration-300 ${
         fading ? "opacity-0" : "opacity-100"
       }`}
       style={{ width: "100vw", height: "100dvh" }}
     >
-      {/* Нижний слой: то же видео, растянутое на весь экран с блюром — заполняет края
-          без чёрных полос (файл один, браузер грузит его единожды). */}
-      <video
-        src="/intro.mp4"
-        autoPlay
-        muted
-        playsInline
-        loop
-        aria-hidden
-        className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl"
-      />
-      {/* Верхний слой: видео целиком — логотип вписан в экран, ничего не обрезается. */}
+      {/* Видео целиком (логотип вписан в экран). Фон ролика — чисто белый (замерено),
+          поэтому белый контейнер сливается с ним в единый полноэкранный кадр без полос. */}
       <video
         ref={videoRef}
         src="/intro.mp4"
