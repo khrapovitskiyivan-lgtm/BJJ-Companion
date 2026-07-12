@@ -43,6 +43,18 @@ export function SplashScreen() {
       }`}
       style={{ width: "100vw", height: "100dvh" }}
     >
+      {/* Нижний слой: то же видео, растянутое на весь экран с блюром — заполняет края
+          без чёрных полос (файл один, браузер грузит его единожды). */}
+      <video
+        src="/intro.mp4"
+        autoPlay
+        muted
+        playsInline
+        loop
+        aria-hidden
+        className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl"
+      />
+      {/* Верхний слой: видео целиком — логотип вписан в экран, ничего не обрезается. */}
       <video
         ref={videoRef}
         src="/intro.mp4"
@@ -51,8 +63,7 @@ export function SplashScreen() {
         playsInline
         onEnded={dismiss}
         onError={dismiss}
-        className="absolute inset-0 h-full w-full object-cover"
-        style={{ transform: "scale(0.9)" }}
+        className="absolute inset-0 h-full w-full object-contain"
       />
       <button
         onClick={dismiss}
