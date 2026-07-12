@@ -1,27 +1,28 @@
-import { forwardRef } from "react";
+import { forwardRef, type SVGProps } from "react";
 
-// Значок «Моя игра» — эмодзи 🤙. Генерируется из код-поинта в рантайме,
-// поэтому в исходнике и бандле НЕТ сырых байтов эмодзи (iOS JavaScriptCore
-// в Telegram падал на них при парсинге — отсюда был «This page didn't load»).
-const SHAKA = String.fromCodePoint(0x1f919);
-
-export const ShakaIcon = forwardRef<
-  HTMLSpanElement,
-  { className?: string; strokeWidth?: number | string }
->(({ className }, ref) => (
-  <span
-    ref={ref}
-    className={className}
-    style={{
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: "1.15rem",
-      lineHeight: 1,
-    }}
-    aria-hidden
-  >
-    {SHAKA}
-  </span>
-));
+// Шака 🤙 в стиле lucide (линейная, под currentColor — как остальные значки нав-бара).
+// База — HandMetal, у которого согнут указательный палец: остаются вытянутыми
+// большой и мизинец, остальные согнуты. В самом lucide такой иконки нет.
+export const ShakaIcon = forwardRef<SVGSVGElement, SVGProps<SVGSVGElement>>(
+  ({ strokeWidth = 2, ...props }, ref) => (
+    <svg
+      ref={ref}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M18 12.5V10a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1.4" />
+      <path d="M14 11V9a2 2 0 1 0-4 0v2" />
+      <path d="M10 10.5V9a2 2 0 1 0-4 0v5" />
+      <path d="m7 15-1.76-1.76a2 2 0 0 0-2.83 2.82l3.6 3.6C7.5 21.14 9.2 22 12 22h2a8 8 0 0 0 8-8V7a2 2 0 1 0-4 0v5" />
+    </svg>
+  ),
+);
 ShakaIcon.displayName = "ShakaIcon";
