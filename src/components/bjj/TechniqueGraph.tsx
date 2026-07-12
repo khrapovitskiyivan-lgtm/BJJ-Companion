@@ -19,7 +19,7 @@ import type { Belt, StyleProfile, Technique } from "@/lib/bjj/types";
 // пунктирное кольцо = риск травмы (линза безопасности).
 
 type FocusDir = "both" | "up" | "down" | "path";
-type BaseFilter = "all" | "myBelt" | "mastered" | "available";
+type BaseFilter = "level" | "all" | "myBelt" | "mastered" | "available";
 type GiFilter = "all" | "gi" | "nogi";
 
 interface EdgeItem {
@@ -116,7 +116,7 @@ export function TechniqueGraph({
 
   const [focusedId, setFocusedId] = useState<number | null>(null);
   const [dir, setDir] = useState<FocusDir>("both");
-  const [filter, setFilter] = useState<BaseFilter>("myBelt");
+  const [filter, setFilter] = useState<BaseFilter>("level");
   const [giFilter, setGiFilter] = useState<GiFilter>("all");
   const [legalOnly, setLegalOnly] = useState(false);
   const [safetyLens, setSafetyLens] = useState(false);
@@ -184,6 +184,12 @@ export function TechniqueGraph({
       if (giFilter === "gi" && !t.gi) return false;
       if (giFilter === "nogi" && !t.noGi) return false;
       if (legalOnly && !t.legal_ibjjf_gi && !t.legal_ibjjf_nogi) return false;
+      if (filter === "level") {
+        // Progressive disclosure: только свой пояс + следующий (куда расти)
+        const bi = beltIdx(t.belt);
+        const ui = beltIdx(profile.belt);
+        return bi === ui || bi === ui + 1;
+      }
       if (filter === "myBelt") return beltIdx(t.belt) <= beltIdx(profile.belt);
       if (filter === "mastered") return s === "done";
       if (filter === "available") {
@@ -544,6 +550,20 @@ const ro = new ResizeObserver(() => {
     }
     if (focusedId != null) visible.add(focusedId);
 
+    // Progressive disclosure: в режиме «Мой уровень» реально ПРЯЧЕМ пояса вне окна
+    // (не просто приглушаем) — так граф разгружается. При фокусе не прячем, чтобы
+    // соседи выбранного узла с других поясов были видны. Связи скрытых узлов
+    // vis-network убирает автоматически.
+    const nodesDS = nodesDSRef.current;
+    if (nodesDS) {
+      nodesDS.update(
+        TECHNIQUES.map((t) => ({
+          id: t.id,
+          hidden: filter === "level" && focusSet === null && !matchesFilter(t),
+        })),
+      );
+    }
+
     for (const t of TECHNIQUES) {
       const d = renderRef.current.get(t.id)!;
       d.status = progress[t.id] ?? "not_started";
@@ -674,7 +694,8 @@ const ro = new ResizeObserver(() => {
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {(
             [
-              ["all", "Все"],
+              ["level", "Мой уровень"],
+              ["all", "Все пояса"],
               ["myBelt", "Мой пояс"],
               ["mastered", "Освоенные"],
               ["available", "Доступные"],
