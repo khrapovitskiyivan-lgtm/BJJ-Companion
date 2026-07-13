@@ -30,10 +30,13 @@ export function SplashScreen() {
     if (!show) return;
     const v = videoRef.current;
     if (!v) return;
-    v.play?.().catch(() => {
-      // повтор через кадр — некоторые webview готовы чуть позже
-      setTimeout(() => v.play?.().catch(() => {}), 150);
-    });
+    // muted ставим императивно ДО play(): React рендерит `muted` как свойство после
+    // монтирования, и браузер успевает заблокировать muted-autoplay. Здесь гарантируем.
+    v.muted = true;
+    v.defaultMuted = true;
+    const tryPlay = () => v.play?.().catch(() => {});
+    tryPlay();
+    setTimeout(tryPlay, 150);
   }, [show]);
 
   const dismiss = () => {
@@ -66,7 +69,7 @@ export function SplashScreen() {
         preload="auto"
         onEnded={dismiss}
         onError={dismiss}
-        className="absolute inset-0 h-full w-full object-contain"
+        className="splash-video absolute inset-0 h-full w-full object-contain"
       />
       <button
         onClick={dismiss}

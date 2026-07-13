@@ -1,8 +1,7 @@
 import { createFileRoute, ClientOnly } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
-import { TechniqueGraph } from "@/components/bjj/TechniqueGraph";
+import { TechniqueFlow } from "@/components/bjj/flow/TechniqueFlow";
 import { TechniquesTabs } from "@/components/bjj/TechniquesTabs";
-import { useProgress, useProfile } from "@/lib/bjj/store";
 
 export const Route = createFileRoute("/map")({
   component: MapPage,
@@ -24,15 +23,9 @@ function MapPage() {
             <div className="h-[640px] w-full rounded-3xl border border-border bg-card" />
           }
         >
-          <GraphInner />
+          <TechniqueFlow />
         </ClientOnly>
       </div>
     </AppShell>
   );
-}
-
-function GraphInner() {
-  const { progress } = useProgress();
-  const { profile } = useProfile();
-  return <TechniqueGraph progress={progress} profile={profile} />;
 }

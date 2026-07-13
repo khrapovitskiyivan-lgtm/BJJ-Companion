@@ -132,4 +132,10 @@
     text-size-adjust: 100%;
     -webkit-text-size-adjust: 100%;
   }
+  /* Заставка: прячем нативную кнопку play (iOS/webview рисует её при заблокированном
+     автоплее). Тогда в худшем случае виден чистый первый кадр на белом, без кнопки. */
+  .splash-video::-webkit-media-controls-overlay-play-button { display: none !important; }
+  .splash-video::-webkit-media-controls-start-playback-button { display: none !important; -webkit-appearance: none; }
+  .splash-video::-webkit-media-controls-play-button { display: none !important; }
+  .splash-video::-webkit-media-controls { display: none !important; }
 }
