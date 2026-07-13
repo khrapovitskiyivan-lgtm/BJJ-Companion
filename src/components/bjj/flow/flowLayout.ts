@@ -31,17 +31,20 @@ export async function layoutFlow(
 ): Promise<{ nodes: Node<TechNodeData>[]; edges: Edge[] }> {
   const visibleIds = new Set(visible.map((t) => t.id));
 
-  // Рёбра: prereq → техника (prereq выше по иерархии). Только среди видимых, без дублей и самоссылок.
+  // Рёбра иерархии: prereq → техника (выше) и техника → продолжение (ниже).
+  // Только среди видимых, без дублей и самоссылок.
   const seen = new Set<string>();
   const rawEdges: { from: number; to: number }[] = [];
+  const addEdge = (from: number, to: number) => {
+    if (!visibleIds.has(from) || !visibleIds.has(to) || from === to) return;
+    const key = `${from}->${to}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    rawEdges.push({ from, to });
+  };
   for (const t of visible) {
-    for (const p of t.prerequisites) {
-      if (!visibleIds.has(p) || p === t.id) continue;
-      const key = `${p}->${t.id}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      rawEdges.push({ from: p, to: t.id });
-    }
+    for (const p of t.prerequisites) addEdge(p, t.id);
+    for (const c of t.chain_to) addEdge(t.id, c);
   }
 
   const elkGraph = {
@@ -59,10 +62,15 @@ export async function layoutFlow(
   const pos = new Map<string, { x: number; y: number }>();
   for (const c of res.children ?? []) pos.set(c.id, { x: c.x ?? 0, y: c.y ?? 0 });
 
+  // Фиксированный размер + measured — узлы сразу видимы (измерение React Flow в нашем
+  // стеке не работает; рёбра рисуем сами SVG-слоем, хендлы RF не нужны).
   const nodes: Node<TechNodeData>[] = visible.map((t) => ({
     id: String(t.id),
     type: "tech",
     position: pos.get(String(t.id)) ?? { x: 0, y: 0 },
+    width: NODE_W,
+    height: NODE_H,
+    measured: { width: NODE_W, height: NODE_H },
     data: { tech: t },
   }));
 
@@ -70,7 +78,6 @@ export async function layoutFlow(
     id: `e${i}`,
     source: String(e.from),
     target: String(e.to),
-    type: "smoothstep",
   }));
 
   return { nodes, edges };
