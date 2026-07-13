@@ -14,6 +14,7 @@ import { Route as SituationsRouteImport } from './routes/situations'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as LibraryRouteImport } from './routes/library'
+import { Route as FlowtestRouteImport } from './routes/flowtest'
 import { Route as DiaryRouteImport } from './routes/diary'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
@@ -44,6 +45,11 @@ const LibraryRoute = LibraryRouteImport.update({
   path: '/library',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FlowtestRoute = FlowtestRouteImport.update({
+  id: '/flowtest',
+  path: '/flowtest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DiaryRoute = DiaryRouteImport.update({
   id: '/diary',
   path: '/diary',
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/diary': typeof DiaryRoute
+  '/flowtest': typeof FlowtestRoute
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
   '/progress': typeof ProgressRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/diary': typeof DiaryRoute
+  '/flowtest': typeof FlowtestRoute
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
   '/progress': typeof ProgressRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/diary': typeof DiaryRoute
+  '/flowtest': typeof FlowtestRoute
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
   '/progress': typeof ProgressRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/diary'
+    | '/flowtest'
     | '/library'
     | '/map'
     | '/progress'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/diary'
+    | '/flowtest'
     | '/library'
     | '/map'
     | '/progress'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/diary'
+    | '/flowtest'
     | '/library'
     | '/map'
     | '/progress'
@@ -139,6 +151,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   DiaryRoute: typeof DiaryRoute
+  FlowtestRoute: typeof FlowtestRoute
   LibraryRoute: typeof LibraryRoute
   MapRoute: typeof MapRoute
   ProgressRoute: typeof ProgressRoute
@@ -184,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LibraryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/flowtest': {
+      id: '/flowtest'
+      path: '/flowtest'
+      fullPath: '/flowtest'
+      preLoaderRoute: typeof FlowtestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/diary': {
       id: '/diary'
       path: '/diary'
@@ -219,6 +239,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   DiaryRoute: DiaryRoute,
+  FlowtestRoute: FlowtestRoute,
   LibraryRoute: LibraryRoute,
   MapRoute: MapRoute,
   ProgressRoute: ProgressRoute,
