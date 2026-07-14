@@ -1,23 +1,43 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-// Статичная заставка при запуске: логотип на белом с лёгкой анимацией появления.
-// Видео убрано — webview Telegram (iOS) не автоплеит его и показывает кнопку play.
-// Показывается один раз за сессию. Флаг ставится ПРИ ЗАКРЫТИИ (StrictMode-safe).
+// Полноэкранная видео-заставка при запуске.
+// Показывается один раз за сессию, muted-autoplay, авто-скрытие по окончании + «Пропустить».
+// SSR-safe: старт скрытым, показ включается в effect (без hydration mismatch).
+// StrictMode-safe: флаг «показано» ставится ПРИ ЗАКРЫТИИ, а не при монтировании,
+// иначе двойной mount в dev глушит показ на выжившем инстансе.
 const SESSION_KEY = "bjj.splashShown";
 
 export function SplashScreen() {
   const [show, setShow] = useState(false);
   const [fading, setFading] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (sessionStorage.getItem(SESSION_KEY)) return;
+    if (sessionStorage.getItem(SESSION_KEY)) return; // уже показывали в этой сессии
     setShow(true);
-    // ~2.5с: приложение монтируется ПОД оверлеем и греет данные (профиль/прогресс + синк).
-    const t = setTimeout(dismiss, 2500);
+    // Заставка ~4с. Приложение монтируется ПОД оверлеем и всё это время греет данные
+    // (гидратация профиля/прогресса + облачная синхронизация Supabase, до 3с) — к снятию
+    // заставки экран уже наполнен.
+    const t = setTimeout(dismiss, 4000);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Принудительный запуск: в webview Telegram muted-autoplay иногда не стартует сам
+  // и показывает статичный кадр с кнопкой play. Дёргаем play() после появления.
+  useEffect(() => {
+    if (!show) return;
+    const v = videoRef.current;
+    if (!v) return;
+    // muted ставим императивно ДО play(): React рендерит `muted` как свойство после
+    // монтирования, и браузер успевает заблокировать muted-autoplay. Здесь гарантируем.
+    v.muted = true;
+    v.defaultMuted = true;
+    const tryPlay = () => v.play?.().catch(() => {});
+    tryPlay();
+    setTimeout(tryPlay, 150);
+  }, [show]);
 
   const dismiss = () => {
     try {
@@ -33,13 +53,30 @@ export function SplashScreen() {
 
   return (
     <div
-      onClick={dismiss}
-      className={`fixed inset-0 z-[100] flex items-center justify-center bg-white transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-white transition-opacity duration-300 ${
         fading ? "opacity-0" : "opacity-100"
       }`}
       style={{ width: "100vw", height: "100dvh" }}
     >
-      <img src="/logo.png" alt="BJJ Companion" className="splash-logo w-[62%] max-w-[320px] select-none" draggable={false} />
+      {/* Видео целиком (логотип вписан в экран). Фон ролика — чисто белый (замерено),
+          поэтому белый контейнер сливается с ним в единый полноэкранный кадр без полос. */}
+      <video
+        ref={videoRef}
+        src="/intro.mp4"
+        autoPlay
+        muted
+        playsInline
+        preload="auto"
+        onEnded={dismiss}
+        onError={dismiss}
+        className="splash-video absolute inset-0 h-full w-full object-contain"
+      />
+      <button
+        onClick={dismiss}
+        className="absolute bottom-6 right-6 rounded-full border border-white/25 bg-black/40 px-4 py-2 text-xs font-medium text-white/90 backdrop-blur transition hover:bg-black/60"
+      >
+        Пропустить
+      </button>
     </div>
   );
 }
