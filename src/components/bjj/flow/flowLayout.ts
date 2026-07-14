@@ -62,8 +62,8 @@ export async function layoutFlow(
   const pos = new Map<string, { x: number; y: number }>();
   for (const c of res.children ?? []) pos.set(c.id, { x: c.x ?? 0, y: c.y ?? 0 });
 
-  // Фиксированный размер + measured — узлы сразу видимы (измерение React Flow в нашем
-  // стеке не работает; рёбра рисуем сами SVG-слоем, хендлы RF не нужны).
+  // Фиксированный размер + measured — RF в нашем стеке не измеряет DOM надёжно, без measured
+  // fitView не находит границ. Рёбра рисуем сами (FlowEdges), хендлы RF не нужны.
   const nodes: Node<TechNodeData>[] = visible.map((t) => ({
     id: String(t.id),
     type: "tech",

@@ -9,12 +9,21 @@ interface EdgeLite {
 }
 
 // Свой слой рёбер поверх React Flow: измерение узлов/хендлов в нашем стеке не работает,
-// поэтому рисуем кривые сами по координатам ELK. Пути зависят только от координат узлов —
-// мемоизируем их; трансформ вьюпорта (пан/зум) двигает только <g>, пути не пересчитываются.
-// pointer-events:none — клики по узлам живут.
-export function FlowEdges({ edges }: { edges: EdgeLite[] }) {
+// поэтому рисуем кривые сами по координатам ELK. Связи фокусной техники красятся её
+// цветом (focusColor), остальные — серые. Пути мемоизированы; вьюпорт двигает только <g>.
+// Стрелка наследует цвет линии через fill="context-stroke".
+export function FlowEdges({
+  edges,
+  focusId,
+  focusColor,
+}: {
+  edges: EdgeLite[];
+  focusId?: string;
+  focusColor?: string;
+}) {
   const nodes = useNodes();
   const { x, y, zoom } = useViewport();
+  const gray = "var(--color-muted-foreground)";
 
   const paths = useMemo(() => {
     const pos = new Map(nodes.map((n) => [n.id, n.position]));
@@ -29,20 +38,22 @@ export function FlowEdges({ edges }: { edges: EdgeLite[] }) {
       const ty = t.y;
       const my = (sy + ty) / 2;
       const d = `M ${sx} ${sy} C ${sx} ${my}, ${tx} ${my}, ${tx} ${ty}`;
+      const isFocus = focusId != null && (e.source === focusId || e.target === focusId);
+      const stroke = isFocus && focusColor ? focusColor : gray;
       out.push(
         <path
           key={e.id}
           d={d}
           fill="none"
-          stroke="var(--color-muted-foreground)"
-          strokeWidth={1.4}
-          strokeOpacity={0.5}
+          stroke={stroke}
+          strokeWidth={isFocus ? 2 : 1.3}
+          strokeOpacity={isFocus ? 0.95 : 0.35}
           markerEnd="url(#rf-arrow)"
         />,
       );
     }
     return out;
-  }, [nodes, edges]);
+  }, [nodes, edges, focusId, focusColor]);
 
   return (
     <svg
@@ -50,7 +61,7 @@ export function FlowEdges({ edges }: { edges: EdgeLite[] }) {
     >
       <defs>
         <marker id="rf-arrow" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto">
-          <path d="M0 0 L6 3 L0 6 z" fill="var(--color-muted-foreground)" />
+          <path d="M0 0 L6 3 L0 6 z" fill="context-stroke" />
         </marker>
       </defs>
       <g transform={`translate(${x} ${y}) scale(${zoom})`}>{paths}</g>

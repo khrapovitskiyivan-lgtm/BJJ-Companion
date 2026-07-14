@@ -1,7 +1,10 @@
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
+import { Link } from "@tanstack/react-router";
+import { ArrowUpRight } from "lucide-react";
 import type { TechNodeData } from "./flowLayout";
 import type { Group, ProgressStatus } from "@/lib/bjj/types";
 import { GROUP_LABEL } from "@/lib/bjj/constants";
+import { haptic } from "@/lib/telegram";
 
 // Цвет группы — второй канал кодировки (первый — пояс через обводку).
 export const GROUP_COLOR: Record<Group, string> = {
@@ -66,6 +69,31 @@ export function TechniqueNode({ data, selected }: NodeProps<TechNode>) {
         <span style={{ width: 8, height: 8, borderRadius: "50%", background: STATUS_FILL[status], flex: "none" }} />
         {STATUS_LABEL[status]} · {t.difficulty}/5
       </div>
+      {/* Кнопка «Открыть» появляется на самой карточке, когда техника в фокусе */}
+      {selected && (
+        <Link
+          to="/technique/$id"
+          params={{ id: String(t.id) }}
+          onClick={(e) => { e.stopPropagation(); haptic("light"); }}
+          className="nodrag"
+          style={{
+            marginTop: 7,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            borderRadius: 8,
+            background: "var(--color-primary)",
+            color: "var(--color-primary-foreground)",
+            fontSize: 12,
+            fontWeight: 500,
+            padding: "5px 9px",
+            width: "100%",
+            justifyContent: "center",
+          }}
+        >
+          Открыть <ArrowUpRight style={{ width: 13, height: 13 }} />
+        </Link>
+      )}
       <Handle type="source" position={Position.Bottom} style={{ opacity: 0, pointerEvents: "none" }} />
     </div>
   );

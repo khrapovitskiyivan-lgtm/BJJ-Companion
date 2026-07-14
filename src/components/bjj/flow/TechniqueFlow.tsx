@@ -9,17 +9,16 @@ import {
   type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Link } from "@tanstack/react-router";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import { useProgress, useProfile } from "@/lib/bjj/store";
 import { nextToLearn, currentFocus } from "@/lib/bjj/recommend";
-import { BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
+import { BELT_LABEL } from "@/lib/bjj/constants";
 import { haptic } from "@/lib/telegram";
 import type { Technique } from "@/lib/bjj/types";
 import { layoutFlow } from "./flowLayout";
-import { TechniqueNode } from "./TechniqueNode";
+import { TechniqueNode, GROUP_COLOR } from "./TechniqueNode";
 import { FlowEdges } from "./FlowEdges";
-import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 const nodeTypes = { tech: TechniqueNode };
 
@@ -57,6 +56,9 @@ export function TechniqueFlow() {
   const [layoutData, setLayoutData] = useState<{ nodes: Node[]; edges: Edge[] }>({ nodes: [], edges: [] });
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState<Node>([]);
   const [loading, setLoading] = useState(true);
+  // Версия раскладки: растёт при каждой новой ELK-раскладке. По ней ремонтим ReactFlow,
+  // чтобы fitView (проп) центрировал СВЕЖИЕ узлы. Меняется только при смене фокуса, не статуса.
+  const [layoutVersion, setLayoutVersion] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +66,7 @@ export function TechniqueFlow() {
     layoutFlow(visible).then((res) => {
       if (cancelled) return;
       setLayoutData(res);
+      setLayoutVersion((v) => v + 1);
       setLoading(false);
     });
     return () => {
@@ -123,12 +126,13 @@ export function TechniqueFlow() {
         )}
         {mounted && (
           <ReactFlow
+            key={layoutVersion}
             nodes={rfNodes}
             edges={[]}
             onNodesChange={onNodesChange}
             nodeTypes={nodeTypes}
             fitView
-            fitViewOptions={{ padding: 0.25, maxZoom: 1.1 }}
+            fitViewOptions={{ padding: 0.22, maxZoom: 1.1 }}
             minZoom={0.4}
             maxZoom={1.6}
             nodesDraggable={false}
@@ -136,34 +140,16 @@ export function TechniqueFlow() {
             elementsSelectable
             onNodeClick={(_, n) => goTo(Number(n.id))}
           >
-            <FlowEdges edges={layoutData.edges} />
+            <FlowEdges
+              edges={layoutData.edges}
+              focusId={String(activeId)}
+              focusColor={focus ? GROUP_COLOR[focus.group] : undefined}
+            />
             <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="var(--color-border)" />
             <Controls showInteractive={false} position="top-right" />
           </ReactFlow>
         )}
       </div>
-
-      {/* Шторка выбранной техники */}
-      {focus && (
-        <div className="mt-2 rounded-2xl border border-border bg-card p-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-[15px] font-semibold">{focus.nameRu}</p>
-              <p className="text-[12px] text-muted-foreground">
-                {GROUP_LABEL[focus.group]} · {BELT_LABEL[focus.belt]} · сложность {focus.difficulty}/5
-              </p>
-            </div>
-            <Link
-              to="/technique/$id"
-              params={{ id: String(focus.id) }}
-              onClick={() => haptic("light")}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[13px] font-medium text-primary-foreground"
-            >
-              Открыть <ArrowUpRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
