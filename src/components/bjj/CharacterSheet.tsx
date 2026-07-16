@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useProfile } from "@/lib/bjj/store";
-import { Avatar } from "./Avatar";
 import { BELT_LABEL, BELT_ORDER, STYLE_ORDER, STYLE_META } from "@/lib/bjj/constants";
 import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
 import type { Belt } from "@/lib/bjj/types";
@@ -24,9 +23,8 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
       <button className="absolute inset-0 bg-black/45 backdrop-blur-sm" aria-label="Закрыть" onClick={onClose} />
 
       <div className="relative z-10 flex max-h-[88vh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl border border-border bg-background shadow-2xl sm:rounded-3xl">
-        {/* Шапка: персонаж крупно */}
+        {/* Шапка (без превью персонажа: он и так виден на странице за листом) */}
         <div className="flex items-center gap-4 border-b border-border p-4">
-          <Avatar profile={profile} className="h-28 shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="text-base font-bold tracking-tight">Персонаж</p>
             <p className="text-xs text-muted-foreground">
