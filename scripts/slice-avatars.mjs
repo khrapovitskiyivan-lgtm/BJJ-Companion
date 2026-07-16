@@ -20,22 +20,84 @@ const BELTS = ["white", "blue", "purple", "brown", "black"];
 const HEAD_W_FRAC = 0.60;   // ширина головы как доля ширины тела
 const HEAD_BOTTOM_PX = 92;  // где низ головы относительно верха тела (px в координатах ячейки тела)
 
+// Прозрачный фон тел. Белое ги напрямую от светлого фона не отделить (flood
+// прогрызает ги насквозь), поэтому маска фона снимается с ЧЁРНОГО ги той же
+// колонки (поза во всех рядах пиксель в пиксель) и переносится на белое/синее.
+// Остатки светлой тени у стоп дочищаются вторичным flood от уже прозрачных зон.
 async function bodies() {
   const SRC = "design/bodies-sheet.png";
   const W = 1024, H = 1024, COLS = 5, ROWS = 3;
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      const left = Math.round((c * W) / COLS);
-      const width = Math.round(((c + 1) * W) / COLS) - left;
-      const top = Math.round((r * H) / ROWS);
-      const height = Math.round(((r + 1) * H) / ROWS) - top;
-      await sharp(SRC)
-        .extract({ left, top, width, height })
+  const BLACK_ROW = 2; // ряд чёрного ги
+
+  // Единый размер ячейки для всех: маска накладывается попиксельно,
+  // разная ширина от округления (204 vs 205) сдвигает stride и рвёт картинку
+  const CW = Math.floor(W / COLS), CH = Math.floor(H / ROWS);
+  const cellRect = (r, c) => ({
+    left: Math.min(Math.round((c * W) / COLS), W - CW),
+    top: Math.min(Math.round((r * H) / ROWS), H - CH),
+    width: CW,
+    height: CH,
+  });
+
+  // 1) одна маска фона на все ячейки: с «чёрное ги + чёрный пояс» (ряд 2, колонка 4)
+  // весь силуэт тёмный, светлого пояса на контуре нет. Поза во всех ячейках идентична.
+  const maskRect = cellRect(BLACK_ROW, 4);
+  const { data: bd, info } = await sharp(SRC).extract(maskRect).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const w = info.width, h = info.height;
+  const bgMask = new Uint8Array(w * h);
+  {
+    const visited = new Uint8Array(w * h);
+    const stack = [];
+    for (let x = 0; x < w; x++) stack.push(x, 0, x, h - 1);
+    for (let y = 0; y < h; y++) stack.push(0, y, w - 1, y);
+    while (stack.length) {
+      const y = stack.pop(); const x = stack.pop();
+      if (x < 0 || y < 0 || x >= w || y >= h) continue;
+      const p = y * w + x;
+      if (visited[p]) continue;
+      visited[p] = 1;
+      const i = p * 4;
+      if (!(bd[i] > 195 && bd[i + 1] > 195 && bd[i + 2] > 195)) continue;
+      bgMask[p] = 1;
+      stack.push(x + 1, y, x - 1, y, x, y + 1, x, y - 1);
+    }
+  }
+
+  for (let c = 0; c < COLS; c++) {
+    // 2) применяем маску к каждому кимоно колонки + дочистка светлых остатков тени
+    for (let r = 0; r < ROWS; r++) {
+      const { data, info: inf } = await sharp(SRC).extract(cellRect(r, c)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      for (let p = 0; p < w * h; p++) if (bgMask[p]) data[p * 4 + 3] = 0;
+      // вторичный flood ТОЛЬКО в зоне стоп (низ ячейки): дочищает светлые
+      // остатки тени. Выше нельзя: у белого ги светлая кромка по контуру
+      // (rim light 230+), flood через неё прогрызает ги.
+      const feetY = Math.round(h * 0.88);
+      const visited = new Uint8Array(w * h);
+      const stack = [];
+      for (let p = 0; p < w * h; p++) {
+        if (!bgMask[p]) continue;
+        const x = p % w, y = (p - x) / w;
+        if (y < feetY) continue;
+        stack.push(x + 1, y, x - 1, y, x, y + 1, x, y - 1);
+      }
+      while (stack.length) {
+        const y = stack.pop(); const x = stack.pop();
+        if (x < 0 || y < feetY || x >= w || y >= h) continue;
+        const p = y * w + x;
+        if (visited[p] || bgMask[p]) continue;
+        visited[p] = 1;
+        const i = p * 4;
+        if (data[i + 3] === 0) continue;
+        if (!(data[i] > 210 && data[i + 1] > 210 && data[i + 2] > 210)) continue;
+        data[i + 3] = 0;
+        stack.push(x + 1, y, x - 1, y, x, y + 1, x, y - 1);
+      }
+      await sharp(data, { raw: { width: inf.width, height: inf.height, channels: 4 } })
         .webp({ quality: 84 })
         .toFile(`${OUT}/body-${KIMONO[r]}-${BELTS[c]}.webp`);
     }
   }
-  console.log("Тела: 15 шт");
+  console.log("Тела: 15 шт (прозрачный фон)");
 }
 
 // Flood-fill от краёв: связанный с краем почти-белый фон -> альфа 0

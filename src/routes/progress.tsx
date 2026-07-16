@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
 import { GapCard } from "@/components/bjj/GapCard";
 import { Avatar } from "@/components/bjj/Avatar";
+import { CharacterSheet } from "@/components/bjj/CharacterSheet";
 import { useProgress, useProfile, useDiary } from "@/lib/bjj/store";
 import { currentFocus, nextToLearn } from "@/lib/bjj/recommend";
 import { computeStyleAffinity, type StyleScore } from "@/lib/bjj/styleProfile";
@@ -63,6 +64,8 @@ function ProgressPage() {
 
   // Раскрытие списка техник по статусу: клик по карточке «Изучено» / «В процессе»
   const [openList, setOpenList] = useState<"done" | "in_progress" | null>(null);
+  // Лист персонажа (пояс, кимоно, стиль игры) — по тапу на аватара
+  const [sheetOpen, setSheetOpen] = useState(false);
   const listTechniques = useMemo(() => {
     if (!openList) return [];
     return TECHNIQUES.filter((t) => (progress[t.id] ?? "not_started") === openList).sort(
@@ -192,15 +195,23 @@ function ProgressPage() {
             value={`${stats.pct}%`}
             accent="var(--color-primary)"
           />
-          <div className="rounded-2xl border border-border bg-card p-3 text-center">
+          {/* Тап по персонажу открывает лист: пояс, кимоно, стиль игры */}
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            className="rounded-2xl border border-border bg-card p-3 text-center transition hover:bg-muted"
+            aria-label="Настроить персонажа"
+          >
             <Avatar profile={profile} className="mx-auto h-20" />
             <p className="mt-1.5 truncate text-[11px] font-medium">
               {doneCount >= ARCHETYPE_MIN_DONE && styleScores.length > 0
                 ? STYLE_META[styleScores[0].style].ru
                 : `${BELT_LABEL[profile.belt]} пояс`}
             </p>
-          </div>
+          </button>
         </section>
+
+        {sheetOpen && <CharacterSheet onClose={() => setSheetOpen(false)} />}
 
         {/* Раскрытый список техник выбранного статуса */}
         {openList && (
