@@ -7,6 +7,7 @@ import { computeStyleAffinity, type StyleScore } from "@/lib/bjj/styleProfile";
 import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
 import { TECHNIQUES } from "@/lib/bjj/data";
 import { BELT_ORDER, BELT_LABEL, GROUP_LABEL, STYLE_META } from "@/lib/bjj/constants";
+import { computeStats, countDone, ARCHETYPE_MIN_DONE, STAT_META, ARCHETYPE_STATS } from "@/lib/bjj/stats";
 import type { Technique } from "@/lib/bjj/types";
 import {
   TrendingUp,
@@ -47,6 +48,13 @@ function ProgressPage() {
     () => computeStyleAffinity(progress, practiceCount()),
     [progress, practiceCount],
   );
+
+  // 6 статов (вторая ось: механика из тегов) и число освоенных для порога
+  const statScores = useMemo(
+    () => computeStats(progress, practiceCount()),
+    [progress, practiceCount],
+  );
+  const doneCount = useMemo(() => countDone(progress), [progress]);
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [importStatus, setImportStatus] = useState<"idle" | "success" | "error">("idle");
@@ -247,7 +255,29 @@ function ProgressPage() {
           />
         </section>
 
-        <YourStyle scores={styleScores} />
+        <YourStyle scores={styleScores} doneCount={doneCount} />
+
+        {/* Характеристики: 6 статов из механических тегов */}
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <h2 className="mb-3 text-sm font-semibold">Характеристики</h2>
+          <div className="space-y-2">
+            {statScores.map((s) => (
+              <div key={s.stat} className="flex items-center gap-2">
+                <span className="w-24 shrink-0 text-[11px]">{STAT_META[s.stat].ru}</span>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-500"
+                    style={{ width: `${s.pct}%` }}
+                  />
+                </div>
+                <span className="w-10 text-right text-[11px] text-muted-foreground">{s.pct}%</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            Растут от изученных техник и отработок в дневнике.
+          </p>
+        </section>
 
         {/* Статистика по поясам */}
         <section className="rounded-2xl border border-border bg-card p-4">
@@ -421,7 +451,18 @@ function StatCard({
 
 
 // «Твой стиль» — аффинити к игровым архетипам
-function YourStyle({ scores }: { scores: StyleScore[] }) {
+function YourStyle({ scores, doneCount }: { scores: StyleScore[]; doneCount: number }) {
+  if (doneCount < ARCHETYPE_MIN_DONE) {
+    return (
+      <section className="rounded-2xl border border-border bg-card p-4">
+        <h2 className="mb-1 text-sm font-semibold">Твой стиль</h2>
+        <p className="text-xs text-muted-foreground">
+          Стиль определяется. Отметь ещё {ARCHETYPE_MIN_DONE - doneCount} техник как изученные,
+          и приложение вычислит твой игровой архетип.
+        </p>
+      </section>
+    );
+  }
   if (scores.length === 0) {
     return (
       <section className="rounded-2xl border border-border bg-card p-4">
@@ -447,7 +488,7 @@ function YourStyle({ scores }: { scores: StyleScore[] }) {
         <div className="min-w-0">
           <p className="text-base font-bold tracking-tight">{STYLE_META[top.style].ru}</p>
           <p className="truncate text-xs text-muted-foreground">
-            {STYLE_META[top.style].desc} · {top.pct}% игры
+            {STYLE_META[top.style].desc} · {top.pct}% игры · ключевой стат: {STAT_META[ARCHETYPE_STATS[top.style].primary].ru}
           </p>
         </div>
       </div>
