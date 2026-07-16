@@ -9,6 +9,11 @@ import { ChevronLeft, Search } from "lucide-react";
 
 export const Route = createFileRoute("/situations")({
   component: SituationsPage,
+  // Выбранная ситуация в search-параметре: переживает уход на карточку техники и возврат назад
+  validateSearch: (search: Record<string, unknown>): { s?: number } => {
+    const s = Number(search.s);
+    return Number.isFinite(s) && s > 0 ? { s } : {};
+  },
 });
 
 // Позиции-ситуации «Что делать, если…» (перенесено из «Решений»).
@@ -56,7 +61,9 @@ function SituationsPage() {
 }
 
 function Decide() {
-  const [situationId, setSituationId] = useState<number | null>(null);
+  const { s: situationParam } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const situationId = situationParam ?? null;
   const [query, setQuery] = useState("");
   const situation = situationId != null ? TECH_BY_ID[situationId] : null;
 
@@ -84,7 +91,7 @@ function Decide() {
     return (
       <div className="space-y-4">
         <button
-          onClick={() => setSituationId(null)}
+          onClick={() => navigate({ search: {} })}
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
@@ -137,7 +144,7 @@ function Decide() {
               {items.map((s) => (
                 <button
                   key={s.id}
-                  onClick={() => setSituationId(s.id)}
+                  onClick={() => navigate({ search: { s: s.id } })}
                   className="rounded-xl border border-border bg-card p-3 text-left text-xs font-medium transition hover:bg-muted"
                 >
                   {s.label}
