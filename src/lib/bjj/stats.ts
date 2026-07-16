@@ -1,7 +1,7 @@
 // === 6 СТАТОВ ИЗ ТЕГОВ + ПРОФИЛИ АРХЕТИПОВ ===
 // Вторая ось геймификации, независимая от архетипов: архетип считается из styles
-// (что играешь), статы из tags (как механически работает). Разные источники —
-// модель не схлопывается в дубль. Профили архетипов (primary/secondary стат)
+// (что играешь), статы из tags (как механически работает). Разные источники,
+// поэтому модель не схлопывается в дубль. Профили архетипов (primary/secondary стат)
 // выводятся из данных через lift, а не пишутся руками: не разойдутся с CSV.
 import { TECHNIQUES } from "./data";
 import { STYLE_ORDER } from "./constants";
@@ -40,7 +40,7 @@ export function countDone(progress: ProgressMap): number {
 }
 
 // Прокачка статов: вес техники как в computeStyleAffinity (done=2, in_progress=1,
-// отработка в дневнике +1.5). Проценты от максимума по стату (2*total), не сырьё —
+// отработка в дневнике +1.5). Проценты от максимума по стату (2*total), не сырьё:
 // иначе редкие статы (speed: 34 техники) никогда не догонят частые (control: 140).
 export function computeStatsFor(
   techniques: Technique[],
@@ -70,7 +70,7 @@ export function computeStats(progress: ProgressMap, practiceCount: Record<number
 }
 
 // Профили архетипов через lift: доля стата внутри архетипа / доля стата по базе.
-// primary — максимальный lift, secondary — следующий.
+// primary: максимальный lift, secondary: следующий.
 export function deriveArchetypeStats(
   techniques: Technique[],
 ): Record<Style, { primary: StatKey; secondary: StatKey }> {
