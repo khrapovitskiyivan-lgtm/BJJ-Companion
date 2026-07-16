@@ -47,22 +47,39 @@ export function getDeviceId(): string {
 }
 
 // === PROFILE HOOK ===
+// Общая шина профиля: useProfile вызывается из нескольких мест одновременно
+// (страница рендерит AppShell, у обоих свой экземпляр useState). Без общего
+// снимка запись из одного экземпляра (онбординг, настройки в AvatarMenu)
+// не доходит до остальных до перемонтирования. Схема та же, что у useProgress.
+let profileSnapshot: StyleProfile | null = null;
+const profileListeners = new Set<(p: StyleProfile) => void>();
+
+function publishProfile(next: StyleProfile) {
+  profileSnapshot = next;
+  for (const listener of profileListeners) listener(next);
+}
+
 export function useProfile() {
   const [profile, setProfile] = useState<StyleProfile>(DEFAULT_PROFILE);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     // merge с дефолтом: у старых профилей могут отсутствовать новые поля (locale и т.п.)
-    setProfile({ ...DEFAULT_PROFILE, ...readJSON<Partial<StyleProfile>>(PROFILE_KEY, {}) });
+    const initial =
+      profileSnapshot ?? { ...DEFAULT_PROFILE, ...readJSON<Partial<StyleProfile>>(PROFILE_KEY, {}) };
+    profileSnapshot = initial;
+    setProfile(initial);
     setHydrated(true);
+    profileListeners.add(setProfile);
+    return () => {
+      profileListeners.delete(setProfile);
+    };
   }, []);
 
   const update = useCallback((patch: Partial<StyleProfile>) => {
-    setProfile((prev) => {
-      const next = { ...prev, ...patch };
-      writeJSON(PROFILE_KEY, next);
-      return next;
-    });
+    const next = { ...(profileSnapshot ?? DEFAULT_PROFILE), ...patch };
+    writeJSON(PROFILE_KEY, next);
+    publishProfile(next);
   }, []);
 
   return { profile, update, hydrated };
