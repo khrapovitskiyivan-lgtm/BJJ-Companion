@@ -669,94 +669,95 @@ git commit -m "Фича «Разрыв»: аспирация из настрое
 
 ---
 
-### Task 5: Аватар персонажа, выбор пола, титул
+### Task 5: Составной аватар (тело + голова), выбор головы, титул
 
-Нарезка листа 1024x1024 (5 колонок-поясов x 6 рядов [пол x кимоно]) в 30 webp; поля `gender`/`kimono` в профиле; шаг пола в онбординге; секция кимоно в настройках; карточка аватара с титулом в hero-ряду «Моей игры».
+Пересмотр 2026-07-16 (v2): вместо 30 цельных фигурок — «бумажная кукла». Тело (кимоно + пояс) и голова — отдельные слои: 15 тел + 12 голов = 180 комбинаций. Исходники: `design/bodies-sheet.png` (5 колонок-поясов x 3 ряда-кимоно, тела безголовые), `design/heads-male-sheet.png` и `design/heads-female-sheet.png` (по 6 голов, сетка 3x2; у мужского листа чёрные линии сетки). Головам при нарезке убирается фон (flood-fill от краёв), иначе белый прямоугольник головы закроет грудь тела при наложении.
+
+Нарезку, подбор констант выравнивания и превью-композит выполняет КОНТРОЛЛЕР (нужна визуальная итерация); имплементер получает готовые ассеты и точные константы и делает интеграцию в приложение.
 
 **Files:**
-- Create: `scripts/slice-avatars.mjs`
-- Create: `public/avatars/*.webp` (30 файлов, генерируются скриптом)
-- Create: `src/lib/bjj/avatar.ts`
-- Modify: `src/lib/bjj/types.ts` (StyleProfile)
-- Modify: `src/components/bjj/Onboarding.tsx` (шаг пола)
-- Modify: `src/components/bjj/AvatarMenu.tsx` (секция «Персонаж»: пол + кимоно)
-- Modify: `src/routes/progress.tsx` (4-я hero-карточка)
-- Modify: `docs/superpowers/specs/2026-07-16-gamification-design.md` (фикс: фон оставляем)
+- Create: `scripts/slice-avatars.mjs` (контроллер)
+- Create: `public/avatars/body-{kimono}-{belt}.webp` — 15 шт (контроллер)
+- Create: `public/avatars/head-{m1..m6|f1..f6}.webp` — 12 шт, прозрачный фон (контроллер)
+- Create: `src/lib/bjj/avatar.ts` (имплементер)
+- Create: `src/components/bjj/Avatar.tsx` (имплементер)
+- Modify: `src/lib/bjj/types.ts` (StyleProfile: kimono, headId)
+- Modify: `src/components/bjj/Onboarding.tsx` (шаг выбора головы)
+- Modify: `src/components/bjj/AvatarMenu.tsx` (секция «Персонаж»: голова + кимоно)
+- Modify: `src/routes/progress.tsx` (4-я hero-карточка с Avatar и титулом)
+- Modify: `docs/superpowers/specs/2026-07-16-gamification-design.md` (аватар: схема тело+голова)
 
 **Interfaces:**
-- Produces: `StyleProfile.gender?: "male" | "female"`, `StyleProfile.kimono?: "white" | "blue" | "black"`.
-- Produces: `avatarSrc(p: StyleProfile): string` — путь `/avatars/{gender}-{kimono}-{belt}.webp`, дефолты male/white.
+- Produces: `StyleProfile.kimono?: "white" | "blue" | "black"`, `StyleProfile.headId?: HeadId`.
+- Produces (`src/lib/bjj/avatar.ts`): `HEAD_IDS: readonly ["m1",...,"f6"]`, `type HeadId`, `bodySrc(p: StyleProfile): string` (`/avatars/body-{kimono}-{belt}.webp`, дефолт кимоно white), `headSrc(p: StyleProfile): string` (`/avatars/head-{headId}.webp`, дефолт m1).
+- Produces (`src/components/bjj/Avatar.tsx`): `<Avatar profile={StyleProfile} className?>` — контейнер с составным персонажем; константы выравнивания даёт контроллер в диспатче.
 
-- [ ] **Step 1: Установить sharp (dev-only) и написать скрипт нарезки**
+- [ ] **Step 1 (КОНТРОЛЛЕР): sharp, нарезка, прозрачность голов, превью-композит**
 
-Run: `npm i -D sharp`
+Run: `npm i -D sharp`. Скрипт `scripts/slice-avatars.mjs`: тела — фиксированные ячейки 5x3 из `bodies-sheet.png` в `body-{kimono}-{belt}.webp` (ряды: white, blue, black кимоно; колонки: white, blue, purple, brown, black пояса; фон остаётся — это нижний слой). Головы — ячейки 3x2 из двух листов с внутренним отступом (у мужского листа чёрные линии сетки), затем flood-fill от краёв: почти-белые пиксели, связанные с краем, получают альфу 0 (глазные белки не связаны с краем — не страдают); вывод `head-{m|f}{1..6}.webp`. Дополнительно скрипт собирает превью-композит (тело + голова с параметрами HEAD_W_FRAC / HEAD_BOTTOM_PX) в `.superpowers/sdd/avatar-preview.png`; контроллер смотрит его через Read и итерирует константы до посадки головы на воротник. Итоговые константы фиксируются в диспатче имплементера.
 
-`scripts/slice-avatars.mjs`:
+Expected: `ls public/avatars | wc -l` = 27; превью-композит визуально корректен.
 
-```js
-// Нарезка design/avatars-sheet.png (1024x1024, 5 колонок-поясов x 6 рядов) в
-// public/avatars/{gender}-{kimono}-{belt}.webp. Верхние 22px каждой ячейки
-// срезаются: там впечатаны подписи генератора (M1, F2...). Серый фон оставляем:
-// белое кимоно на светло-сером — автоматическая вырезка съест ги.
-import sharp from "sharp";
-import { mkdirSync } from "node:fs";
-
-const SRC = "design/avatars-sheet.png";
-const OUT = "public/avatars";
-const ROWS_META = [
-  ["male", "white"], ["male", "blue"], ["male", "black"],
-  ["female", "white"], ["female", "blue"], ["female", "black"],
-];
-const BELTS = ["white", "blue", "purple", "brown", "black"];
-const W = 1024, H = 1024, COLS = 5, ROWS = 6, LABEL_CROP = 22;
-
-mkdirSync(OUT, { recursive: true });
-for (let r = 0; r < ROWS; r++) {
-  const [gender, kimono] = ROWS_META[r];
-  for (let c = 0; c < COLS; c++) {
-    const left = Math.round((c * W) / COLS);
-    const width = Math.round(((c + 1) * W) / COLS) - left;
-    const top = Math.round((r * H) / ROWS) + LABEL_CROP;
-    const height = Math.round(((r + 1) * H) / ROWS) - top;
-    await sharp(SRC)
-      .extract({ left, top, width, height })
-      .webp({ quality: 84 })
-      .toFile(`${OUT}/${gender}-${kimono}-${BELTS[c]}.webp`);
-  }
-}
-console.log("Нарезано 30 аватаров в", OUT);
-```
-
-Run: `node scripts/slice-avatars.mjs`
-Expected: `Нарезано 30 аватаров в public/avatars`; `ls public/avatars | wc -l` = 30. Открыть 2-3 файла (Read) и проверить глазами: подписи срезаны, пояс соответствует имени файла.
-
-- [ ] **Step 2: Поля профиля и avatarSrc**
+- [ ] **Step 2 (имплементер): поля профиля, avatar.ts, компонент Avatar**
 
 `src/lib/bjj/types.ts`, в `StyleProfile` после `avatarUrl?: string;`:
 
 ```ts
-  // Игровой персонаж (аватар из public/avatars; avatarUrl выше — фото из Telegram)
-  gender?: "male" | "female";
+  // Игровой персонаж (составной аватар из public/avatars; avatarUrl выше — фото из Telegram)
   kimono?: "white" | "blue" | "black";
+  headId?: import("./avatar").HeadId;
 ```
+
+(Если циклический импорт мешает — объявить `HeadId` прямо в types.ts и реэкспортировать из avatar.ts.)
 
 `src/lib/bjj/avatar.ts`:
 
 ```ts
-// Путь к аватару персонажа: пол и кимоно из профиля, пояс — текущий.
-// Пояс не хранится в пути заранее: повышение пояса меняет аватар автоматически.
+// Составной аватар: тело (кимоно + пояс) и голова — отдельные слои.
+// Пояс в пути тела берётся из профиля на лету: повышение пояса
+// автоматически переодевает персонажа.
 import type { StyleProfile } from "./types";
 
-export function avatarSrc(p: StyleProfile): string {
-  return `/avatars/${p.gender ?? "male"}-${p.kimono ?? "white"}-${p.belt}.webp`;
+export const HEAD_IDS = ["m1", "m2", "m3", "m4", "m5", "m6", "f1", "f2", "f3", "f4", "f5", "f6"] as const;
+export type HeadId = (typeof HEAD_IDS)[number];
+
+export function bodySrc(p: StyleProfile): string {
+  return `/avatars/body-${p.kimono ?? "white"}-${p.belt}.webp`;
+}
+
+export function headSrc(p: StyleProfile): string {
+  return `/avatars/head-${p.headId ?? "m1"}.webp`;
 }
 ```
 
-- [ ] **Step 3: Шаг пола в онбординге**
+`src/components/bjj/Avatar.tsx` — константы выравнивания приходят из диспатча контроллера:
 
-`Onboarding.tsx`: расширить `Step` до `0..7`, `totalSteps = 8`. Новый шаг 1 (после welcome, до пояса): состояние `const [gender, setGender] = useState<"male" | "female" | null>(null);`, в `canProceed` добавить `if (step === 1) return gender !== null;`. Все существующие проверки шагов сдвинуть на +1 (пояс 2, формат 3, цель 4, частота 5, знакомые техники 6, финал 7); граничные проверки `step < 6` заменить на `step < 7`, `step === 5` (кнопка «Пропустить») на `step === 6`, `step === 6` (кнопка «Начать») на `step === 7`. В `onDone` добавить `gender: gender ?? undefined` в патч профиля.
+```tsx
+// Составной персонаж: тело снизу, голова слоем сверху по центру.
+// Константы подобраны по превью-композиту (scripts/slice-avatars.mjs).
+import { bodySrc, headSrc } from "@/lib/bjj/avatar";
+import type { StyleProfile } from "@/lib/bjj/types";
 
-Разметка шага:
+export function Avatar({ profile, className }: { profile: StyleProfile; className?: string }) {
+  return (
+    <div className={`relative ${className ?? ""}`} style={{ aspectRatio: "AR_PLACEHOLDER" }}>
+      <img src={bodySrc(profile)} alt="" className="absolute bottom-0 left-0 w-full" />
+      <img
+        src={headSrc(profile)}
+        alt="Персонаж"
+        className="absolute left-1/2 -translate-x-1/2"
+        style={{ top: "HEAD_TOP_PLACEHOLDER", width: "HEAD_W_PLACEHOLDER" }}
+      />
+    </div>
+  );
+}
+```
+
+- [ ] **Step 3 (имплементер): шаг выбора головы в онбординге**
+
+`Onboarding.tsx`: расширить `Step` до `0..7`, `totalSteps = 8`. Новый шаг 1 (после welcome, до пояса): состояние `const [headId, setHeadId] = useState<HeadId | null>(null);`, в `canProceed` добавить `if (step === 1) return headId !== null;`. Существующие проверки шагов сдвинуть на +1 (пояс 2, формат 3, цель 4, частота 5, знакомые техники 6, финал 7); граничные проверки `step < 6` -> `step < 7`, `step === 5` (кнопка «Пропустить») -> `step === 6`, `step === 6` («Начать») -> `step === 7`. В `onDone` добавить `headId: headId ?? undefined` в патч профиля.
+
+Разметка шага: сетка 4 колонки, 12 кнопок-голов:
 
 ```tsx
 {step === 1 && (
@@ -764,31 +765,25 @@ export function avatarSrc(p: StyleProfile): string {
     <div>
       <h2 className="text-2xl font-bold">Ваш персонаж</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Аватар будет расти вместе с вами и менять пояс.
+        Выберите голову. Кимоно и пояс персонаж возьмёт из профиля и будет расти вместе с вами.
       </p>
     </div>
-    <div className="grid grid-cols-2 gap-3">
-      {(["male", "female"] as const).map((g) => (
+    <div className="grid grid-cols-4 gap-2">
+      {HEAD_IDS.map((h) => (
         <button
-          key={g}
+          key={h}
           type="button"
-          onClick={() => setGender(g)}
-          className="rounded-xl border-2 p-3 transition-all"
+          onClick={() => setHeadId(h)}
+          className="rounded-xl border-2 p-1.5 transition-all"
           style={{
-            borderColor: gender === g ? "var(--color-primary)" : "var(--color-border)",
-            background: gender === g
+            borderColor: headId === h ? "var(--color-primary)" : "var(--color-border)",
+            background: headId === h
               ? "color-mix(in oklch, var(--color-primary) 8%, var(--color-card))"
               : "var(--color-card)",
           }}
+          aria-label={`Голова ${h}`}
         >
-          <img
-            src={`/avatars/${g}-white-white.webp`}
-            alt={g === "male" ? "Мужской" : "Женский"}
-            className="mx-auto h-28 rounded-lg object-cover"
-          />
-          <span className="mt-2 block text-sm font-medium">
-            {g === "male" ? "Мужской" : "Женский"}
-          </span>
+          <img src={`/avatars/head-${h}.webp`} alt="" className="mx-auto h-14 object-contain" />
         </button>
       ))}
     </div>
@@ -796,17 +791,32 @@ export function avatarSrc(p: StyleProfile): string {
 )}
 ```
 
-- [ ] **Step 4: Секция «Персонаж» в AvatarMenu**
+- [ ] **Step 4 (имплементер): секция «Персонаж» в AvatarMenu**
 
 После секции «Формат тренировок» добавить (использует существующий `Toggle`):
 
 ```tsx
-{/* Персонаж: пол и цвет кимоно (аватар в «Моей игре») */}
+{/* Персонаж: голова и цвет кимоно (составной аватар в «Моей игре») */}
 <section>
   <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Персонаж</h3>
-  <div className="mb-2 grid grid-cols-2 gap-2">
-    <Toggle label="Мужской" active={(profile.gender ?? "male") === "male"} onClick={() => update({ gender: "male" })} />
-    <Toggle label="Женский" active={profile.gender === "female"} onClick={() => update({ gender: "female" })} />
+  <div className="mb-2 grid grid-cols-6 gap-1.5">
+    {HEAD_IDS.map((h) => (
+      <button
+        key={h}
+        type="button"
+        onClick={() => update({ headId: h })}
+        className="rounded-lg border-2 p-1 transition-all"
+        style={{
+          borderColor: (profile.headId ?? "m1") === h ? "var(--color-primary)" : "var(--color-border)",
+          background: (profile.headId ?? "m1") === h
+            ? "color-mix(in oklch, var(--color-primary) 8%, var(--color-card))"
+            : "var(--color-card)",
+        }}
+        aria-label={`Голова ${h}`}
+      >
+        <img src={`/avatars/head-${h}.webp`} alt="" className="mx-auto h-9 object-contain" />
+      </button>
+    ))}
   </div>
   <div className="grid grid-cols-3 gap-2">
     <Toggle label="Белое ги" active={(profile.kimono ?? "white") === "white"} onClick={() => update({ kimono: "white" })} />
@@ -816,17 +826,15 @@ export function avatarSrc(p: StyleProfile): string {
 </section>
 ```
 
-- [ ] **Step 5: Карточка аватара с титулом в hero-ряду «Моей игры»**
+Импорт в AvatarMenu: `import { HEAD_IDS } from "@/lib/bjj/avatar";`
 
-`progress.tsx`: импорт `avatarSrc` и `STYLE_META` (STYLE_META уже импортирован). В hero-секции добавить четвёртую карточку после «Прогресс»:
+- [ ] **Step 5 (имплементер): карточка аватара с титулом в hero-ряду «Моей игры»**
+
+`progress.tsx`: импорт `Avatar` (STYLE_META уже импортирован). В hero-секции добавить четвёртую карточку после «Прогресс»:
 
 ```tsx
 <div className="rounded-2xl border border-border bg-card p-3 text-center">
-  <img
-    src={avatarSrc(profile)}
-    alt="Персонаж"
-    className="mx-auto h-20 rounded-xl object-cover"
-  />
+  <Avatar profile={profile} className="mx-auto h-20" />
   <p className="mt-1.5 truncate text-[11px] font-medium">
     {doneCount >= ARCHETYPE_MIN_DONE && styleScores.length > 0
       ? STYLE_META[styleScores[0].style].ru
@@ -837,24 +845,24 @@ export function avatarSrc(p: StyleProfile): string {
 
 Сетка секции уже `grid-cols-2 sm:grid-cols-4` — карточка встаёт четвёртой.
 
-- [ ] **Step 6: Фикс спека (фон аватаров)**
+- [ ] **Step 6 (имплементер): фикс спека (схема аватара)**
 
-В `docs/superpowers/specs/2026-07-16-gamification-design.md` заменить строку «Подписи в ячейках и серый фон убрать при нарезке.» на «Подписи в ячейках срезаются кропом; серый фон остаётся (белое ги на светло-сером — автоматическая вырезка съест ги), карточка показывает картинку как есть.»
+В `docs/superpowers/specs/2026-07-16-gamification-design.md` в разделе «7. Аватар персонажа» заменить пункты про пол и нарезку листа 5x6 на: «Схема v2 (2026-07-16): составной аватар — 15 тел (body-{kimono}-{belt}) + 12 голов (head-{m1..f6}, прозрачный фон) = 180 комбинаций. В профиле {kimono, headId}; пояс тела берётся из profile.belt на лету. Онбординг: шаг выбора головы вместо пола.»
 
-- [ ] **Step 7: Типчек + рантайм**
+- [ ] **Step 7 (КОНТРОЛЛЕР): типчек + рантайм**
 
 Run: `npx tsc --noEmit` — новых ошибок нет. `npx vitest run` — зелёные.
 Рантайм:
-1. `localStorage.clear()`, пройти онбординг: шаг 2 из 8 — два персонажа с картинками, без выбора «Далее» заблокирован; выбрать женский.
-2. `/progress`: 4-я карточка с женским аватаром в белом ги и белым поясом, подпись «Белый пояс» (прогресс пустой).
-3. В меню профиля сменить пояс на синий и кимоно на чёрное — аватар в карточке сменился на `female-black-blue.webp`.
+1. `localStorage.clear()`, онбординг: шаг 2 из 8 — сетка из 12 голов, «Далее» заблокирован до выбора; выбрать женскую голову.
+2. `/progress`: 4-я карточка — составной персонаж (выбранная голова, белое ги, белый пояс), подпись «Белый пояс».
+3. В меню профиля сменить пояс на синий и кимоно на чёрное — тело сменилось на body-black-blue, голова та же.
 4. Засеять 5 done — подпись карточки сменилась на титул архетипа.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 8 (имплементер): Commit**
 
 ```bash
-git add scripts/slice-avatars.mjs public/avatars src/lib/bjj/avatar.ts src/lib/bjj/types.ts src/components/bjj/Onboarding.tsx src/components/bjj/AvatarMenu.tsx src/routes/progress.tsx docs/superpowers/specs/2026-07-16-gamification-design.md package.json package-lock.json
-git commit -m "Аватар персонажа: нарезка 30 webp, пол в онбординге, кимоно в настройках, карточка с титулом архетипа"
+git add scripts/slice-avatars.mjs public/avatars src/lib/bjj/avatar.ts src/components/bjj/Avatar.tsx src/lib/bjj/types.ts src/components/bjj/Onboarding.tsx src/components/bjj/AvatarMenu.tsx src/routes/progress.tsx docs/superpowers/specs/2026-07-16-gamification-design.md package.json package-lock.json
+git commit -m "Составной аватар: 15 тел + 12 голов (180 комбинаций), выбор головы в онбординге, титул архетипа"
 ```
 
 ---
