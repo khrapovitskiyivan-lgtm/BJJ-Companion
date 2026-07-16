@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useProfile } from "@/lib/bjj/store";
 import { BELT_LABEL, BELT_ORDER, STYLE_ORDER, STYLE_META } from "@/lib/bjj/constants";
+import { Toggle } from "@/components/bjj/ui";
 import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
 import type { Belt } from "@/lib/bjj/types";
 import { X, Check } from "lucide-react";
@@ -69,8 +70,8 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
           <section>
             <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Формат тренировок</h3>
             <div className="grid grid-cols-2 gap-2">
-              <FormatTile label="Gi (в кимоно)" active={profile.gi} onClick={() => (profile.noGi || !profile.gi) && update({ gi: !profile.gi })} />
-              <FormatTile label="No-Gi" active={profile.noGi} onClick={() => (profile.gi || !profile.noGi) && update({ noGi: !profile.noGi })} />
+              <Toggle label="Gi (в кимоно)" active={profile.gi} onClick={() => (profile.noGi || !profile.gi) && update({ gi: !profile.gi })} />
+              <Toggle label="No-Gi" active={profile.noGi} onClick={() => (profile.gi || !profile.noGi) && update({ noGi: !profile.noGi })} />
             </div>
           </section>
 
@@ -111,23 +112,5 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
         </div>
       </div>
     </div>
-  );
-}
-
-function FormatTile({
-  label, active, onClick,
-}: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-xl border-2 p-2.5 text-sm font-medium transition-all"
-      style={{
-        borderColor: active ? "var(--color-primary)" : "var(--color-border)",
-        background: active ? "color-mix(in oklch, var(--color-primary) 10%, var(--color-card))" : "var(--color-card)",
-      }}
-    >
-      {label}
-    </button>
   );
 }

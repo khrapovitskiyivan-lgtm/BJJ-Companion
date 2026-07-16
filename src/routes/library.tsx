@@ -12,6 +12,7 @@ import {
 } from "@/lib/bjj/constants";
 import type { Belt, Group } from "@/lib/bjj/types";
 import { TechniquesTabs } from "@/components/bjj/TechniquesTabs";
+import { Chip, FilterRow } from "@/components/bjj/ui";
 import { Search, X, RotateCcw, Filter } from "lucide-react";
 
 export const Route = createFileRoute("/library")({
@@ -344,46 +345,3 @@ function Library() {
   );
 }
 
-function FilterRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-      <div className="-mx-1 flex flex-wrap gap-1.5 px-1">{children}</div>
-    </div>
-  );
-}
-
-function Chip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors"
-      style={{
-        borderColor: active ? "var(--color-primary)" : "var(--color-border)",
-        background: active
-          ? "color-mix(in oklch, var(--color-primary) 12%, var(--color-card))"
-          : "var(--color-card)",
-        color: active ? "var(--color-primary)" : "var(--color-foreground)",
-      }}
-    >
-      {children}
-    </button>
-  );
-}

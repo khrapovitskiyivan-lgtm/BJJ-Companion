@@ -13,6 +13,7 @@ import type {
   Workout,
   WorkoutConfig,
 } from "@/lib/bjj/types";
+import { Chip, FilterRow } from "@/components/bjj/ui";
 import { Flame, Snowflake, Sparkles, Timer, Dumbbell, Swords, NotebookPen } from "lucide-react";
 
 export const Route = createFileRoute("/workout")({
@@ -118,7 +119,7 @@ function WorkoutGenerator() {
   return (
     <div className="space-y-5">
       <section className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
-        <Row label="Подбор" icon={<NotebookPen className="h-4 w-4" />}>
+        <FilterRow label="Подбор" icon={<NotebookPen className="h-4 w-4" />}>
           <Chip
             active={source === "profile"}
             onClick={() => setSource("profile")}
@@ -133,7 +134,7 @@ function WorkoutGenerator() {
           >
             По дневнику
           </Chip>
-        </Row>
+        </FilterRow>
 
         {source === "diary" && (
           <p className="-mt-2 text-[11px] text-muted-foreground">
@@ -143,7 +144,7 @@ function WorkoutGenerator() {
           </p>
         )}
 
-        <Row label="Длительность" icon={<Timer className="h-4 w-4" />}>
+        <FilterRow label="Длительность" icon={<Timer className="h-4 w-4" />}>
           {DURATIONS.map((d) => (
             <Chip
               key={d}
@@ -153,9 +154,9 @@ function WorkoutGenerator() {
               {d} мин
             </Chip>
           ))}
-        </Row>
+        </FilterRow>
 
-        <Row label="Интенсивность" icon={<Flame className="h-4 w-4" />}>
+        <FilterRow label="Интенсивность" icon={<Flame className="h-4 w-4" />}>
           {INTENSITIES.map((i) => (
             <Chip
               key={i.value}
@@ -165,9 +166,9 @@ function WorkoutGenerator() {
               {i.label}
             </Chip>
           ))}
-        </Row>
+        </FilterRow>
 
-        <Row label="Безопасность" icon={<Sparkles className="h-4 w-4" />}>
+        <FilterRow label="Безопасность" icon={<Sparkles className="h-4 w-4" />}>
           {SAFETY.map((s) => (
             <Chip
               key={s.value}
@@ -178,9 +179,9 @@ function WorkoutGenerator() {
               {s.label}
             </Chip>
           ))}
-        </Row>
+        </FilterRow>
 
-        <Row label="Фокус">
+        <FilterRow label="Фокус">
           {FOCUSES.map((g) => (
             <Chip
               key={g}
@@ -190,7 +191,7 @@ function WorkoutGenerator() {
               {g === "all" ? "Все" : GROUP_LABEL[g]}
             </Chip>
           ))}
-        </Row>
+        </FilterRow>
 
         <button
           type="button"
@@ -266,56 +267,6 @@ function WorkoutGenerator() {
         </section>
       )}
     </div>
-  );
-}
-
-function Row({
-  label,
-  icon,
-  children,
-}: {
-  label: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-        {icon}
-        {label}
-      </p>
-      <div className="flex flex-wrap gap-1.5">{children}</div>
-    </div>
-  );
-}
-
-function Chip({
-  active,
-  onClick,
-  children,
-  title,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-  title?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className="rounded-full border px-3 py-1 text-xs font-medium transition-colors"
-      style={{
-        borderColor: active ? "var(--color-primary)" : "var(--color-border)",
-        background: active
-          ? "color-mix(in oklch, var(--color-primary) 12%, var(--color-card))"
-          : "var(--color-card)",
-        color: active ? "var(--color-primary)" : "var(--color-foreground)",
-      }}
-    >
-      {children}
-    </button>
   );
 }
 

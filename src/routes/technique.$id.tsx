@@ -32,6 +32,7 @@ import { RelatedList } from "@/components/bjj/technique/RelatedList";
 import { StyleBadges } from "@/components/bjj/StyleBadges";
 
 import { Clock3, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/bjj/ui";
 
 export const Route = createFileRoute("/technique/$id")({
   component: TechniquePage,
@@ -174,16 +175,16 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
           </button>
         </div>
         <div className="mt-3 flex flex-wrap gap-1.5 text-[11px]">
-          <Chip>{GROUP_LABEL[tech.group]}</Chip>
-          <Chip>{BELT_LABEL[tech.belt]}</Chip>
-          {tech.gi && <Chip>Gi</Chip>}
-          {tech.noGi && <Chip>No-Gi</Chip>}
-          <Chip>Сложность {tech.difficulty}/5</Chip>
-          {tech.successRate && tech.successRate !== "N/A" && <Chip>Успех ~{tech.successRate}</Chip>}
-          {tech.energyCost && <Chip>Энергия: {tech.energyCost}</Chip>}
-          {tech.legal_ibjjf_gi && <Chip>IBJJF Gi</Chip>}
-          {tech.legal_ibjjf_nogi && <Chip>IBJJF No-Gi</Chip>}
-          {tech.legal_adcc && <Chip>ADCC</Chip>}
+          <Badge>{GROUP_LABEL[tech.group]}</Badge>
+          <Badge>{BELT_LABEL[tech.belt]}</Badge>
+          {tech.gi && <Badge>Gi</Badge>}
+          {tech.noGi && <Badge>No-Gi</Badge>}
+          <Badge>Сложность {tech.difficulty}/5</Badge>
+          {tech.successRate && tech.successRate !== "N/A" && <Badge>Успех ~{tech.successRate}</Badge>}
+          {tech.energyCost && <Badge>Энергия: {tech.energyCost}</Badge>}
+          {tech.legal_ibjjf_gi && <Badge>IBJJF Gi</Badge>}
+          {tech.legal_ibjjf_nogi && <Badge>IBJJF No-Gi</Badge>}
+          {tech.legal_adcc && <Badge>ADCC</Badge>}
         </div>
         {tech.styles?.length > 0 && (
           <div className="mt-3">
@@ -312,6 +313,3 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
   );
 }
 
-function Chip({ children }: { children: React.ReactNode }) {
-  return <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{children}</span>;
-}

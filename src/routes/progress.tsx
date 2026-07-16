@@ -170,8 +170,52 @@ function ProgressPage() {
           <h1 className="text-xl font-bold tracking-tight">Моя игра</h1>
         </header>
 
-        {/* Hero-статистика — «Изучено» и «В процессе» кликабельны, раскрывают список */}
+        {/* Hero: верхний ряд — Прогресс и Профиль; нижний — Изучено и В процессе */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard
+            icon={<TrendingUp className="h-5 w-5" />}
+            label="Прогресс"
+            value={`${stats.pct}%`}
+            accent="var(--color-primary)"
+          />
+          {/* Профиль: кружок слева, имя из Telegram, ниже титул. Тап открывает лист игрока */}
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-left transition hover:bg-muted"
+            aria-label="Мой профиль игрока"
+          >
+            {profile.avatarUrl ? (
+              <img
+                src={profile.avatarUrl}
+                alt=""
+                className="block h-12 w-12 shrink-0 rounded-full object-cover"
+                style={{ boxShadow: `0 0 0 3px var(--belt-${profile.belt})` }}
+              />
+            ) : profile.name ? (
+              <span
+                className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-base font-bold text-white ring-2 ring-border"
+                style={{ background: `var(--belt-${profile.belt})` }}
+              >
+                {initials(profile.name)}
+              </span>
+            ) : (
+              <span
+                className="block h-12 w-12 shrink-0 rounded-full ring-2 ring-border"
+                style={{ background: `var(--belt-${profile.belt})` }}
+              />
+            )}
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold">
+                {profile.name || "Боец"}
+              </span>
+              <span className="block truncate text-[11px] text-muted-foreground">
+                {doneCount >= ARCHETYPE_MIN_DONE && styleScores.length > 0
+                  ? STYLE_META[styleScores[0].style].ru
+                  : `${BELT_LABEL[profile.belt]} пояс`}
+              </span>
+            </span>
+          </button>
           <StatCard
             icon={<BookOpen className="h-5 w-5" />}
             label="Изучено"
@@ -189,45 +233,6 @@ function ProgressPage() {
             onClick={() => setOpenList((v) => (v === "in_progress" ? null : "in_progress"))}
             active={openList === "in_progress"}
           />
-          <StatCard
-            icon={<TrendingUp className="h-5 w-5" />}
-            label="Прогресс"
-            value={`${stats.pct}%`}
-            accent="var(--color-primary)"
-          />
-          {/* Тап по кружку профиля открывает лист игрока: пояс, формат, стиль игры */}
-          <button
-            type="button"
-            onClick={() => setSheetOpen(true)}
-            className="rounded-2xl border border-border bg-card p-3 text-center transition hover:bg-muted"
-            aria-label="Мой профиль игрока"
-          >
-            {profile.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt=""
-                className="mx-auto block h-14 w-14 rounded-full object-cover"
-                style={{ boxShadow: `0 0 0 3px var(--belt-${profile.belt})` }}
-              />
-            ) : profile.name ? (
-              <span
-                className="mx-auto grid h-14 w-14 place-items-center rounded-full text-base font-bold text-white ring-2 ring-border"
-                style={{ background: `var(--belt-${profile.belt})` }}
-              >
-                {initials(profile.name)}
-              </span>
-            ) : (
-              <span
-                className="mx-auto block h-14 w-14 rounded-full ring-2 ring-border"
-                style={{ background: `var(--belt-${profile.belt})` }}
-              />
-            )}
-            <p className="mt-2 truncate text-[11px] font-medium">
-              {doneCount >= ARCHETYPE_MIN_DONE && styleScores.length > 0
-                ? STYLE_META[styleScores[0].style].ru
-                : `${BELT_LABEL[profile.belt]} пояс`}
-            </p>
-          </button>
         </section>
 
         {sheetOpen && <CharacterSheet onClose={() => setSheetOpen(false)} />}

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TechniquesTabs } from "@/components/bjj/TechniquesTabs";
+import { Chip } from "@/components/bjj/ui";
 import {
   GLOSSARY,
   GLOSSARY_CATEGORY_LABEL,
@@ -125,29 +126,3 @@ function Glossary() {
   );
 }
 
-function Chip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors"
-      style={{
-        borderColor: active ? "var(--color-primary)" : "var(--color-border)",
-        background: active
-          ? "color-mix(in oklch, var(--color-primary) 12%, var(--color-card))"
-          : "var(--color-card)",
-        color: active ? "var(--color-primary)" : "var(--color-foreground)",
-      }}
-    >
-      {children}
-    </button>
-  );
-}

@@ -1,6 +1,7 @@
 import type { Technique, ProgressStatus } from "@/lib/bjj/types";
 import { BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
 import { Check, Circle, CircleDot } from "lucide-react";
+import { Badge } from "@/components/bjj/ui";
 
 // === TECHNIQUE CARD ===
 const STATUS_ICON = {
@@ -60,18 +61,13 @@ export function TechniqueCard({
         )}
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
-        <Chip>{GROUP_LABEL[technique.group]}</Chip>
-        <Chip>{BELT_LABEL[technique.belt]}</Chip>
-        {technique.gi && <Chip>Gi</Chip>}
-        {technique.noGi && <Chip>No-Gi</Chip>}
-        <Chip>Сложность {technique.difficulty}/5</Chip>
+        <Badge>{GROUP_LABEL[technique.group]}</Badge>
+        <Badge>{BELT_LABEL[technique.belt]}</Badge>
+        {technique.gi && <Badge>Gi</Badge>}
+        {technique.noGi && <Badge>No-Gi</Badge>}
+        <Badge>Сложность {technique.difficulty}/5</Badge>
       </div>
     </article>
   );
 }
 
-function Chip({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{children}</span>
-  );
-}

@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { AuthModal } from "@/components/AuthModal";
 import { useProfile } from "@/lib/bjj/store";
 import type { Locale } from "@/lib/bjj/types";
+import { Toggle } from "@/components/bjj/ui";
 import { X, Cloud, CloudOff, LogIn, LogOut, Info, ChevronRight } from "lucide-react";
 
 // Настройки и информация: шторка по тапу на значок в шапке.
@@ -118,21 +119,5 @@ export function AvatarMenu({ onClose }: { onClose: () => void }) {
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
     </div>
-  );
-}
-
-function Toggle({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-xl border-2 p-2.5 text-sm font-medium transition-all"
-      style={{
-        borderColor: active ? "var(--color-primary)" : "var(--color-border)",
-        background: active ? "color-mix(in oklch, var(--color-primary) 10%, var(--color-card))" : "var(--color-card)",
-      }}
-    >
-      {label}
-    </button>
   );
 }
