@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useRef } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
 import { GapCard } from "@/components/bjj/GapCard";
+import { Avatar } from "@/components/bjj/Avatar";
 import { useProgress, useProfile, useDiary } from "@/lib/bjj/store";
 import { currentFocus, nextToLearn } from "@/lib/bjj/recommend";
 import { computeStyleAffinity, type StyleScore } from "@/lib/bjj/styleProfile";
@@ -191,6 +192,14 @@ function ProgressPage() {
             value={`${stats.pct}%`}
             accent="var(--color-primary)"
           />
+          <div className="rounded-2xl border border-border bg-card p-3 text-center">
+            <Avatar profile={profile} className="mx-auto h-20" />
+            <p className="mt-1.5 truncate text-[11px] font-medium">
+              {doneCount >= ARCHETYPE_MIN_DONE && styleScores.length > 0
+                ? STYLE_META[styleScores[0].style].ru
+                : `${BELT_LABEL[profile.belt]} пояс`}
+            </p>
+          </div>
         </section>
 
         {/* Раскрытый список техник выбранного статуса */}

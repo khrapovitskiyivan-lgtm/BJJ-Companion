@@ -98,6 +98,9 @@ export interface StyleProfile {
   // Профиль пользователя (в т.ч. из Telegram)
   name?: string;
   avatarUrl?: string;
+  // Игровой персонаж (составной аватар из public/avatars; avatarUrl выше - фото из Telegram)
+  kimono?: "white" | "blue" | "black";
+  headId?: "m1" | "m2" | "m3" | "m4" | "m5" | "m6" | "f1" | "f2" | "f3" | "f4" | "f5" | "f6";
   startedAt?: string;   // дата начала занятий BJJ (ISO)
   onboardedAt?: string; // дата прохождения онбординга (ISO)
 }

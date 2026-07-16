@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { AuthModal } from "@/components/AuthModal";
 import { useProfile, useProgress } from "@/lib/bjj/store";
 import { initials } from "@/components/bjj/AppShell";
+import { HEAD_IDS } from "@/lib/bjj/avatar";
 import { TECHNIQUES } from "@/lib/bjj/data";
 import { BELT_LABEL, BELT_ORDER, STYLE_ORDER, STYLE_META } from "@/lib/bjj/constants";
 import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
@@ -172,6 +173,35 @@ export function AvatarMenu({ onClose }: { onClose: () => void }) {
             <div className="grid grid-cols-2 gap-2">
               <Toggle label="Gi (в кимоно)" active={profile.gi} onClick={() => (profile.noGi || !profile.gi) && update({ gi: !profile.gi })} />
               <Toggle label="No-Gi" active={profile.noGi} onClick={() => (profile.gi || !profile.noGi) && update({ noGi: !profile.noGi })} />
+            </div>
+          </section>
+
+          {/* Персонаж: голова и цвет кимоно (составной аватар в «Моей игре») */}
+          <section>
+            <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Персонаж</h3>
+            <div className="mb-2 grid grid-cols-6 gap-1.5">
+              {HEAD_IDS.map((h) => (
+                <button
+                  key={h}
+                  type="button"
+                  onClick={() => update({ headId: h })}
+                  className="rounded-lg border-2 p-1 transition-all"
+                  style={{
+                    borderColor: (profile.headId ?? "m1") === h ? "var(--color-primary)" : "var(--color-border)",
+                    background: (profile.headId ?? "m1") === h
+                      ? "color-mix(in oklch, var(--color-primary) 8%, var(--color-card))"
+                      : "var(--color-card)",
+                  }}
+                  aria-label={`Голова ${h}`}
+                >
+                  <img src={`/avatars/head-${h}.webp`} alt="" className="mx-auto h-9 object-contain" />
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <Toggle label="Белое ги" active={(profile.kimono ?? "white") === "white"} onClick={() => update({ kimono: "white" })} />
+              <Toggle label="Синее ги" active={profile.kimono === "blue"} onClick={() => update({ kimono: "blue" })} />
+              <Toggle label="Чёрное ги" active={profile.kimono === "black"} onClick={() => update({ kimono: "black" })} />
             </div>
           </section>
 
