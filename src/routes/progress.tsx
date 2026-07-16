@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
+import { GapCard } from "@/components/bjj/GapCard";
 import { useProgress, useProfile, useDiary } from "@/lib/bjj/store";
 import { currentFocus, nextToLearn } from "@/lib/bjj/recommend";
 import { computeStyleAffinity, type StyleScore } from "@/lib/bjj/styleProfile";
@@ -278,6 +279,14 @@ function ProgressPage() {
             Растут от изученных техник и отработок в дневнике.
           </p>
         </section>
+
+        <GapCard
+          scores={styleScores}
+          preferredStyles={profile.preferredStyles}
+          progress={progress}
+          belt={profile.belt}
+          doneCount={doneCount}
+        />
 
         {/* Статистика по поясам */}
         <section className="rounded-2xl border border-border bg-card p-4">
