@@ -36,14 +36,14 @@ export function GapCard({
       </h2>
       {onTrack ? (
         <p className="text-xs text-muted-foreground">
-          Идёшь по плану: твой стиль "{STYLE_META[top.style].ru}" совпадает с целью
+          Идёшь по плану: твой стиль «{STYLE_META[top.style].ru}» совпадает с целью
           и занимает {top.pct}% игры.
         </p>
       ) : (
         <>
           <p className="text-xs text-muted-foreground">
-            Хочешь играть "{STYLE_META[aspiration].ru}", но в твоей игре это {aspirationPct}%.
-            Реально тренируешь "{STYLE_META[top.style].ru}" ({top.pct}%).
+            Хочешь играть «{STYLE_META[aspiration].ru}», но в твоей игре это {aspirationPct}%.
+            Реально тренируешь «{STYLE_META[top.style].ru}» ({top.pct}%).
           </p>
           {next.length > 0 && (
             <>
