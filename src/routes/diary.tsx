@@ -7,7 +7,9 @@ import { hapticSuccess } from "@/lib/telegram";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import { GROUP_LABEL } from "@/lib/bjj/constants";
 import type { Intensity } from "@/lib/bjj/types";
-import { Plus, Search, X, CalendarDays, Trash2, NotebookPen, HeartPulse } from "lucide-react";
+import { Plus, Search, X, CalendarDays, Trash2, NotebookPen, HeartPulse, Pencil, Minus } from "lucide-react";
+
+const MAX_ROUNDS = 20;
 
 const INTENSITY: { key: Intensity; label: string }[] = [
   { key: "light", label: "Лёгкая" },
@@ -29,17 +31,19 @@ function DiaryPage() {
 }
 
 function Diary() {
-  const { entries, addEntry, deleteEntry, hydrated } = useDiary();
+  const { entries, addEntry, updateEntry, deleteEntry, hydrated } = useDiary();
   const { setStatus, progress } = useProgress();
 
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [date, setDate] = useState("");
   const [picked, setPicked] = useState<number[]>([]);
   const [note, setNote] = useState("");
   const [query, setQuery] = useState("");
   const [intensity, setIntensity] = useState<Intensity | null>(null);
   const [wellbeing, setWellbeing] = useState<number | null>(null);
-  const [rounds, setRounds] = useState("");
+  const [rounds, setRounds] = useState(0);
   const [injury, setInjury] = useState("");
 
   const resetForm = () => {
@@ -48,9 +52,41 @@ function Diary() {
     setQuery("");
     setIntensity(null);
     setWellbeing(null);
-    setRounds("");
+    setRounds(0);
     setInjury("");
     setAdding(false);
+    setEditingId(null);
+  };
+
+  // Открыть форму для новой записи (чистые поля, дата — сегодня)
+  const startAdd = () => {
+    setEditingId(null);
+    setPicked([]);
+    setNote("");
+    setQuery("");
+    setIntensity(null);
+    setWellbeing(null);
+    setRounds(0);
+    setInjury("");
+    setDate(new Date().toISOString().slice(0, 10));
+    setConfirmDelete(null);
+    setAdding(true);
+  };
+
+  // Открыть форму на редактирование существующей записи
+  const startEdit = (e: (typeof entries)[number]) => {
+    setEditingId(e.id);
+    setAdding(true);
+    setDate(e.date);
+    setPicked(e.techniqueIds);
+    setNote(e.note ?? "");
+    setQuery("");
+    setIntensity(e.intensity ?? null);
+    setWellbeing(e.wellbeing ?? null);
+    setRounds(e.rounds ?? 0);
+    setInjury(e.injury ?? "");
+    setConfirmDelete(null);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // дата по умолчанию — сегодня (в effect, чтобы не ловить hydration mismatch)
@@ -72,15 +108,20 @@ function Diary() {
 
   const save = () => {
     if (!date || picked.length === 0) return;
-    addEntry({
+    const payload = {
       date,
       techniqueIds: picked,
       note: note.trim() || undefined,
       intensity: intensity ?? undefined,
       wellbeing: wellbeing ?? undefined,
-      rounds: rounds ? parseInt(rounds, 10) || undefined : undefined,
+      rounds: rounds > 0 ? rounds : undefined,
       injury: injury.trim() || undefined,
-    });
+    };
+    if (editingId) {
+      updateEntry(editingId, payload);
+    } else {
+      addEntry(payload);
+    }
     // ежедневный цикл: отмеченные техники минимум «в процессе»
     for (const id of picked) {
       if ((progress[id] ?? "not_started") === "not_started") setStatus(id, "in_progress");
@@ -98,7 +139,7 @@ function Diary() {
         </div>
         {!adding && (
           <button
-            onClick={() => setAdding(true)}
+            onClick={startAdd}
             className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
           >
             <Plus className="h-4 w-4" />
@@ -113,6 +154,9 @@ function Diary() {
       {/* Форма новой тренировки */}
       {adding && (
         <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
+          <p className="text-sm font-semibold">
+            {editingId ? "Редактировать тренировку" : "Новая тренировка"}
+          </p>
           <div className="flex items-center gap-2">
             <CalendarDays className="h-4 w-4 text-muted-foreground" />
             <input
@@ -196,15 +240,27 @@ function Diary() {
             ))}
             <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
               Раунды
-              <input
-                type="number"
-                inputMode="numeric"
-                min={0}
-                value={rounds}
-                onChange={(e) => setRounds(e.target.value)}
-                placeholder="0"
-                className="w-14 rounded-lg border border-border bg-background px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-ring"
-              />
+              <span className="inline-flex items-center rounded-lg border border-border bg-background">
+                <button
+                  type="button"
+                  onClick={() => setRounds((r) => Math.max(0, r - 1))}
+                  disabled={rounds <= 0}
+                  className="grid h-8 w-8 place-items-center rounded-l-lg text-muted-foreground transition hover:bg-muted disabled:opacity-40"
+                  aria-label="Меньше раундов"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+                <span className="w-8 text-center text-sm font-medium tabular-nums text-foreground">{rounds}</span>
+                <button
+                  type="button"
+                  onClick={() => setRounds((r) => Math.min(MAX_ROUNDS, r + 1))}
+                  disabled={rounds >= MAX_ROUNDS}
+                  className="grid h-8 w-8 place-items-center rounded-r-lg text-muted-foreground transition hover:bg-muted disabled:opacity-40"
+                  aria-label="Больше раундов"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </span>
             </span>
           </div>
 
@@ -253,7 +309,7 @@ function Diary() {
               disabled={picked.length === 0}
               className="flex-1 rounded-lg bg-primary py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
             >
-              Сохранить
+              {editingId ? "Сохранить изменения" : "Сохранить"}
             </button>
           </div>
         </section>
@@ -280,9 +336,32 @@ function Diary() {
                 {e.rounds ? <span>{e.rounds} р.</span> : null}
                 {e.wellbeing ? <span className="text-sm leading-none">{WELLBEING[e.wellbeing - 1]}</span> : null}
                 <span>{e.techniqueIds.length} техн.</span>
-                <button onClick={() => deleteEntry(e.id)} aria-label="Удалить">
-                  <Trash2 className="h-3.5 w-3.5 hover:text-destructive" />
-                </button>
+                {confirmDelete === e.id ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-destructive">Удалить?</span>
+                    <button
+                      onClick={() => { deleteEntry(e.id); setConfirmDelete(null); }}
+                      className="rounded px-1.5 py-0.5 font-medium text-destructive hover:bg-destructive/10"
+                    >
+                      Да
+                    </button>
+                    <button
+                      onClick={() => setConfirmDelete(null)}
+                      className="rounded px-1.5 py-0.5 font-medium hover:bg-muted"
+                    >
+                      Нет
+                    </button>
+                  </span>
+                ) : (
+                  <>
+                    <button onClick={() => startEdit(e)} aria-label="Редактировать" className="hover:text-foreground">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button onClick={() => setConfirmDelete(e.id)} aria-label="Удалить" className="hover:text-destructive">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">

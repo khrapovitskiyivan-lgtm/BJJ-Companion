@@ -72,57 +72,75 @@ export function useProfile() {
 // Ключи — id техник (number). В JSON сериализуется как строки — работаем через Record<number,...>.
 export type ProgressMap = Record<number, ProgressStatus>;
 
+// Общая шина прогресса. useProgress вызывается из нескольких мест одновременно
+// (AppShell + страница, которая его же и рендерит), а каждый вызов хука заводит свой
+// useState. Без общего снимка экземпляры расходятся: один пишет localStorage, другие
+// об этом не узнают и показывают устаревшие данные до перемонтирования.
+// Держим единый снимок + подписчиков, чтобы запись из любого места дошла до всех.
+let progressSnapshot: ProgressMap | null = null;
+const progressListeners = new Set<(m: ProgressMap) => void>();
+
+function publishProgress(next: ProgressMap) {
+  progressSnapshot = next;
+  for (const listener of progressListeners) listener(next);
+}
+
 export function useProgress() {
   const [progress, setProgressState] = useState<ProgressMap>({});
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setProgressState(readJSON<ProgressMap>(PROGRESS_KEY, {}));
+    // Снимок уже есть (другой экземпляр гидратировался раньше) — берём его, не читаем заново
+    const initial = progressSnapshot ?? readJSON<ProgressMap>(PROGRESS_KEY, {});
+    progressSnapshot = initial;
+    setProgressState(initial);
     setHydrated(true);
+    progressListeners.add(setProgressState);
+
     trySyncFromCloud().then((remote) => {
       if (remote) {
-        setProgressState((prev) => {
-          // Merge стратегия: облако + локальное (локальное имеет приоритет)
-          const merged = { ...remote, ...prev };
-          writeJSON(PROGRESS_KEY, merged);
-          return merged;
-        });
+        // Merge стратегия: облако + локальное (локальное имеет приоритет)
+        const merged = { ...remote, ...(progressSnapshot ?? {}) };
+        writeJSON(PROGRESS_KEY, merged);
+        publishProgress(merged);
       }
     });
+
+    return () => {
+      progressListeners.delete(setProgressState);
+    };
   }, []);
 
   const setStatus = useCallback((techniqueId: number, status: ProgressStatus) => {
-    setProgressState((prev) => {
-      const next = { ...prev, [techniqueId]: status };
-      writeJSON(PROGRESS_KEY, next);
-      void trySyncToCloud(next);
-      return next;
-    });
+    const next = { ...(progressSnapshot ?? {}), [techniqueId]: status };
+    writeJSON(PROGRESS_KEY, next);
+    void trySyncToCloud(next);
+    publishProgress(next);
   }, []);
 
   const cycleStatus = useCallback(
     (techniqueId: number) => {
       const order: ProgressStatus[] = ["not_started", "in_progress", "done"];
-      const current = progress[techniqueId] ?? "not_started";
+      const current = (progressSnapshot ?? {})[techniqueId] ?? "not_started";
       const idx = order.indexOf(current);
       const next = order[(idx + 1) % order.length];
       setStatus(techniqueId, next);
     },
-    [progress, setStatus],
+    [setStatus],
   );
 
-  // Массовая замена (импорт прогресса)
+  // Массовая замена (импорт прогресса, засев из онбординга)
   const setProgress = useCallback((map: ProgressMap) => {
     writeJSON(PROGRESS_KEY, map);
     void trySyncToCloud(map);
-    setProgressState(map);
+    publishProgress(map);
   }, []);
 
   // Полный сброс прогресса
   const clearProgress = useCallback(() => {
     writeJSON(PROGRESS_KEY, {});
     void trySyncToCloud({});
-    setProgressState({});
+    publishProgress({});
   }, []);
 
   return { progress, setStatus, cycleStatus, setProgress, clearProgress, hydrated };
@@ -161,6 +179,16 @@ export function useDiary() {
     [],
   );
 
+  const updateEntry = useCallback(
+    (id: string, patch: Partial<Omit<DiaryEntry, "id">>) => setEntries((prev) => {
+      const next = prev.map((e) => (e.id === id ? { ...e, ...patch } : e));
+      next.sort((a, b) => b.date.localeCompare(a.date));
+      writeJSON(DIARY_KEY, next);
+      return next;
+    }),
+    [],
+  );
+
   const deleteEntry = useCallback(
     (id: string) => setEntries((prev) => {
       const next = prev.filter((e) => e.id !== id);
@@ -180,7 +208,7 @@ export function useDiary() {
     [entries],
   );
 
-  return { entries, addEntry, deleteEntry, practiceCount, persist, hydrated };
+  return { entries, addEntry, updateEntry, deleteEntry, practiceCount, persist, hydrated };
 }
 
 // === CLOUD SYNC (best-effort, 3s timeout) ===

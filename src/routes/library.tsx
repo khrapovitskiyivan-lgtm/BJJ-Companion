@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TechniqueCard } from "@/components/bjj/TechniqueCard";
 import { useProfile, useProgress } from "@/lib/bjj/store";
@@ -12,7 +12,6 @@ import {
 } from "@/lib/bjj/constants";
 import type { Belt, Group } from "@/lib/bjj/types";
 import { TechniquesTabs } from "@/components/bjj/TechniquesTabs";
-import { ProgressPieChart } from "@/components/bjj/ProgressPieChart";
 import { Search, X, RotateCcw, Filter } from "lucide-react";
 
 export const Route = createFileRoute("/library")({
@@ -20,6 +19,17 @@ export const Route = createFileRoute("/library")({
 });
 
 const PAGE_SIZE = 40;
+
+// Кэш фильтров на время сессии: переживает уход на карточку техники и возврат
+// (страница размонтируется, локальный useState теряется — держим последнее состояние здесь).
+type LibFilters = {
+  search: string;
+  belt: Belt;
+  giMode: "both" | "gi" | "nogi";
+  group: Group | "all";
+  page: number;
+};
+let libFiltersCache: LibFilters | null = null;
 
 // ✅ Динамическая генерация из GROUP_LABEL
 // Если добавите новую группу в constants.ts — она автоматически появится здесь
@@ -40,17 +50,22 @@ function Library() {
   const { profile } = useProfile();
   const { progress, cycleStatus } = useProgress();
 
-  const [search, setSearch] = useState("");
-  const [belt, setBelt] = useState<Belt>(profile.belt);
-  const [giMode, setGiMode] = useState<"both" | "gi" | "nogi">(
-    profile.gi && profile.noGi ? "both" : profile.gi ? "gi" : "nogi",
-  );
-  const [group, setGroup] = useState<Group | "all">("all");
-  const [page, setPage] = useState(1);
-
   // Дефолтные значения из профиля (для сброса и сравнения)
   const defaultGiMode: "both" | "gi" | "nogi" =
     profile.gi && profile.noGi ? "both" : profile.gi ? "gi" : "nogi";
+
+  const [search, setSearch] = useState(() => libFiltersCache?.search ?? "");
+  const [belt, setBelt] = useState<Belt>(() => libFiltersCache?.belt ?? profile.belt);
+  const [giMode, setGiMode] = useState<"both" | "gi" | "nogi">(
+    () => libFiltersCache?.giMode ?? defaultGiMode,
+  );
+  const [group, setGroup] = useState<Group | "all">(() => libFiltersCache?.group ?? "all");
+  const [page, setPage] = useState(() => libFiltersCache?.page ?? 1);
+
+  // Держим кэш в актуальном состоянии, чтобы восстановить фильтры после возврата
+  useEffect(() => {
+    libFiltersCache = { search, belt, giMode, group, page };
+  }, [search, belt, giMode, group, page]);
 
   // ✅ Фильтрация техник
   const filtered = useMemo(
@@ -64,36 +79,6 @@ function Library() {
       }),
     [belt, giMode, group, search],
   );
-
-  // ✅ Данные для круговой диаграммы прогресса
-  const pieSegments = useMemo(() => {
-    const done = filtered.filter((t) => progress[t.id] === "done").length;
-    const inProgress = filtered.filter(
-      (t) => progress[t.id] === "in_progress",
-    ).length;
-    const notStarted = filtered.length - done - inProgress;
-
-    return [
-      {
-        label: "Изучено",
-        value: done,
-        color: "var(--status-done, #10b981)",
-        icon: "✓",
-      },
-      {
-        label: "В процессе",
-        value: inProgress,
-        color: "var(--status-progress, #3b82f6)",
-        icon: "◐",
-      },
-      {
-        label: "Не начато",
-        value: notStarted,
-        color: "var(--status-idle, #6b7280)",
-        icon: "○",
-      },
-    ];
-  }, [filtered, progress]);
 
   // ✅ Пагинация
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -127,90 +112,31 @@ function Library() {
 
   const hasActiveFilters = activeFiltersCount > 0;
 
-  // ✅ Процент изученных техник (для центра диаграммы)
-  const donePercent =
-    filtered.length > 0
-      ? Math.round((pieSegments[0].value / filtered.length) * 100)
-      : 0;
-
   return (
-    <div className="space-y-4">
-      {/* Header с диаграммой */}
-      <header className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
+    <div className="space-y-3">
+      {/* Шапка — единая форма с /map и /situations: кикер + заголовок слева, табы справа */}
+      <header className="flex items-end justify-between px-1">
+        <div>
+          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Каталог</p>
           <h1 className="text-xl font-bold tracking-tight">Библиотека техник</h1>
-          <p className="text-xs text-muted-foreground">
-            {filtered.length} техник · страница {currentPage}/{totalPages}
-            {hasActiveFilters && (
-              <span className="ml-2 inline-flex items-center gap-1 text-primary">
-                <Filter className="h-3 w-3" />
-                {activeFiltersCount}{" "}
-                {activeFiltersCount === 1
-                  ? "фильтр"
-                  : activeFiltersCount < 5
-                    ? "фильтра"
-                    : "фильтров"}
-              </span>
-            )}
-          </p>
         </div>
-
-        {/* ✅ Компактная круговая диаграмма в шапке */}
-        {filtered.length > 0 && (
-          <div className="hidden sm:block shrink-0">
-            <ProgressPieChart
-              segments={pieSegments}
-              size={88}
-              thickness={12}
-              centerLabel="изучено"
-              centerValue={`${donePercent}%`}
-              showLegend={false}
-            />
-          </div>
-        )}
-
         <TechniquesTabs />
       </header>
 
-      {/* ✅ Расширенная статистика с большой диаграммой */}
-      {filtered.length > 0 && (
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            <ProgressPieChart
-              segments={pieSegments}
-              size={140}
-              thickness={18}
-              centerLabel="всего"
-              centerValue={filtered.length}
-              showLegend={false}
-            />
-            <div className="flex-1 grid grid-cols-3 gap-3 w-full">
-              {pieSegments.map((segment, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col items-center p-3 rounded-xl bg-muted/30 border border-border/50"
-                >
-                  <span
-                    className="text-2xl font-bold"
-                    style={{ color: segment.color }}
-                  >
-                    {segment.value}
-                  </span>
-                  <span className="text-[11px] text-muted-foreground text-center mt-1">
-                    {segment.icon} {segment.label}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground/70 mt-0.5">
-                    {filtered.length > 0
-                      ? Math.round((segment.value / filtered.length) * 100)
-                      : 0}
-                    %
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      <p className="px-1 text-xs text-muted-foreground">
+        {filtered.length} техник · страница {currentPage}/{totalPages}
+        {hasActiveFilters && (
+          <span className="ml-2 inline-flex items-center gap-1 text-primary">
+            <Filter className="h-3 w-3" />
+            {activeFiltersCount}{" "}
+            {activeFiltersCount === 1
+              ? "фильтр"
+              : activeFiltersCount < 5
+                ? "фильтра"
+                : "фильтров"}
+          </span>
+        )}
+      </p>
 
       {/* Search */}
       <div className="relative">
