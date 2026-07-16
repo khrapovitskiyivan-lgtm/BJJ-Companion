@@ -1,10 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
 import { BottomNav } from "./BottomNav";
 import { Onboarding } from "./Onboarding";
 import { Logo } from "./Logo";
 import { AvatarMenu } from "./AvatarMenu";
+import { GlobalStatsModal } from "./GlobalStatsModal";
 import { useProfile, useProgress } from "@/lib/bjj/store";
+import { reportPlayer } from "@/lib/bjj/globalStats";
 import { initTelegram, haptic } from "@/lib/telegram";
 import { Moon, Sun, Settings } from "lucide-react";
 
@@ -25,11 +26,18 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
   const { profile, update, hydrated } = useProfile();
   const { progress, setProgress } = useProgress();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
 
   useEffect(() => {
     if (!hydrated) return;
     document.documentElement.classList.toggle("dark", profile.theme === "dark");
   }, [profile.theme, hydrated]);
+
+  // Анонимный отчёт в глобальную статистику (device_id + пояс); троттлинг внутри
+  useEffect(() => {
+    if (!hydrated || !profile.onboardingDone) return;
+    reportPlayer(profile.belt);
+  }, [hydrated, profile.onboardingDone, profile.belt]);
 
   // Telegram Mini App: подтянуть имя/фото/язык из Telegram (один раз после гидратации)
   useEffect(() => {
@@ -77,11 +85,16 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
               {profile.theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
-          {/* центр: лого + название */}
-          <Link to="/" className="flex items-center gap-2 justify-self-center">
+          {/* центр: лого + название — тап открывает глобальную статистику */}
+          <button
+            type="button"
+            onClick={() => { haptic("light"); setStatsOpen(true); }}
+            aria-label="Глобальная статистика"
+            className="flex items-center gap-2 justify-self-center"
+          >
             <Logo size={26} />
             <span className="text-sm font-bold tracking-tight">BJJ Companion</span>
-          </Link>
+          </button>
           {/* справа: настройки и информация (язык, аккаунт, о приложении) */}
           <button
             type="button"
@@ -97,6 +110,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
       <main className={`mx-auto px-4 py-4 ${wide ? "max-w-6xl" : "max-w-xl"}`}>{children}</main>
       <BottomNav />
       {menuOpen && <AvatarMenu onClose={() => setMenuOpen(false)} />}
+      {statsOpen && <GlobalStatsModal onClose={() => setStatsOpen(false)} />}
     </div>
   );
 }
