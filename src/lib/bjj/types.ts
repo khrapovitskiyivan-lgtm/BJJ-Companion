@@ -98,9 +98,11 @@ export interface StyleProfile {
   // Профиль пользователя (в т.ч. из Telegram)
   name?: string;
   avatarUrl?: string;
-  // Игровой персонаж (составной аватар из public/avatars; avatarUrl выше - фото из Telegram)
+  // Игровой персонаж (составной аватар из public/avatars; avatarUrl выше - фото из Telegram).
+  // HeadId живёт в avatar.ts (единственный источник, выводится из HEAD_IDS);
+  // import() здесь type-only, цикла в рантайме нет.
   kimono?: "white" | "blue" | "black";
-  headId?: "m1" | "m2" | "m3" | "m4" | "m5" | "m6" | "f1" | "f2" | "f3" | "f4" | "f5" | "f6";
+  headId?: import("./avatar").HeadId;
   startedAt?: string;   // дата начала занятий BJJ (ISO)
   onboardedAt?: string; // дата прохождения онбординга (ISO)
 }
