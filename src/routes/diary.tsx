@@ -16,7 +16,8 @@ const INTENSITY: { key: Intensity; label: string }[] = [
   { key: "medium", label: "Средняя" },
   { key: "hard", label: "Жёсткая" },
 ];
-const WELLBEING = ["😣", "😕", "😐", "🙂", "😄"];
+// Смайлы через fromCodePoint: сырой эмодзи в исходнике ломает iOS JavaScriptCore (webview Telegram)
+const WELLBEING = [0x1f623, 0x1f615, 0x1f610, 0x1f642, 0x1f604].map((c) => String.fromCodePoint(c));
 
 export const Route = createFileRoute("/diary")({
   component: DiaryPage,

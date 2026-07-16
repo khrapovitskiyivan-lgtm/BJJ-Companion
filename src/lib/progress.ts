@@ -6,7 +6,7 @@ const STORAGE_KEY = "bjj.progress.v1";
 export function exportProgress(): void {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) {
-    alert("⚠️ Нет данных для экспорта");
+    alert("Нет данных для экспорта");
     return;
   }
 
@@ -14,7 +14,7 @@ export function exportProgress(): void {
     // Проверяем что это валидный JSON
     JSON.parse(raw);
   } catch {
-    alert("❌ Данные в localStorage повреждены");
+    alert("Данные в localStorage повреждены");
     return;
   }
 

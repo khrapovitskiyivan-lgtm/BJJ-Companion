@@ -25,7 +25,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
           password,
         });
         if (error) throw error;
-        alert("✅ Регистрация успешна! Проверьте email для подтверждения (если включено).");
+        alert("Регистрация успешна! Проверьте email для подтверждения (если включено).");
         setMode("login");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
