@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
 import { GapCard } from "@/components/bjj/GapCard";
@@ -14,14 +14,10 @@ import { computeStats, countDone, ARCHETYPE_MIN_DONE, STAT_META, ARCHETYPE_STATS
 import type { Technique } from "@/lib/bjj/types";
 import {
   TrendingUp,
-  Download,
-  Upload,
-  Trash2,
   Award,
   Target,
   CircleDot,
   BookOpen,
-  AlertTriangle,
   Flag,
 } from "lucide-react";
 
@@ -29,15 +25,11 @@ export const Route = createFileRoute("/progress")({
   component: ProgressPage,
 });
 
-// === Вспомогательные утилиты ===
-const getDateKey = (date: Date): string => date.toISOString().split("T")[0];
-
 // === ГЛАВНЫЙ КОМПОНЕНТ ===
 function ProgressPage() {
-  const { progress, setProgress, clearProgress } = useProgress();
+  const { progress } = useProgress();
   const { profile } = useProfile();
   const { practiceCount } = useDiary();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Текущий фокус (в процессе) + следующая цель (рекомендации)
   const focusTech = useMemo(() => currentFocus(TECHNIQUES, progress), [progress]);
@@ -58,9 +50,6 @@ function ProgressPage() {
     [progress, practiceCount],
   );
   const doneCount = useMemo(() => countDone(progress), [progress]);
-
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [importStatus, setImportStatus] = useState<"idle" | "success" | "error">("idle");
 
   // Раскрытие списка техник по статусу: клик по карточке «Изучено» / «В процессе»
   const [openList, setOpenList] = useState<"done" | "in_progress" | null>(null);
@@ -107,57 +96,6 @@ function ProgressPage() {
     }).filter((s) => s.total > 0);
   }, [progress]);
 
-  // === Экспорт прогресса ===
-  const exportProgress = useCallback(() => {
-    const data = {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      progress,
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `bjj-progress-${getDateKey(new Date())}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [progress]);
-
-  // === Импорт прогресса ===
-  const importProgress = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = JSON.parse(event.target?.result as string);
-        if (data.progress && typeof data.progress === "object") {
-          setProgress(data.progress);
-          setImportStatus("success");
-          setTimeout(() => setImportStatus("idle"), 2000);
-        } else {
-          throw new Error("Invalid format");
-        }
-      } catch {
-        setImportStatus("error");
-        setTimeout(() => setImportStatus("idle"), 2000);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = "";
-  }, [setProgress]);
-
-  // === Сброс прогресса ===
-  const handleReset = useCallback(() => {
-    if (showResetConfirm) {
-      clearProgress();
-      setShowResetConfirm(false);
-    } else {
-      setShowResetConfirm(true);
-      setTimeout(() => setShowResetConfirm(false), 3000);
-    }
-  }, [showResetConfirm, clearProgress]);
 
   return (
     <AppShell>
@@ -393,53 +331,6 @@ function ProgressPage() {
           </div>
         </section>
 
-        {/* Экспорт / Импорт / Сброс */}
-        <section className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="mb-3 text-sm font-semibold">Управление данными</h2>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={exportProgress}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium transition hover:bg-muted"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Экспорт
-            </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium transition hover:bg-muted"
-            >
-              <Upload className="h-3.5 w-3.5" />
-              {importStatus === "success" ? "Импортировано" : importStatus === "error" ? "Ошибка импорта" : "Импорт"}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={importProgress}
-              className="hidden"
-            />
-            <button
-              onClick={handleReset}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition ${
-                showResetConfirm
-                  ? "border-destructive bg-destructive text-destructive-foreground"
-                  : "border-destructive/30 bg-background text-destructive hover:bg-destructive/10"
-              }`}
-            >
-              {showResetConfirm ? (
-                <>
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  Подтвердить сброс?
-                </>
-              ) : (
-                <>
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Сбросить
-                </>
-              )}
-            </button>
-          </div>
-        </section>
       </div>
     </AppShell>
   );

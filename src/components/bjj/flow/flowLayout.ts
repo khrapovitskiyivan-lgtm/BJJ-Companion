@@ -101,6 +101,12 @@ function mkLabel(id: string, text: string, x: number, y: number): Node {
   };
 }
 
+// Ширина самого широкого ряда зоны (для отвода колонки альтернатив в сторону)
+function rowWidth(count: number): number {
+  const inRow = Math.min(count, MAX_PER_ROW);
+  return inRow > 0 ? inRow * NODE_W + (inRow - 1) * GAP_X : 0;
+}
+
 // Построить positioned nodes+edges для фокусной техники. Синхронно.
 export function layoutFlow(focus: Technique): { nodes: Node[]; edges: Edge[] } {
   const zones = collectZones(focus);
@@ -110,11 +116,14 @@ export function layoutFlow(focus: Technique): { nodes: Node[]; edges: Edge[] } {
   const edge = (from: number, to: number, kind: "flow" | "alt") =>
     edges.push({ id: `e${ei++}`, source: String(from), target: String(to), data: { kind } });
 
-  // Верх: откуда попадаешь (стрелки вниз, в фокус)
+  // Верх: откуда попадаешь (стрелки вниз, в фокус). Зона растёт ВВЕРХ,
+  // поэтому подпись — над самым верхним рядом, а не над первым.
   if (zones.up.length) {
     const upY = -NODE_H / 2 - ZONE_GAP_Y - NODE_H;
     nodes.push(...layoutRows(zones.up, upY, -1));
-    nodes.push(mkLabel("zl-up", "Откуда попадаешь", -NODE_W / 2, upY - 26));
+    const upRows = Math.ceil(zones.up.length / MAX_PER_ROW);
+    const upTopY = upY - (upRows - 1) * (NODE_H + ROW_GAP);
+    nodes.push(mkLabel("zl-up", "Откуда попадаешь", -NODE_W / 2, upTopY - 30));
     for (const t of zones.up) edge(t.id, focus.id, "flow");
   }
 
@@ -122,29 +131,37 @@ export function layoutFlow(focus: Technique): { nodes: Node[]; edges: Edge[] } {
   const downY = NODE_H / 2 + ZONE_GAP_Y;
   if (zones.down.length) {
     nodes.push(...layoutRows(zones.down, downY, 1));
-    nodes.push(mkLabel("zl-down", "Что дальше", -NODE_W / 2, downY - 26));
+    nodes.push(mkLabel("zl-down", "Что дальше", -NODE_W / 2, downY - 30));
     for (const t of zones.down) edge(focus.id, t.id, "flow");
   }
 
-  // Низ, ряд 2: сабмишены (финиш) — ниже продолжений
+  // Низ, ряд 2: сабмишены (финиш) — ниже всех рядов продолжений,
+  // с зазором под подпись (56 > высота подписи + отступ)
   if (zones.subs.length) {
     const downRows = Math.ceil(zones.down.length / MAX_PER_ROW);
-    const subsY = downY + Math.max(downRows, 0) * (NODE_H + ROW_GAP) + (zones.down.length ? 40 : 0);
+    const subsY = downY + downRows * (NODE_H + ROW_GAP) + (zones.down.length ? 56 : 0);
     nodes.push(...layoutRows(zones.subs, subsY, 1));
-    nodes.push(mkLabel("zl-subs", "Сабмишены: финиш", -NODE_W / 2, subsY - 26));
+    nodes.push(mkLabel("zl-subs", "Сабмишены: финиш", -NODE_W / 2, subsY - 30));
     for (const t of zones.subs) edge(focus.id, t.id, "flow");
   }
 
-  // Лево: альтернативы (колонка, пунктирные связи без направления)
+  // Лево: альтернативы. Колонка отводится левее САМОГО ШИРОКОГО ряда всех зон,
+  // иначе при рядах в 3-4 узла колонка оказывается под ними (наложение).
   if (zones.alts.length) {
-    const colX = -NODE_W / 2 - ALT_GAP_X - NODE_W;
+    const maxHalfW = Math.max(
+      NODE_W,
+      rowWidth(zones.up.length),
+      rowWidth(zones.down.length),
+      rowWidth(zones.subs.length),
+    ) / 2;
+    const colX = -maxHalfW - ALT_GAP_X - NODE_W;
     const colH = zones.alts.length * NODE_H + (zones.alts.length - 1) * ROW_GAP;
     const startY = -colH / 2;
     zones.alts.forEach((t, i) => {
       nodes.push(mkNode(t, colX, startY + i * (NODE_H + ROW_GAP)));
       edge(focus.id, t.id, "alt");
     });
-    nodes.push(mkLabel("zl-alts", "Альтернативы", colX, startY - 26));
+    nodes.push(mkLabel("zl-alts", "Альтернативы", colX, startY - 30));
   }
 
   return { nodes, edges };
