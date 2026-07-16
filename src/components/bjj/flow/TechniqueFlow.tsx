@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
   Background,
   BackgroundVariant,
-  Controls,
   useNodesState,
+  useReactFlow,
   type Node,
   type Edge,
 } from "@xyflow/react";
@@ -12,13 +12,13 @@ import "@xyflow/react/dist/style.css";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import { useProgress, useProfile } from "@/lib/bjj/store";
 import { nextToLearn, currentFocus } from "@/lib/bjj/recommend";
-import { BELT_LABEL } from "@/lib/bjj/constants";
+import { GROUP_LABEL } from "@/lib/bjj/constants";
 import { haptic } from "@/lib/telegram";
 import type { Technique } from "@/lib/bjj/types";
 import { layoutFlow } from "./flowLayout";
-import { TechniqueNode, GROUP_COLOR } from "./TechniqueNode";
+import { TechniqueNode } from "./TechniqueNode";
 import { FlowEdges } from "./FlowEdges";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Search, Crosshair, X } from "lucide-react";
 
 const nodeTypes = { tech: TechniqueNode };
 
@@ -28,6 +28,21 @@ function neighborhood(focus: Technique): Technique[] {
   for (const p of focus.prerequisites) ids.add(p);
   for (const c of focus.chain_to) ids.add(c);
   return [...ids].map((id) => TECH_BY_ID[id]).filter((t): t is Technique => Boolean(t));
+}
+
+// Кнопка центрирования графа (единственный контрол вместо стоковых +/-/fit).
+function FitButton() {
+  const rf = useReactFlow();
+  return (
+    <button
+      type="button"
+      onClick={() => rf.fitView({ padding: 0.22, maxZoom: 1.1, duration: 300 })}
+      className="absolute bottom-3 right-3 z-10 grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-muted-foreground shadow-md transition hover:bg-muted"
+      aria-label="Центрировать"
+    >
+      <Crosshair className="h-4 w-4" />
+    </button>
+  );
 }
 
 export function TechniqueFlow() {
@@ -59,6 +74,38 @@ export function TechniqueFlow() {
   // Версия раскладки: растёт при каждой новой ELK-раскладке. По ней ремонтим ReactFlow,
   // чтобы fitView (проп) центрировал СВЕЖИЕ узлы. Меняется только при смене фокуса, не статуса.
   const [layoutVersion, setLayoutVersion] = useState(0);
+
+  // Поиск техники — прыжок фокуса на любую технику базы.
+  const [query, setQuery] = useState("");
+  const searchResults = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return TECHNIQUES.filter(
+      (t) =>
+        t.id !== activeId &&
+        (t.nameRu.toLowerCase().includes(q) ||
+          t.nameEn.toLowerCase().includes(q) ||
+          t.label.toLowerCase().includes(q)),
+    ).slice(0, 8);
+  }, [query, activeId]);
+
+  // Адаптивная высота графа под экран телефона: от низа панели до нижней навигации.
+  // BELOW_GRAPH — то, что идёт ниже графа в AppShell: main py-4 (16px) + root pb-20 (80px)
+  // под фиксированную нижнюю навигацию. Без этого страница скроллится, а карта «больше телефона».
+  const BELOW_GRAPH = 96;
+  const graphRef = useRef<HTMLDivElement>(null);
+  const [graphH, setGraphH] = useState(0);
+  useLayoutEffect(() => {
+    const compute = () => {
+      const el = graphRef.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top;
+      setGraphH(Math.max(320, window.innerHeight - top - BELOW_GRAPH));
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+  }, [mounted]);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,8 +149,8 @@ export function TechniqueFlow() {
   };
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100dvh - 200px)", minHeight: 400 }}>
-      {/* Панель фокуса */}
+    <div className="flex flex-col">
+      {/* Панель: назад + поиск техники */}
       <div className="mb-2 flex items-center gap-2">
         <button
           onClick={goBack}
@@ -113,14 +160,48 @@ export function TechniqueFlow() {
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <span className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">
-          {profile.belt && <span>{BELT_LABEL[profile.belt]} · </span>}
-          Нажми узел — центрируется на нём
-        </span>
+        <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Найти технику на карте…"
+            className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-9 text-sm outline-none focus:ring-1 focus:ring-ring"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-muted"
+              aria-label="Очистить"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+          {searchResults.length > 0 && (
+            <div className="absolute z-30 mt-1 w-full overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
+              {searchResults.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => { goTo(t.id); setQuery(""); }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted"
+                >
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: `var(--belt-${t.belt})` }} />
+                  <span className="min-w-0 flex-1 truncate">{t.nameRu}</span>
+                  <span className="shrink-0 text-[10px] text-muted-foreground">{GROUP_LABEL[t.group]}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Граф-соседство */}
-      <div className="relative flex-1 overflow-hidden rounded-2xl border border-border" style={{ background: "var(--color-background)" }}>
+      <div
+        ref={graphRef}
+        className="relative overflow-hidden rounded-2xl border border-border"
+        style={{ height: graphH || 400, background: "var(--color-background)" }}
+      >
         {(loading || !mounted) && (
           <div className="absolute inset-0 z-10 grid place-items-center text-sm text-muted-foreground">Строю…</div>
         )}
@@ -140,13 +221,9 @@ export function TechniqueFlow() {
             elementsSelectable
             onNodeClick={(_, n) => goTo(Number(n.id))}
           >
-            <FlowEdges
-              edges={layoutData.edges}
-              focusId={String(activeId)}
-              focusColor={focus ? GROUP_COLOR[focus.group] : undefined}
-            />
+            <FlowEdges edges={layoutData.edges} focusId={String(activeId)} />
             <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="var(--color-border)" />
-            <Controls showInteractive={false} position="top-right" />
+            <FitButton />
           </ReactFlow>
         )}
       </div>
