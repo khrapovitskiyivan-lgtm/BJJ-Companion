@@ -91,6 +91,7 @@ async function heads() {
 
 // Превью-композит: тело + голова с текущими константами, чтобы проверить посадку
 async function preview() {
+  mkdirSync(".superpowers/sdd", { recursive: true });
   const bodyBuf = await sharp(`${OUT}/body-white-white.webp`).png().toBuffer();
   const bodyMeta = await sharp(bodyBuf).metadata();
   const bw = bodyMeta.width, bh = bodyMeta.height;

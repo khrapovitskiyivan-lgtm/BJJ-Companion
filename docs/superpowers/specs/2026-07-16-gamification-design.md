@@ -60,7 +60,7 @@ primary/secondary стат каждого архетипа считается ч
 `nextToLearn` в `recommend.ts` получает мягкий бонус к сортировке по цели:
 - `self-defense`: приоритет `group` in {escape, takedown} + `fundamental` тег.
 - `competition`: приоритет `points_ibjjf > 0` и `legal_ibjjf_gi` (по формату профиля).
-- `hobby`: усилить существующий round-robin по группам (разнообразие).
+- `hobby`: без бонуса — существующий round-robin по группам уже даёт разнообразие.
 
 Бонус к весу сортировки, не жёсткий фильтр — иначе сузим выдачу.
 
