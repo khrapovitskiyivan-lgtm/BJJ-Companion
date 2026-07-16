@@ -7,6 +7,7 @@ interface EdgeLite {
   id: string;
   source: string;
   target: string;
+  data?: { kind?: "flow" | "alt" };
 }
 
 // Цвет связи по поясу техники, к которой она ведёт. Белый пояс — серый (сам свотч
@@ -44,17 +45,41 @@ export function FlowEdges({
       const s = pos.get(e.source);
       const t = pos.get(e.target);
       if (!s || !t) continue;
+      const isFocus = focusId != null && (e.source === focusId || e.target === focusId);
+      // Пояс соседа: конец связи, который не является фокусом (иначе — целевой узел).
+      const otherId = focusId != null && e.source === focusId ? e.target : e.source;
+      const belt = beltOf.get(otherId) ?? beltOf.get(e.target);
+      const stroke = belt ? EDGE_BELT_COLOR[belt] : gray;
+
+      if (e.data?.kind === "alt") {
+        // Альтернатива: горизонтальная пунктирная связь без стрелки
+        // (из левого края фокуса в правый край альтернативы)
+        const sx = s.x;
+        const sy = s.y + NODE_H / 2;
+        const tx = t.x + NODE_W;
+        const ty = t.y + NODE_H / 2;
+        const mx = (sx + tx) / 2;
+        const d = `M ${sx} ${sy} C ${mx} ${sy}, ${mx} ${ty}, ${tx} ${ty}`;
+        out.push(
+          <path
+            key={e.id}
+            d={d}
+            fill="none"
+            stroke={stroke}
+            strokeWidth={1.3}
+            strokeOpacity={0.55}
+            strokeDasharray="5 4"
+          />,
+        );
+        continue;
+      }
+
       const sx = s.x + NODE_W / 2;
       const sy = s.y + NODE_H;
       const tx = t.x + NODE_W / 2;
       const ty = t.y;
       const my = (sy + ty) / 2;
       const d = `M ${sx} ${sy} C ${sx} ${my}, ${tx} ${my}, ${tx} ${ty}`;
-      const isFocus = focusId != null && (e.source === focusId || e.target === focusId);
-      // Пояс соседа: конец связи, который не является фокусом (иначе — целевой узел).
-      const otherId = focusId != null && e.source === focusId ? e.target : e.source;
-      const belt = beltOf.get(otherId) ?? beltOf.get(e.target);
-      const stroke = belt ? EDGE_BELT_COLOR[belt] : gray;
       out.push(
         <path
           key={e.id}

@@ -6,7 +6,6 @@ import {
   useNodesState,
   useReactFlow,
   type Node,
-  type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
@@ -14,21 +13,12 @@ import { useProgress, useProfile } from "@/lib/bjj/store";
 import { nextToLearn, currentFocus } from "@/lib/bjj/recommend";
 import { GROUP_LABEL } from "@/lib/bjj/constants";
 import { haptic } from "@/lib/telegram";
-import type { Technique } from "@/lib/bjj/types";
 import { layoutFlow } from "./flowLayout";
-import { TechniqueNode } from "./TechniqueNode";
+import { TechniqueNode, ZoneLabelNode } from "./TechniqueNode";
 import { FlowEdges } from "./FlowEdges";
 import { ArrowLeft, Search, Crosshair, X } from "lucide-react";
 
-const nodeTypes = { tech: TechniqueNode };
-
-// Соседство техники: она сама + пререквизиты (сверху) + продолжения (снизу).
-function neighborhood(focus: Technique): Technique[] {
-  const ids = new Set<number>([focus.id]);
-  for (const p of focus.prerequisites) ids.add(p);
-  for (const c of focus.chain_to) ids.add(c);
-  return [...ids].map((id) => TECH_BY_ID[id]).filter((t): t is Technique => Boolean(t));
-}
+const nodeTypes = { tech: TechniqueNode, zone: ZoneLabelNode };
 
 // Кнопка центрирования графа (единственный контрол вместо стоковых +/-/fit).
 function FitButton() {
@@ -36,7 +26,7 @@ function FitButton() {
   return (
     <button
       type="button"
-      onClick={() => rf.fitView({ padding: 0.22, maxZoom: 1.1, duration: 300 })}
+      onClick={() => rf.fitView({ padding: 0.18, maxZoom: 1.1, duration: 300 })}
       className="absolute bottom-3 right-3 z-10 grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-muted-foreground shadow-md transition hover:bg-muted"
       aria-label="Центрировать"
     >
@@ -66,14 +56,13 @@ export function TechniqueFlow() {
   const activeId = focusId ?? startId;
   const focus = TECH_BY_ID[activeId];
 
-  const visible = useMemo(() => (focus ? neighborhood(focus) : []), [focus]);
+  // Зональная раскладка: синхронно, без ELK
+  const layoutData = useMemo(
+    () => (focus ? layoutFlow(focus) : { nodes: [], edges: [] }),
+    [focus],
+  );
 
-  const [layoutData, setLayoutData] = useState<{ nodes: Node[]; edges: Edge[] }>({ nodes: [], edges: [] });
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState<Node>([]);
-  const [loading, setLoading] = useState(true);
-  // Версия раскладки: растёт при каждой новой ELK-раскладке. По ней ремонтим ReactFlow,
-  // чтобы fitView (проп) центрировал СВЕЖИЕ узлы. Меняется только при смене фокуса, не статуса.
-  const [layoutVersion, setLayoutVersion] = useState(0);
 
   // Поиск техники — прыжок фокуса на любую технику базы.
   const [query, setQuery] = useState("");
@@ -107,33 +96,23 @@ export function TechniqueFlow() {
     return () => window.removeEventListener("resize", compute);
   }, [mounted]);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    layoutFlow(visible).then((res) => {
-      if (cancelled) return;
-      setLayoutData(res);
-      setLayoutVersion((v) => v + 1);
-      setLoading(false);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [visible]);
-
-  // Влить статус + выделение фокуса в data (без пересчёта ELK)
+  // Влить статус + выделение фокуса в data (без пересчёта раскладки)
   useEffect(() => {
     setRfNodes(
-      layoutData.nodes.map((n) => ({
-        ...n,
-        selected: Number(n.id) === activeId,
-        data: { ...n.data, status: progress[Number(n.id)] ?? "not_started" },
-      })),
+      layoutData.nodes.map((n) =>
+        n.type === "tech"
+          ? {
+              ...n,
+              selected: Number(n.id) === activeId,
+              data: { ...n.data, status: progress[Number(n.id)] ?? "not_started" },
+            }
+          : n,
+      ),
     );
   }, [layoutData.nodes, progress, activeId, setRfNodes]);
 
   const goTo = (id: number) => {
-    if (id === activeId) return;
+    if (id === activeId || !TECH_BY_ID[id]) return;
     haptic("light");
     setHistory((h) => [...h, activeId]);
     setFocusId(id);
@@ -196,30 +175,27 @@ export function TechniqueFlow() {
         </div>
       </div>
 
-      {/* Граф-соседство */}
+      {/* Граф-соседство: зоны вокруг фокуса */}
       <div
         ref={graphRef}
         className="relative overflow-hidden rounded-2xl border border-border"
         style={{ height: graphH || 400, background: "var(--color-background)" }}
       >
-        {(loading || !mounted) && (
-          <div className="absolute inset-0 z-10 grid place-items-center text-sm text-muted-foreground">Строю…</div>
-        )}
         {mounted && (
           <ReactFlow
-            key={layoutVersion}
+            key={activeId}
             nodes={rfNodes}
             edges={[]}
             onNodesChange={onNodesChange}
             nodeTypes={nodeTypes}
             fitView
-            fitViewOptions={{ padding: 0.22, maxZoom: 1.1 }}
-            minZoom={0.4}
+            fitViewOptions={{ padding: 0.18, maxZoom: 1.1 }}
+            minZoom={0.3}
             maxZoom={1.6}
             nodesDraggable={false}
             nodesConnectable={false}
             elementsSelectable
-            onNodeClick={(_, n) => goTo(Number(n.id))}
+            onNodeClick={(_, n) => n.type === "tech" && goTo(Number(n.id))}
           >
             <FlowEdges edges={layoutData.edges} focusId={String(activeId)} />
             <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="var(--color-border)" />

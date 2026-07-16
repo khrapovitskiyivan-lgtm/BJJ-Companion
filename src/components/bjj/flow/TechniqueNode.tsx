@@ -33,6 +33,25 @@ const STATUS_LABEL: Record<ProgressStatus, string> = {
 
 export type TechNode = Node<TechNodeData & { status?: ProgressStatus; dimmed?: boolean }, "tech">;
 
+// Подпись зоны раскладки («Откуда попадаешь», «Сабмишены: финиш»...)
+export function ZoneLabelNode({ data }: NodeProps<Node<{ text: string }, "zone">>) {
+  return (
+    <div
+      style={{
+        width: 156,
+        fontSize: 10,
+        textTransform: "uppercase",
+        letterSpacing: "0.08em",
+        color: "var(--color-muted-foreground)",
+        pointerEvents: "none",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {data.text}
+    </div>
+  );
+}
+
 export function TechniqueNode({ data, selected }: NodeProps<TechNode>) {
   const t = data.tech;
   const status = (data.status ?? "not_started") as ProgressStatus;
