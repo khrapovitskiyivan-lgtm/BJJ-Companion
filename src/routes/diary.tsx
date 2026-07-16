@@ -354,11 +354,20 @@ function Diary() {
                   </span>
                 ) : (
                   <>
-                    <button onClick={() => startEdit(e)} aria-label="Редактировать" className="hover:text-foreground">
-                      <Pencil className="h-3.5 w-3.5" />
+                    {/* Крупные зоны нажатия с зазором: на телефоне легко промахнуться */}
+                    <button
+                      onClick={() => startEdit(e)}
+                      aria-label="Редактировать"
+                      className="grid h-8 w-8 place-items-center rounded-lg transition hover:bg-muted hover:text-foreground"
+                    >
+                      <Pencil className="h-4 w-4" />
                     </button>
-                    <button onClick={() => setConfirmDelete(e.id)} aria-label="Удалить" className="hover:text-destructive">
-                      <Trash2 className="h-3.5 w-3.5" />
+                    <button
+                      onClick={() => setConfirmDelete(e.id)}
+                      aria-label="Удалить"
+                      className="ml-1.5 grid h-8 w-8 place-items-center rounded-lg transition hover:bg-muted hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </>
                 )}

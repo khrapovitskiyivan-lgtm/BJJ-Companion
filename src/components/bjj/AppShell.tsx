@@ -6,8 +6,7 @@ import { Logo } from "./Logo";
 import { AvatarMenu } from "./AvatarMenu";
 import { useProfile, useProgress } from "@/lib/bjj/store";
 import { initTelegram, haptic } from "@/lib/telegram";
-import { BELT_LABEL } from "@/lib/bjj/constants";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Settings } from "lucide-react";
 
 // Инициалы из имени для фоллбэк-аватара (когда фото из Telegram недоступно).
 export function initials(name: string): string {
@@ -83,34 +82,15 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
             <Logo size={26} />
             <span className="text-sm font-bold tracking-tight">BJJ Companion</span>
           </Link>
-          {/* справа: аватар — открывает меню (статистика · настройки · о приложении) */}
+          {/* справа: настройки и информация (язык, аккаунт, о приложении) */}
           <button
             type="button"
             onClick={() => { haptic("light"); setMenuOpen(true); }}
-            aria-label={`Меню профиля: ${BELT_LABEL[profile.belt]} пояс`}
+            aria-label="Настройки и информация"
             style={{ marginTop: "var(--tg-content-safe-area-inset-top, 0px)" }}
-            className="justify-self-end rounded-full p-1 transition hover:bg-muted"
+            className="justify-self-end rounded-full p-2 text-muted-foreground transition hover:bg-muted"
           >
-            {profile.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt=""
-                className="block h-7 w-7 rounded-full object-cover ring-2"
-                style={{ boxShadow: `0 0 0 2px var(--belt-${profile.belt})` }}
-              />
-            ) : profile.name ? (
-              <span
-                className="grid h-7 w-7 place-items-center rounded-full text-[10px] font-bold text-white ring-2 ring-border"
-                style={{ background: `var(--belt-${profile.belt})` }}
-              >
-                {initials(profile.name)}
-              </span>
-            ) : (
-              <span
-                className="block h-7 w-7 rounded-full ring-2 ring-border"
-                style={{ background: `var(--belt-${profile.belt})` }}
-              />
-            )}
+            <Settings className="h-4 w-4" />
           </button>
         </div>
       </header>

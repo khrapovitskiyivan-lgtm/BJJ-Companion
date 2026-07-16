@@ -114,14 +114,12 @@ function Library() {
 
   return (
     <div className="space-y-3">
-      {/* Шапка — единая форма с /map и /situations: кикер + заголовок слева, табы справа */}
-      <header className="flex items-end justify-between px-1">
-        <div>
-          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Каталог</p>
-          <h1 className="text-xl font-bold tracking-tight">Библиотека техник</h1>
-        </div>
-        <TechniquesTabs />
+      {/* Шапка — единая форма: кикер + заголовок, табы отдельной строкой ниже */}
+      <header className="px-1">
+        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Каталог</p>
+        <h1 className="text-xl font-bold tracking-tight">Библиотека техник</h1>
       </header>
+      <TechniquesTabs />
 
       <p className="px-1 text-xs text-muted-foreground">
         {filtered.length} техник · страница {currentPage}/{totalPages}

@@ -14,14 +14,12 @@ import {
 } from "lucide-react";
 import type { Belt, StyleProfile, Goal, Frequency, Technique } from "@/lib/bjj/types";
 import { BELT_LABEL, BELT_LABEL_EN, BELT_ORDER, GROUP_LABEL } from "@/lib/bjj/constants";
-import { HEAD_IDS } from "@/lib/bjj/avatar";
-import type { HeadId } from "@/lib/bjj/avatar";
 import { TECHNIQUES } from "@/lib/bjj/data";
 import { BrandLogo } from "./Logo";
 
-type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
-// === ONBOARDING: 8 шагов ===
+// === ONBOARDING: 7 шагов ===
 // knownIds — техники, которые пользователь уже знает: помечаются «изучено», чтобы
 // стартовый экран не был пустым и рекомендации сразу отталкивались от них.
 export function Onboarding({
@@ -30,7 +28,6 @@ export function Onboarding({
   onDone: (p: Partial<StyleProfile>, knownIds: number[]) => void;
 }) {
   const [step, setStep] = useState<Step>(0);
-  const [headId, setHeadId] = useState<HeadId | null>(null);
   const [belt, setBelt] = useState<Belt>("white");
   const [gi, setGi] = useState(true);
   const [noGi, setNoGi] = useState(true);
@@ -38,14 +35,13 @@ export function Onboarding({
   const [frequency, setFrequency] = useState<Frequency | null>(null);
   const [known, setKnown] = useState<number[]>([]);
 
-  const totalSteps = 8;
+  const totalSteps = 7;
   const progress = ((step + 1) / totalSteps) * 100;
 
   const canProceed = () => {
-    if (step === 1) return headId !== null;
-    if (step === 3) return gi || noGi;
-    if (step === 4) return goal !== null;
-    if (step === 5) return frequency !== null;
+    if (step === 2) return gi || noGi;
+    if (step === 3) return goal !== null;
+    if (step === 4) return frequency !== null;
     return true;
   };
 
@@ -63,7 +59,7 @@ export function Onboarding({
         {/* Индикатор шага */}
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>Шаг {step + 1} из {totalSteps}</span>
-          {step > 0 && step < 7 && (
+          {step > 0 && step < 6 && (
             <button
               type="button"
               onClick={() => setStep((s) => (s - 1) as Step)}
@@ -80,37 +76,33 @@ export function Onboarding({
           {step === 0 && <WelcomeScreen />}
 
           {step === 1 && (
-            <HeadStep headId={headId} setHeadId={setHeadId} />
-          )}
-
-          {step === 2 && (
             <BeltStep belt={belt} setBelt={setBelt} />
           )}
 
-          {step === 3 && (
+          {step === 2 && (
             <StyleStep gi={gi} setGi={setGi} noGi={noGi} setNoGi={setNoGi} />
           )}
 
-          {step === 4 && (
+          {step === 3 && (
             <GoalStep goal={goal} setGoal={setGoal} />
           )}
 
-          {step === 5 && (
+          {step === 4 && (
             <FrequencyStep frequency={frequency} setFrequency={setFrequency} />
           )}
 
-          {step === 6 && (
+          {step === 5 && (
             <KnownStep belt={belt} known={known} setKnown={setKnown} />
           )}
 
-          {step === 7 && (
+          {step === 6 && (
             <FinalScreen belt={belt} gi={gi} noGi={noGi} goal={goal} knownCount={known.length} />
           )}
         </div>
 
         {/* Навигация */}
         <div className="mt-8 flex gap-2">
-          {step > 0 && step < 7 && (
+          {step > 0 && step < 6 && (
             <button
               type="button"
               onClick={() => setStep((s) => (s - 1) as Step)}
@@ -123,7 +115,7 @@ export function Onboarding({
             type="button"
             disabled={!canProceed()}
             onClick={() => {
-              if (step < 7) {
+              if (step < 6) {
                 setStep((s) => (s + 1) as Step);
               } else {
                 onDone(
@@ -133,7 +125,6 @@ export function Onboarding({
                     noGi,
                     goal: goal || undefined,
                     frequency: frequency || undefined,
-                    headId: headId ?? undefined,
                     onboardedAt: new Date().toISOString(),
                   },
                   known,
@@ -142,7 +133,7 @@ export function Onboarding({
             }}
             className="flex-1 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
-            {step === 7 ? "Начать" : step === 6 && known.length === 0 ? "Пропустить" : "Далее"}
+            {step === 6 ? "Начать" : step === 5 && known.length === 0 ? "Пропустить" : "Далее"}
           </button>
         </div>
       </div>
@@ -248,42 +239,7 @@ function WelcomeScreen() {
   );
 }
 
-// === ШАГ 1: Персонаж (выбор головы) ===
-function HeadStep({
-  headId, setHeadId,
-}: { headId: HeadId | null; setHeadId: (h: HeadId) => void }) {
-  return (
-    <section aria-label="Персонаж" className="space-y-4">
-      <div>
-        <h2 className="text-2xl font-bold">Ваш персонаж</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Выберите голову. Кимоно и пояс персонаж возьмёт из профиля и будет расти вместе с вами.
-        </p>
-      </div>
-      <div className="grid grid-cols-4 gap-2">
-        {HEAD_IDS.map((h) => (
-          <button
-            key={h}
-            type="button"
-            onClick={() => setHeadId(h)}
-            className="rounded-xl border-2 p-1.5 transition-all"
-            style={{
-              borderColor: headId === h ? "var(--color-primary)" : "var(--color-border)",
-              background: headId === h
-                ? "color-mix(in oklch, var(--color-primary) 8%, var(--color-card))"
-                : "var(--color-card)",
-            }}
-            aria-label={`Голова ${h}`}
-          >
-            <img src={`/avatars/head-${h}.webp`} alt="" className="mx-auto h-14 object-contain" />
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-// === ШАГ 2: Пояс ===
+// === ШАГ 1: Пояс ===
 function BeltStep({ belt, setBelt }: { belt: Belt; setBelt: (b: Belt) => void }) {
   return (
     <section aria-label="Выбор пояса" className="space-y-4">
@@ -327,7 +283,7 @@ function BeltStep({ belt, setBelt }: { belt: Belt; setBelt: (b: Belt) => void })
   );
 }
 
-// === ШАГ 3: Gi / No-Gi ===
+// === ШАГ 2: Gi / No-Gi ===
 function StyleStep({
   gi, setGi, noGi, setNoGi,
 }: {
@@ -365,7 +321,7 @@ function StyleStep({
   );
 }
 
-// === ШАГ 4: Цель ===
+// === ШАГ 3: Цель ===
 function GoalStep({
   goal, setGoal,
 }: { goal: Goal | null; setGoal: (g: Goal) => void }) {
@@ -422,7 +378,7 @@ function GoalStep({
   );
 }
 
-// === ШАГ 5: Частота ===
+// === ШАГ 4: Частота ===
 function FrequencyStep({
   frequency, setFrequency,
 }: { frequency: Frequency | null; setFrequency: (f: Frequency) => void }) {
@@ -469,7 +425,7 @@ function FrequencyStep({
   );
 }
 
-// === ШАГ 6: Что уже знаешь ===
+// === ШАГ 5: Что уже знаешь ===
 // Отмеченные техники станут «изучено»: стартовый экран не пустой, рекомендации
 // сразу отталкиваются от них. Показываем базовые по поясу + поиск по всей базе.
 function KnownStep({
@@ -588,7 +544,7 @@ function TechChip({
   );
 }
 
-// === ШАГ 7: Финальный экран ===
+// === ШАГ 6: Финальный экран ===
 function FinalScreen({
   belt, gi, noGi, goal, knownCount,
 }: {

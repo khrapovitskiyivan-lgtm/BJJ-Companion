@@ -44,13 +44,11 @@ function SituationsPage() {
   return (
     <AppShell>
       <div className="space-y-3">
-        <header className="flex items-end justify-between px-1">
-          <div>
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Разбор ситуаций</p>
-            <h1 className="text-xl font-bold tracking-tight">Что если…</h1>
-          </div>
-          <TechniquesTabs />
+        <header className="px-1">
+          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Разбор ситуаций</p>
+          <h1 className="text-xl font-bold tracking-tight">Что если…</h1>
         </header>
+        <TechniquesTabs />
         <Decide />
       </div>
     </AppShell>

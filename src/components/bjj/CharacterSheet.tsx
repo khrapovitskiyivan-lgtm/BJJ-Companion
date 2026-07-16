@@ -5,9 +5,8 @@ import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
 import type { Belt } from "@/lib/bjj/types";
 import { X, Check } from "lucide-react";
 
-// Лист персонажа: открывается тапом по аватару в «Моей игре».
-// Здесь всё, что определяет персонажа и игру: пояс, цвет кимоно, стиль игры.
-// Голова выбирается один раз в онбординге и здесь не предлагается.
+// Лист игрока: открывается тапом по кружку профиля в «Моей игре».
+// Здесь всё, что определяет твою игру: пояс, формат Gi/No-Gi, стиль игры.
 export function CharacterSheet({ onClose }: { onClose: () => void }) {
   const { profile, update } = useProfile();
 
@@ -23,13 +22,13 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
       <button className="absolute inset-0 bg-black/45 backdrop-blur-sm" aria-label="Закрыть" onClick={onClose} />
 
       <div className="relative z-10 flex max-h-[88vh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl border border-border bg-background shadow-2xl sm:rounded-3xl">
-        {/* Шапка (без превью персонажа: он и так виден на странице за листом) */}
+        {/* Шапка */}
         <div className="flex items-center gap-4 border-b border-border p-4">
           <div className="min-w-0 flex-1">
-            <p className="text-base font-bold tracking-tight">Персонаж</p>
+            <p className="text-base font-bold tracking-tight">Мой профиль игрока</p>
             <p className="text-xs text-muted-foreground">
               {BELT_LABEL[profile.belt]} пояс ·{" "}
-              {profile.kimono === "blue" ? "синее ги" : profile.kimono === "black" ? "чёрное ги" : "белое ги"}
+              {profile.gi && profile.noGi ? "Gi + No-Gi" : profile.gi ? "Gi" : "No-Gi"}
             </p>
           </div>
           <button
@@ -66,13 +65,12 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
             </div>
           </section>
 
-          {/* Кимоно */}
+          {/* Формат тренировок */}
           <section>
-            <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Кимоно</h3>
-            <div className="grid grid-cols-3 gap-2">
-              <KimonoTile label="Белое" value="white" current={profile.kimono ?? "white"} onPick={(k) => update({ kimono: k })} />
-              <KimonoTile label="Синее" value="blue" current={profile.kimono ?? "white"} onPick={(k) => update({ kimono: k })} />
-              <KimonoTile label="Чёрное" value="black" current={profile.kimono ?? "white"} onPick={(k) => update({ kimono: k })} />
+            <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Формат тренировок</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <FormatTile label="Gi (в кимоно)" active={profile.gi} onClick={() => (profile.noGi || !profile.gi) && update({ gi: !profile.gi })} />
+              <FormatTile label="No-Gi" active={profile.noGi} onClick={() => (profile.gi || !profile.noGi) && update({ noGi: !profile.noGi })} />
             </div>
           </section>
 
@@ -116,19 +114,13 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
   );
 }
 
-function KimonoTile({
-  label, value, current, onPick,
-}: {
-  label: string;
-  value: "white" | "blue" | "black";
-  current: "white" | "blue" | "black";
-  onPick: (k: "white" | "blue" | "black") => void;
-}) {
-  const active = current === value;
+function FormatTile({
+  label, active, onClick,
+}: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
-      onClick={() => onPick(value)}
+      onClick={onClick}
       className="rounded-xl border-2 p-2.5 text-sm font-medium transition-all"
       style={{
         borderColor: active ? "var(--color-primary)" : "var(--color-border)",

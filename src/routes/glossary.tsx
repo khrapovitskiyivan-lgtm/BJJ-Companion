@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/bjj/AppShell";
+import { TechniquesTabs } from "@/components/bjj/TechniquesTabs";
 import {
   GLOSSARY,
   GLOSSARY_CATEGORY_LABEL,
@@ -50,12 +51,11 @@ function Glossary() {
 
   return (
     <div className="space-y-3">
-      <header className="flex items-end justify-between px-1">
-        <div>
-          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Справочник</p>
-          <h1 className="text-xl font-bold tracking-tight">Словарь терминов</h1>
-        </div>
+      <header className="px-1">
+        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Справочник</p>
+        <h1 className="text-xl font-bold tracking-tight">Словарь терминов</h1>
       </header>
+      <TechniquesTabs />
 
       <p className="px-1 text-xs text-muted-foreground">
         Что говорят на тренировке и что это значит. {GLOSSARY.length} терминов.

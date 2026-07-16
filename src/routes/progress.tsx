@@ -2,8 +2,8 @@ import { useState, useMemo, useCallback, useRef } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
 import { GapCard } from "@/components/bjj/GapCard";
-import { Avatar } from "@/components/bjj/Avatar";
 import { CharacterSheet } from "@/components/bjj/CharacterSheet";
+import { initials } from "@/components/bjj/AppShell";
 import { useProgress, useProfile, useDiary } from "@/lib/bjj/store";
 import { currentFocus, nextToLearn } from "@/lib/bjj/recommend";
 import { computeStyleAffinity, type StyleScore } from "@/lib/bjj/styleProfile";
@@ -162,12 +162,12 @@ function ProgressPage() {
   return (
     <AppShell>
       <div className="space-y-6 pb-20">
-        {/* Шапка */}
-        <header>
-          <h1 className="text-2xl font-bold tracking-tight">Моя игра</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Ваша статистика и путь от белого до чёрного пояса
+        {/* Шапка — единая форма с остальными разделами: кикер сверху, название ниже */}
+        <header className="px-1">
+          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+            Статистика и путь до чёрного пояса
           </p>
+          <h1 className="text-xl font-bold tracking-tight">Моя игра</h1>
         </header>
 
         {/* Hero-статистика — «Изучено» и «В процессе» кликабельны, раскрывают список */}
@@ -195,15 +195,34 @@ function ProgressPage() {
             value={`${stats.pct}%`}
             accent="var(--color-primary)"
           />
-          {/* Тап по персонажу открывает лист: пояс, кимоно, стиль игры */}
+          {/* Тап по кружку профиля открывает лист игрока: пояс, формат, стиль игры */}
           <button
             type="button"
             onClick={() => setSheetOpen(true)}
             className="rounded-2xl border border-border bg-card p-3 text-center transition hover:bg-muted"
-            aria-label="Настроить персонажа"
+            aria-label="Мой профиль игрока"
           >
-            <Avatar profile={profile} className="mx-auto h-20" />
-            <p className="mt-1.5 truncate text-[11px] font-medium">
+            {profile.avatarUrl ? (
+              <img
+                src={profile.avatarUrl}
+                alt=""
+                className="mx-auto block h-14 w-14 rounded-full object-cover"
+                style={{ boxShadow: `0 0 0 3px var(--belt-${profile.belt})` }}
+              />
+            ) : profile.name ? (
+              <span
+                className="mx-auto grid h-14 w-14 place-items-center rounded-full text-base font-bold text-white ring-2 ring-border"
+                style={{ background: `var(--belt-${profile.belt})` }}
+              >
+                {initials(profile.name)}
+              </span>
+            ) : (
+              <span
+                className="mx-auto block h-14 w-14 rounded-full ring-2 ring-border"
+                style={{ background: `var(--belt-${profile.belt})` }}
+              />
+            )}
+            <p className="mt-2 truncate text-[11px] font-medium">
               {doneCount >= ARCHETYPE_MIN_DONE && styleScores.length > 0
                 ? STYLE_META[styleScores[0].style].ru
                 : `${BELT_LABEL[profile.belt]} пояс`}
