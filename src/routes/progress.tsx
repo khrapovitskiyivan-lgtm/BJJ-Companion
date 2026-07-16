@@ -38,8 +38,8 @@ function ProgressPage() {
   // Текущий фокус (в процессе) + следующая цель (рекомендации)
   const focusTech = useMemo(() => currentFocus(TECHNIQUES, progress), [progress]);
   const recommendations = useMemo(
-    () => nextToLearn(TECHNIQUES, progress, profile.belt, 4),
-    [progress, profile.belt],
+    () => nextToLearn(TECHNIQUES, progress, profile.belt, 4, { goal: profile.goal, gi: profile.gi, noGi: profile.noGi }),
+    [progress, profile.belt, profile.goal, profile.gi, profile.noGi],
   );
 
   // «Твой стиль» — аффинити к 10 архетипам из прогресса + отработок дневника

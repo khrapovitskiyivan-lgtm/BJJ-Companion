@@ -1,6 +1,6 @@
 // === Рекомендательный движок: «что учить дальше» ===
 // Работает на графе пререквизитов + прогрессе пользователя.
-import type { Belt, Technique } from "./types";
+import type { Belt, Goal, Style, Technique } from "./types";
 import type { ProgressMap } from "./store";
 import { BELT_ORDER } from "./constants";
 import { TECH_BY_ID } from "./data";
@@ -28,6 +28,25 @@ export function currentFocus(techniques: Technique[], progress: ProgressMap): Te
   return inProgress[0];
 }
 
+// Бонус техники под цель тренировок (мягкий приоритет сортировки, не фильтр)
+function goalScore(t: Technique, opts?: { goal?: Goal; gi?: boolean; noGi?: boolean }): number {
+  if (!opts?.goal) return 0;
+  if (opts.goal === "self-defense") {
+    let s = 0;
+    if (t.group === "escape" || t.group === "takedown") s += 2;
+    if (t.tags.includes("fundamental")) s += 1;
+    return s;
+  }
+  if (opts.goal === "competition") {
+    let s = 0;
+    const legal = opts.gi !== false ? t.legal_ibjjf_gi : t.legal_ibjjf_nogi;
+    if (t.points_ibjjf > 0 && legal) s += 2;
+    if (t.legal_adcc) s += 1;
+    return s;
+  }
+  return 0; // hobby: разнообразие уже даёт round-robin по группам
+}
+
 // Следующая цель: не начатая, разблокированная, в пределах пояса пользователя.
 // Сортировка: пояс ↑, сложность ↑; разнообразие групп — round-robin.
 export function nextToLearn(
@@ -35,6 +54,7 @@ export function nextToLearn(
   progress: ProgressMap,
   userBelt: Belt,
   count = 5,
+  opts?: { goal?: Goal; gi?: boolean; noGi?: boolean },
 ): Technique[] {
   const myIdx = beltIdx(userBelt);
   const candidates = techniques.filter(
@@ -43,7 +63,12 @@ export function nextToLearn(
       beltIdx(t.belt) <= myIdx &&
       isUnlocked(t, progress),
   );
-  candidates.sort((a, b) => beltIdx(a.belt) - beltIdx(b.belt) || a.difficulty - b.difficulty);
+  candidates.sort(
+    (a, b) =>
+      goalScore(b, opts) - goalScore(a, opts) ||
+      beltIdx(a.belt) - beltIdx(b.belt) ||
+      a.difficulty - b.difficulty,
+  );
   // round-robin по группам, чтобы не рекомендовать 5 сабмишенов подряд
   const byGroup = new Map<string, Technique[]>();
   for (const t of candidates) {
@@ -60,6 +85,27 @@ export function nextToLearn(
     if (t) out.push(t);
   }
   return out;
+}
+
+// Ближайшие к изучению техники конкретного стиля (для фичи «Разрыв»)
+export function nextForStyle(
+  techniques: Technique[],
+  progress: ProgressMap,
+  userBelt: Belt,
+  style: Style,
+  count = 3,
+): Technique[] {
+  const myIdx = beltIdx(userBelt);
+  return techniques
+    .filter(
+      (t) =>
+        t.styles.includes(style) &&
+        (progress[t.id] ?? "not_started") === "not_started" &&
+        beltIdx(t.belt) <= myIdx &&
+        isUnlocked(t, progress),
+    )
+    .sort((a, b) => beltIdx(a.belt) - beltIdx(b.belt) || a.difficulty - b.difficulty)
+    .slice(0, count);
 }
 
 // Путь обучения к цели: ЛИНЕЙНАЯ цепочка «от фундамента к цели».

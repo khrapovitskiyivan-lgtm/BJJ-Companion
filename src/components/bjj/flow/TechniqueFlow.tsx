@@ -54,12 +54,12 @@ export function TechniqueFlow() {
 
   // Стартовая техника фокуса: рекомендация → текущий фокус → первая по поясу
   const startId = useMemo(() => {
-    const rec = nextToLearn(TECHNIQUES, progress, profile.belt, 1)[0] ?? currentFocus(TECHNIQUES, progress);
+    const rec = nextToLearn(TECHNIQUES, progress, profile.belt, 1, { goal: profile.goal, gi: profile.gi, noGi: profile.noGi })[0] ?? currentFocus(TECHNIQUES, progress);
     if (rec) return rec.id;
     const belt = TECHNIQUES.find((t) => t.belt === profile.belt);
     return (belt ?? TECHNIQUES[0]).id;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile.belt]);
+  }, [profile.belt, profile.goal, profile.gi, profile.noGi]);
 
   const [focusId, setFocusId] = useState<number | null>(null);
   const [history, setHistory] = useState<number[]>([]);
