@@ -26,7 +26,7 @@ export const BELT_ORDER: Belt[] = ["white", "blue", "purple", "brown", "black"];
 export const BELT_LABEL: Record<Belt, string> = {
   white: "Белый",
   blue: "Синий",
-  purple: "Фиолетовый",
+  purple: "Пурпурный",
   brown: "Коричневый",
   black: "Чёрный",
 };
