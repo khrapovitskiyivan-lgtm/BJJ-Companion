@@ -3,8 +3,8 @@ import { useState } from "react";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TechniqueCard } from "@/components/bjj/TechniqueCard";
 import { Scenarios } from "@/components/bjj/Scenarios";
-import { useProfile, useProgress } from "@/lib/bjj/store";
-import { generateWorkout } from "@/lib/bjj/workout";
+import { useDiary, useProfile, useProgress } from "@/lib/bjj/store";
+import { generateWorkout, generateWorkoutFromDiary } from "@/lib/bjj/workout";
 import { GROUP_LABEL } from "@/lib/bjj/constants";
 import type {
   Group,
@@ -13,7 +13,7 @@ import type {
   Workout,
   WorkoutConfig,
 } from "@/lib/bjj/types";
-import { Flame, Snowflake, Sparkles, Timer, Dumbbell, Swords } from "lucide-react";
+import { Flame, Snowflake, Sparkles, Timer, Dumbbell, Swords, NotebookPen } from "lucide-react";
 
 export const Route = createFileRoute("/workout")({
   component: WorkoutPage,
@@ -95,6 +95,7 @@ function SubTab({
 function WorkoutGenerator() {
   const { profile } = useProfile();
   const { progress, cycleStatus } = useProgress();
+  const { entries } = useDiary();
 
   const [config, setConfig] = useState<WorkoutConfig>({
     duration: 45,
@@ -102,15 +103,46 @@ function WorkoutGenerator() {
     safety: "smart",
     focus: "all",
   });
+  // Источник подбора техник: профиль (пояс/цель) или дневник (что реально отрабатывал)
+  const [source, setSource] = useState<"profile" | "diary">("profile");
   const [workout, setWorkout] = useState<Workout | null>(null);
 
   const handleGenerate = () => {
-    setWorkout(generateWorkout(config, profile));
+    setWorkout(
+      source === "diary"
+        ? generateWorkoutFromDiary(config, profile, progress, entries)
+        : generateWorkout(config, profile),
+    );
   };
 
   return (
     <div className="space-y-5">
       <section className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <Row label="Подбор" icon={<NotebookPen className="h-4 w-4" />}>
+          <Chip
+            active={source === "profile"}
+            onClick={() => setSource("profile")}
+            title="По поясу и настройкам профиля"
+          >
+            По профилю
+          </Chip>
+          <Chip
+            active={source === "diary"}
+            onClick={() => setSource("diary")}
+            title="По дневнику: что учишь сейчас и что давно не отрабатывал"
+          >
+            По дневнику
+          </Chip>
+        </Row>
+
+        {source === "diary" && (
+          <p className="-mt-2 text-[11px] text-muted-foreground">
+            {entries.length === 0
+              ? "Дневник пуст — план соберётся по профилю. Отмечайте тренировки, и он станет точнее."
+              : `Учтём ${entries.length} ${entries.length === 1 ? "запись" : entries.length < 5 ? "записи" : "записей"}: приоритет — техники в процессе и те, что давно не отрабатывали.`}
+          </p>
+        )}
+
         <Row label="Длительность" icon={<Timer className="h-4 w-4" />}>
           {DURATIONS.map((d) => (
             <Chip

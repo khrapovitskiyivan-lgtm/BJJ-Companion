@@ -51,6 +51,15 @@ function ProgressPage() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [importStatus, setImportStatus] = useState<"idle" | "success" | "error">("idle");
 
+  // Раскрытие списка техник по статусу: клик по карточке «Изучено» / «В процессе»
+  const [openList, setOpenList] = useState<"done" | "in_progress" | null>(null);
+  const listTechniques = useMemo(() => {
+    if (!openList) return [];
+    return TECHNIQUES.filter((t) => (progress[t.id] ?? "not_started") === openList).sort(
+      (a, b) => BELT_ORDER.indexOf(a.belt) - BELT_ORDER.indexOf(b.belt) || a.difficulty - b.difficulty,
+    );
+  }, [openList, progress]);
+
   // === Общая статистика ===
   const stats = useMemo(() => {
     const total = TECHNIQUES.length;
@@ -148,7 +157,7 @@ function ProgressPage() {
           </p>
         </header>
 
-        {/* Hero-статистика */}
+        {/* Hero-статистика — «Изучено» и «В процессе» кликабельны, раскрывают список */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard
             icon={<BookOpen className="h-5 w-5" />}
@@ -156,12 +165,16 @@ function ProgressPage() {
             value={stats.done}
             total={stats.total}
             accent="var(--status-done)"
+            onClick={() => setOpenList((v) => (v === "done" ? null : "done"))}
+            active={openList === "done"}
           />
           <StatCard
             icon={<CircleDot className="h-5 w-5" />}
             label="В процессе"
             value={stats.inProgress}
             accent="var(--status-progress)"
+            onClick={() => setOpenList((v) => (v === "in_progress" ? null : "in_progress"))}
+            active={openList === "in_progress"}
           />
           <StatCard
             icon={<TrendingUp className="h-5 w-5" />}
@@ -170,6 +183,51 @@ function ProgressPage() {
             accent="var(--color-primary)"
           />
         </section>
+
+        {/* Раскрытый список техник выбранного статуса */}
+        {openList && (
+          <section className="rounded-2xl border border-border bg-card p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold">
+                {openList === "done" ? "Изученные техники" : "Техники в процессе"}{" "}
+                <span className="text-muted-foreground">({listTechniques.length})</span>
+              </h2>
+              <button
+                onClick={() => setOpenList(null)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Свернуть
+              </button>
+            </div>
+            {listTechniques.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                {openList === "done"
+                  ? "Пока нет изученных техник. Отмечайте их в библиотеке."
+                  : "Пока нет техник в процессе. Отметьте технику «в процессе» — она появится здесь."}
+              </p>
+            ) : (
+              <ul className="space-y-1.5">
+                {listTechniques.map((t) => (
+                  <li key={t.id}>
+                    <Link
+                      to="/technique/$id"
+                      params={{ id: String(t.id) }}
+                      className="flex items-center justify-between gap-2 rounded-xl border border-border bg-background p-2.5 transition hover:bg-muted"
+                      style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium">{t.nameRu}</span>
+                        <span className="block text-[11px] text-muted-foreground">
+                          {GROUP_LABEL[t.group]} · {BELT_LABEL[t.belt]} · сложность {t.difficulty}/5
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
 
         {/* Текущий фокус + следующая цель (перенесено из графа) */}
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -313,6 +371,8 @@ function StatCard({
   total,
   suffix,
   accent,
+  onClick,
+  active,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -320,9 +380,11 @@ function StatCard({
   total?: number;
   suffix?: string;
   accent: string;
+  onClick?: () => void;
+  active?: boolean;
 }) {
-  return (
-    <div className="rounded-2xl border border-border bg-card p-4">
+  const inner = (
+    <>
       <div
         className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg"
         style={{ background: `${accent}20`, color: accent }}
@@ -337,7 +399,23 @@ function StatCard({
         )}
       </div>
       <p className="mt-0.5 text-[11px] text-muted-foreground">{label}</p>
-    </div>
+    </>
+  );
+
+  if (!onClick) {
+    return <div className="rounded-2xl border border-border bg-card p-4">{inner}</div>;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={active}
+      className="rounded-2xl border bg-card p-4 text-left transition hover:bg-muted"
+      style={{ borderColor: active ? accent : "var(--color-border)" }}
+    >
+      {inner}
+    </button>
   );
 }
 

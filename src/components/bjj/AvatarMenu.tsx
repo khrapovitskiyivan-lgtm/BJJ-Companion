@@ -8,7 +8,7 @@ import { TECHNIQUES } from "@/lib/bjj/data";
 import { BELT_LABEL, BELT_ORDER, STYLE_ORDER, STYLE_META } from "@/lib/bjj/constants";
 import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
 import type { Belt, Locale, Style } from "@/lib/bjj/types";
-import { X, Cloud, CloudOff, LogIn, LogOut, Info, ChevronRight, BarChart3, Check } from "lucide-react";
+import { X, Cloud, CloudOff, LogIn, LogOut, Info, ChevronRight, BarChart3, Check, BookA } from "lucide-react";
 
 // Шторка по тапу на аватар: статистика · настройки · о приложении.
 export function AvatarMenu({ onClose }: { onClose: () => void }) {
@@ -218,6 +218,19 @@ export function AvatarMenu({ onClose }: { onClose: () => void }) {
               <Toggle label="English" active={profile.locale === "en"} onClick={() => update({ locale: "en" as Locale })} />
             </div>
           </section>
+
+          {/* Словарь терминов */}
+          <Link
+            to="/glossary"
+            onClick={onClose}
+            className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 transition hover:bg-muted"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium">
+              <BookA className="h-4 w-4 text-primary" />
+              Словарь терминов
+            </span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
 
           {/* О приложении */}
           <Link

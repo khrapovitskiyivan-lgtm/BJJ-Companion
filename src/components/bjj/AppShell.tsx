@@ -4,7 +4,7 @@ import { BottomNav } from "./BottomNav";
 import { Onboarding } from "./Onboarding";
 import { Logo } from "./Logo";
 import { AvatarMenu } from "./AvatarMenu";
-import { useProfile } from "@/lib/bjj/store";
+import { useProfile, useProgress } from "@/lib/bjj/store";
 import { initTelegram, haptic } from "@/lib/telegram";
 import { BELT_LABEL } from "@/lib/bjj/constants";
 import { Moon, Sun } from "lucide-react";
@@ -24,6 +24,7 @@ export function initials(name: string): string {
 // Тап по аватару открывает меню (статистика · настройки · о приложении) — AvatarMenu.
 export function AppShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
   const { profile, update, hydrated } = useProfile();
+  const { progress, setProgress } = useProgress();
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -43,7 +44,19 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
   }
 
   if (!profile.onboardingDone) {
-    return <Onboarding onDone={(p) => update({ ...p, onboardingDone: true })} />;
+    return (
+      <Onboarding
+        onDone={(p, knownIds) => {
+          // Отмеченные в опросе техники — сразу «изучено» (одной массовой записью)
+          if (knownIds.length) {
+            const next = { ...progress };
+            for (const id of knownIds) next[id] = "done";
+            setProgress(next);
+          }
+          update({ ...p, onboardingDone: true });
+        }}
+      />
+    );
   }
 
   return (

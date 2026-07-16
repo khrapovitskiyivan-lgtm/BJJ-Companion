@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   BookOpen,
   Dumbbell,
@@ -10,23 +10,32 @@ import {
   Smile,
   Check,
   Sparkles,
+  Search,
 } from "lucide-react";
-import type { Belt, StyleProfile, Goal, Frequency } from "@/lib/bjj/types";
-import { BELT_LABEL, BELT_LABEL_EN, BELT_ORDER } from "@/lib/bjj/constants";
+import type { Belt, StyleProfile, Goal, Frequency, Technique } from "@/lib/bjj/types";
+import { BELT_LABEL, BELT_LABEL_EN, BELT_ORDER, GROUP_LABEL } from "@/lib/bjj/constants";
+import { TECHNIQUES } from "@/lib/bjj/data";
 import { BrandLogo } from "./Logo";
 
-type Step = 0 | 1 | 2 | 3 | 4 | 5;
+type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
-// === ONBOARDING: 6 шагов ===
-export function Onboarding({ onDone }: { onDone: (p: Partial<StyleProfile>) => void }) {
+// === ONBOARDING: 7 шагов ===
+// knownIds — техники, которые пользователь уже знает: помечаются «изучено», чтобы
+// стартовый экран не был пустым и рекомендации сразу отталкивались от них.
+export function Onboarding({
+  onDone,
+}: {
+  onDone: (p: Partial<StyleProfile>, knownIds: number[]) => void;
+}) {
   const [step, setStep] = useState<Step>(0);
   const [belt, setBelt] = useState<Belt>("white");
   const [gi, setGi] = useState(true);
   const [noGi, setNoGi] = useState(true);
   const [goal, setGoal] = useState<Goal | null>(null);
   const [frequency, setFrequency] = useState<Frequency | null>(null);
+  const [known, setKnown] = useState<number[]>([]);
 
-  const totalSteps = 6;
+  const totalSteps = 7;
   const progress = ((step + 1) / totalSteps) * 100;
 
   const canProceed = () => {
@@ -50,7 +59,7 @@ export function Onboarding({ onDone }: { onDone: (p: Partial<StyleProfile>) => v
         {/* Индикатор шага */}
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>Шаг {step + 1} из {totalSteps}</span>
-          {step > 0 && step < 5 && (
+          {step > 0 && step < 6 && (
             <button
               type="button"
               onClick={() => setStep((s) => (s - 1) as Step)}
@@ -83,13 +92,17 @@ export function Onboarding({ onDone }: { onDone: (p: Partial<StyleProfile>) => v
           )}
 
           {step === 5 && (
-            <FinalScreen belt={belt} gi={gi} noGi={noGi} goal={goal} />
+            <KnownStep belt={belt} known={known} setKnown={setKnown} />
+          )}
+
+          {step === 6 && (
+            <FinalScreen belt={belt} gi={gi} noGi={noGi} goal={goal} knownCount={known.length} />
           )}
         </div>
 
         {/* Навигация */}
         <div className="mt-8 flex gap-2">
-          {step > 0 && step < 5 && (
+          {step > 0 && step < 6 && (
             <button
               type="button"
               onClick={() => setStep((s) => (s - 1) as Step)}
@@ -102,22 +115,25 @@ export function Onboarding({ onDone }: { onDone: (p: Partial<StyleProfile>) => v
             type="button"
             disabled={!canProceed()}
             onClick={() => {
-              if (step < 5) {
+              if (step < 6) {
                 setStep((s) => (s + 1) as Step);
               } else {
-                onDone({
-                  belt,
-                  gi,
-                  noGi,
-                  goal: goal || undefined,
-                  frequency: frequency || undefined,
-                  onboardedAt: new Date().toISOString(),
-                });
+                onDone(
+                  {
+                    belt,
+                    gi,
+                    noGi,
+                    goal: goal || undefined,
+                    frequency: frequency || undefined,
+                    onboardedAt: new Date().toISOString(),
+                  },
+                  known,
+                );
               }
             }}
             className="flex-1 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
-            {step === 5 ? "Начать" : "Далее"}
+            {step === 6 ? "Начать" : step === 5 && known.length === 0 ? "Пропустить" : "Далее"}
           </button>
         </div>
       </div>
@@ -409,11 +425,130 @@ function FrequencyStep({
   );
 }
 
-// === ШАГ 5: Финальный экран ===
-function FinalScreen({
-  belt, gi, noGi, goal,
+// === ШАГ 5: Что уже знаешь ===
+// Отмеченные техники станут «изучено»: стартовый экран не пустой, рекомендации
+// сразу отталкиваются от них. Показываем базовые по поясу + поиск по всей базе.
+function KnownStep({
+  belt, known, setKnown,
 }: {
-  belt: Belt; gi: boolean; noGi: boolean; goal: Goal | null;
+  belt: Belt;
+  known: number[];
+  setKnown: React.Dispatch<React.SetStateAction<number[]>>;
+}) {
+  const [query, setQuery] = useState("");
+  const maxBeltIdx = BELT_ORDER.indexOf(belt);
+
+  const pool = useMemo(
+    () => TECHNIQUES.filter((t) => BELT_ORDER.indexOf(t.belt) <= maxBeltIdx),
+    [maxBeltIdx],
+  );
+
+  const shown = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const base = q
+      ? pool.filter(
+          (t) =>
+            t.nameRu.toLowerCase().includes(q) ||
+            t.nameEn.toLowerCase().includes(q) ||
+            t.label.toLowerCase().includes(q),
+        )
+      : [...pool].sort(
+          (a, b) =>
+            a.difficulty - b.difficulty ||
+            BELT_ORDER.indexOf(a.belt) - BELT_ORDER.indexOf(b.belt),
+        );
+    return base.slice(0, 24);
+  }, [pool, query]);
+
+  // Выбранные, но выпавшие из текущей выдачи — показываем отдельно, чтобы не потерялись
+  const selectedOutside = useMemo(
+    () =>
+      known
+        .filter((id) => !shown.some((t) => t.id === id))
+        .map((id) => pool.find((t) => t.id === id))
+        .filter((t): t is Technique => Boolean(t)),
+    [known, shown, pool],
+  );
+
+  const toggle = (id: number) =>
+    setKnown((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+
+  return (
+    <section aria-label="Знакомые техники" className="space-y-4">
+      <div>
+        <h2 className="text-2xl font-bold">Что уже знаете?</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Отметьте техники, которые уже освоили. Будем отталкиваться от них в рекомендациях.
+          Необязательно — можно пропустить.
+        </p>
+      </div>
+
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Найти технику…"
+          className="w-full rounded-xl border border-border bg-card py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+        />
+      </div>
+
+      {selectedOutside.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selectedOutside.map((t) => (
+            <TechChip key={t.id} tech={t} active onClick={() => toggle(t.id)} />
+          ))}
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-1.5">
+        {shown.map((t) => (
+          <TechChip key={t.id} tech={t} active={known.includes(t.id)} onClick={() => toggle(t.id)} />
+        ))}
+      </div>
+
+      {shown.length === 0 && (
+        <p className="text-xs text-muted-foreground">Ничего не найдено — попробуйте другой запрос.</p>
+      )}
+
+      <p className="text-xs text-muted-foreground">
+        Выбрано: <span className="font-semibold text-foreground">{known.length}</span>
+      </p>
+    </section>
+  );
+}
+
+function TechChip({
+  tech, active, onClick,
+}: { tech: Technique; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 rounded-full border-2 px-3 py-1.5 text-xs font-medium transition-all"
+      style={{
+        borderColor: active ? "var(--color-primary)" : "var(--color-border)",
+        background: active
+          ? "color-mix(in oklch, var(--color-primary) 10%, var(--color-card))"
+          : "var(--color-card)",
+      }}
+      title={`${GROUP_LABEL[tech.group]} · ${BELT_LABEL[tech.belt]}`}
+    >
+      <span
+        className="inline-block h-2 w-2 shrink-0 rounded-full ring-1 ring-black/10"
+        style={{ background: `var(--belt-${tech.belt})` }}
+      />
+      {tech.nameRu}
+      {active && <Check className="h-3 w-3 text-primary" />}
+    </button>
+  );
+}
+
+// === ШАГ 6: Финальный экран ===
+function FinalScreen({
+  belt, gi, noGi, goal, knownCount,
+}: {
+  belt: Belt; gi: boolean; noGi: boolean; goal: Goal | null; knownCount: number;
 }) {
   const goalLabel = {
     "self-defense": "самообороне",
@@ -444,6 +579,9 @@ function FinalScreen({
           value={[gi && "Gi", noGi && "No-Gi"].filter(Boolean).join(" + ")}
         />
         <SummaryRow label="Фокус" value={goalLabel} />
+        {knownCount > 0 && (
+          <SummaryRow label="Уже знаете" value={`${knownCount} техн.`} />
+        )}
       </div>
 
       <p className="text-xs text-muted-foreground">

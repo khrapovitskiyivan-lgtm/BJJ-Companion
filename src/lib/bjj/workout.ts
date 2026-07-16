@@ -1,8 +1,10 @@
 // === WORKOUT GENERATOR === (перенос логики из bjj-map/index.html:6130+)
-import type { Belt, Group, Technique, Workout, WorkoutConfig } from "./types";
+import type { Belt, DiaryEntry, Group, Technique, Workout, WorkoutConfig } from "./types";
 import { BELT_ORDER, COOLDOWN_BY_BELT, MAX_DIFFICULTY_BY_BELT, WARMUP_BY_BELT } from "./constants";
 import { TECHNIQUES } from "./data";
 import type { StyleProfile } from "./types";
+import type { ProgressMap } from "./store";
+import { isUnlocked } from "./recommend";
 
 const CRITICAL_TAGS = ["dangerous", "critical", "high_risk"];
 const BANNED_IDS = new Set<number>([384]); // Kani Basami — запрещён во всех режимах smart
@@ -46,19 +48,14 @@ export function filterTechniques(opts: {
   });
 }
 
-// === Генератор ===
-export function generateWorkout(
-  config: WorkoutConfig,
-  profile: StyleProfile,
-): Workout {
-  const belt = profile.belt;
-  const maxBeltIndex = beltIndex(belt);
-  const maxDifficulty = MAX_DIFFICULTY_BY_BELT[belt] ?? 2;
-
+// === Доступные техники под конфиг и профиль (общий фильтр для обоих генераторов) ===
+function availableFor(config: WorkoutConfig, profile: StyleProfile): Technique[] {
+  const maxBeltIndex = beltIndex(profile.belt);
+  const maxDifficulty = MAX_DIFFICULTY_BY_BELT[profile.belt] ?? 2;
   const giMode: "gi" | "nogi" | "both" =
     profile.gi && profile.noGi ? "both" : profile.gi ? "gi" : "nogi";
 
-  let available = TECHNIQUES.filter((n) => {
+  return TECHNIQUES.filter((n) => {
     if (beltIndex(n.belt) > maxBeltIndex) return false;
     if (config.focus !== "all" && n.group !== config.focus) return false;
     if (giMode === "gi" && !n.gi) return false;
@@ -67,6 +64,67 @@ export function generateWorkout(
     if ((n.difficulty || 1) > maxDifficulty) return false;
     return true;
   });
+}
+
+// === Распределение времени (из оригинала) ===
+function splitTime(config: WorkoutConfig) {
+  let warmupRatio: number, cooldownRatio: number, timePerDrillBase: number;
+  if (config.intensity === "light") {
+    warmupRatio = 0.3; cooldownRatio = 0.2; timePerDrillBase = 10;
+  } else if (config.intensity === "hard") {
+    warmupRatio = 0.15; cooldownRatio = 0.15; timePerDrillBase = 5;
+  } else {
+    warmupRatio = 0.2; cooldownRatio = 0.15; timePerDrillBase = 8;
+  }
+  const warmupMinutes = Math.max(3, Math.round(config.duration * warmupRatio));
+  const cooldownMinutes = Math.max(3, Math.round(config.duration * cooldownRatio));
+  const mainMinutes = Math.max(0, config.duration - warmupMinutes - cooldownMinutes); // main — остаток
+  const techniqueCount = Math.max(2, Math.round(mainMinutes / timePerDrillBase));
+  return { warmupMinutes, cooldownMinutes, mainMinutes, techniqueCount };
+}
+
+// === Сборка результата из отобранных техник ===
+function assemble(
+  belt: Belt,
+  selected: Technique[],
+  times: ReturnType<typeof splitTime>,
+  config: WorkoutConfig,
+  message?: string,
+): Workout {
+  const { warmupMinutes, cooldownMinutes, mainMinutes } = times;
+  const base = {
+    belt,
+    warmup: WARMUP_BY_BELT[belt],
+    warmupMinutes,
+    mainMinutes,
+    cooldown: COOLDOWN_BY_BELT[belt],
+    cooldownMinutes,
+    totalMinutes: config.duration,
+  };
+
+  if (selected.length === 0) {
+    return {
+      ...base,
+      drills: [],
+      message: "Нет техник под текущие фильтры. Попробуйте снять ограничения.",
+    };
+  }
+
+  // Ключевое правило: timePerDrill = max(2, mainDuration / selected.length)
+  const timePerDrill = Math.max(2, Math.round(mainMinutes / selected.length));
+  return {
+    ...base,
+    drills: selected.map((t) => ({ technique: t, minutes: timePerDrill })),
+    message,
+  };
+}
+
+// === Генератор по профилю ===
+export function generateWorkout(
+  config: WorkoutConfig,
+  profile: StyleProfile,
+): Workout {
+  const available = availableFor(config, profile);
 
   // Сортировка: предпочтительные теги профиля + сложность
   const preferred: string[] = [];
@@ -84,49 +142,62 @@ export function generateWorkout(
     return bMatch - aMatch || (a.difficulty || 1) - (b.difficulty || 1);
   });
 
-  // Распределение времени (из оригинала)
-  let warmupRatio: number, mainRatio: number, cooldownRatio: number, timePerDrillBase: number;
-  if (config.intensity === "light") {
-    warmupRatio = 0.3; mainRatio = 0.5; cooldownRatio = 0.2; timePerDrillBase = 10;
-  } else if (config.intensity === "hard") {
-    warmupRatio = 0.15; mainRatio = 0.7; cooldownRatio = 0.15; timePerDrillBase = 5;
-  } else {
-    warmupRatio = 0.2; mainRatio = 0.65; cooldownRatio = 0.15; timePerDrillBase = 8;
-  }
-  void mainRatio; // считаем main как остаток
+  const times = splitTime(config);
+  return assemble(profile.belt, available.slice(0, times.techniqueCount), times, config);
+}
 
-  const warmupMinutes = Math.max(3, Math.round(config.duration * warmupRatio));
-  const cooldownMinutes = Math.max(3, Math.round(config.duration * cooldownRatio));
-  const mainMinutes = Math.max(0, config.duration - warmupMinutes - cooldownMinutes);
-  const techniqueCount = Math.max(2, Math.round(mainMinutes / timePerDrillBase));
+// === Генератор по дневнику ===
+// Отталкивается от реальных тренировок: что учишь сейчас, что давно не трогал,
+// что отработано мало. Дневник пуст → возвращаем обычную генерацию по профилю.
+const DAY_MS = 86_400_000;
 
-  const selected = available.slice(0, Math.min(techniqueCount, available.length));
-
-  if (selected.length === 0) {
-    return {
-      belt,
-      warmup: WARMUP_BY_BELT[belt],
-      warmupMinutes,
-      drills: [],
-      mainMinutes,
-      cooldown: COOLDOWN_BY_BELT[belt],
-      cooldownMinutes,
-      totalMinutes: config.duration,
-      message: "Нет техник под текущие фильтры. Попробуйте снять ограничения.",
-    };
+export function generateWorkoutFromDiary(
+  config: WorkoutConfig,
+  profile: StyleProfile,
+  progress: ProgressMap,
+  entries: DiaryEntry[],
+): Workout {
+  if (entries.length === 0) {
+    const w = generateWorkout(config, profile);
+    return { ...w, message: "Дневник пуст — план собран по профилю. Отмечайте тренировки, и он станет точнее." };
   }
 
-  // Ключевое правило: timePerDrill = max(2, mainDuration / selected.length)
-  const timePerDrill = Math.max(2, Math.round(mainMinutes / selected.length));
+  // Сколько раз и когда последний раз отрабатывалась каждая техника
+  const stats = new Map<number, { count: number; last: string }>();
+  for (const e of entries) {
+    for (const id of e.techniqueIds) {
+      const prev = stats.get(id);
+      if (!prev) stats.set(id, { count: 1, last: e.date });
+      else stats.set(id, { count: prev.count + 1, last: e.date > prev.last ? e.date : prev.last });
+    }
+  }
 
-  return {
-    belt,
-    warmup: WARMUP_BY_BELT[belt],
-    warmupMinutes,
-    drills: selected.map((t) => ({ technique: t, minutes: timePerDrill })),
-    mainMinutes,
-    cooldown: COOLDOWN_BY_BELT[belt],
-    cooldownMinutes,
-    totalMinutes: config.duration,
+  const today = Date.now();
+  const daysSince = (iso: string) => Math.max(0, Math.round((today - new Date(iso).getTime()) / DAY_MS));
+
+  const score = (t: Technique): number => {
+    const status = progress[t.id] ?? "not_started";
+    let s = 0;
+    // Что в работе — главный приоритет; затем готовое к изучению; повторение изученного — ниже.
+    if (status === "in_progress") s += 100;
+    else if (status === "not_started") s += isUnlocked(t, progress) ? 45 : 5;
+    else s += 25;
+
+    const st = stats.get(t.id);
+    if (!st) s += 30; // ни разу не отрабатывал
+    else {
+      s += Math.min(daysSince(st.last), 60) * 0.8; // давно не трогал — важнее
+      s -= Math.min(st.count, 10) * 3; // отработано много раз — реже
+    }
+    return s;
   };
+
+  const available = availableFor(config, profile);
+  const scored = available
+    .map((t) => ({ t, s: score(t) }))
+    .sort((a, b) => b.s - a.s || (a.t.difficulty || 1) - (b.t.difficulty || 1));
+
+  const times = splitTime(config);
+  const selected = scored.slice(0, times.techniqueCount).map((x) => x.t);
+  return assemble(profile.belt, selected, times, config);
 }
