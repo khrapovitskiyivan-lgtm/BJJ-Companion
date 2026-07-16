@@ -3,8 +3,15 @@ import { useProfile } from "@/lib/bjj/store";
 import { BELT_LABEL, BELT_ORDER, STYLE_ORDER, STYLE_META } from "@/lib/bjj/constants";
 import { Toggle } from "@/components/bjj/ui";
 import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
-import type { Belt } from "@/lib/bjj/types";
+import type { Belt, Frequency } from "@/lib/bjj/types";
 import { X, Check } from "lucide-react";
+
+// Частота тренировок — те же варианты, что в онбординге; задаёт план дневника
+const FREQ_OPTIONS: { value: Frequency; label: string; desc: string }[] = [
+  { value: 1, label: "1-2 раза", desc: "Поддерживаю форму" },
+  { value: 3, label: "3 раза", desc: "Стабильный прогресс" },
+  { value: 4, label: "4+ раз", desc: "Интенсивные тренировки" },
+];
 
 // Лист игрока: открывается тапом по кружку профиля в «Моей игре».
 // Здесь всё, что определяет твою игру: пояс, формат Gi/No-Gi, стиль игры.
@@ -72,6 +79,31 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
             <div className="grid grid-cols-2 gap-2">
               <Toggle label="Gi (в кимоно)" active={profile.gi} onClick={() => (profile.noGi || !profile.gi) && update({ gi: !profile.gi })} />
               <Toggle label="No-Gi" active={profile.noGi} onClick={() => (profile.gi || !profile.noGi) && update({ noGi: !profile.noGi })} />
+            </div>
+          </section>
+
+          {/* Частота тренировок — план для календаря дневника */}
+          <section>
+            <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Частота тренировок</h3>
+            <p className="mb-2 text-[11px] text-muted-foreground">Сколько раз в неделю тренируешься — от этого считается план в дневнике.</p>
+            <div className="grid grid-cols-3 gap-2">
+              {FREQ_OPTIONS.map(({ value, label, desc }) => (
+                <button
+                  key={value}
+                  onClick={() => update({ frequency: value })}
+                  className="flex flex-col items-center gap-0.5 rounded-xl border-2 p-2.5 text-center transition-all"
+                  style={{
+                    borderColor: profile.frequency === value ? "var(--color-primary)" : "var(--color-border)",
+                    background:
+                      profile.frequency === value
+                        ? "color-mix(in oklch, var(--color-primary) 8%, var(--color-card))"
+                        : "var(--color-card)",
+                  }}
+                >
+                  <span className="text-sm font-semibold">{label}</span>
+                  <span className="text-[10px] text-muted-foreground">{desc}</span>
+                </button>
+              ))}
             </div>
           </section>
 

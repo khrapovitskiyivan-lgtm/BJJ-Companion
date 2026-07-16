@@ -1,92 +1,180 @@
-import { useMemo } from "react";
-import type { DiaryEntry } from "@/lib/bjj/types";
-import { Flame, CalendarCheck } from "lucide-react";
+import { Fragment, useMemo, useState } from "react";
+import type { DiaryEntry, Frequency } from "@/lib/bjj/types";
+import { dayKey, monthGrid, trainedByDate, weekStatus, monthSummary } from "@/lib/bjj/plan";
+import { Flame, ChevronLeft, ChevronRight, CalendarCog } from "lucide-react";
 
-// Активность + тепловая карта, посчитанные из записей дневника.
-// Тренировочный день = день, за который есть запись; интенсивность клетки — число техник.
-const WEEKS = 18;
+// Календарь месяца от плановой частоты: тренировочные дни, недельные квоты,
+// недобор закрытых недель, сверхплановые дни и итог месяца.
+// Без частоты — календарь без квот и кнопка «Указать частоту» (лист игрока).
 
-function dateKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+const MONTHS = [
+  "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+  "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+];
+const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
-export function ActivityHeatmap({ entries }: { entries: DiaryEntry[] }) {
-  const { byDate, streak, thisMonth, max } = useMemo(() => {
-    const byDate = new Map<string, number>();
-    for (const e of entries) byDate.set(e.date, (byDate.get(e.date) ?? 0) + Math.max(1, e.techniqueIds.length));
+const VERDICT_LABEL: Record<string, string> = {
+  under: "план не выполнен",
+  met: "план выполнен",
+  over: "план перевыполнен",
+  on_track: "идёшь по плану",
+  behind: "отстаёшь от плана",
+};
 
-    // streak: подряд идущие дни с активностью, считая от сегодня (или вчера)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    let streak = 0;
+export function ActivityHeatmap({
+  entries,
+  frequency,
+  onSetFrequency,
+}: {
+  entries: DiaryEntry[];
+  frequency?: Frequency;
+  onSetFrequency?: () => void;
+}) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [view, setView] = useState(() => ({ y: today.getFullYear(), m: today.getMonth() }));
+
+  const trained = useMemo(() => trainedByDate(entries), [entries]);
+
+  // Стрик: подряд идущие дни с активностью, считая от сегодня (или вчера)
+  const streak = useMemo(() => {
+    let n = 0;
     const cursor = new Date(today);
-    if (!byDate.has(dateKey(cursor))) cursor.setDate(cursor.getDate() - 1); // сегодня ещё не тренировались — начнём со вчера
-    while (byDate.has(dateKey(cursor))) {
-      streak++;
+    if (!trained.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
+    while (trained.has(dayKey(cursor))) {
+      n++;
       cursor.setDate(cursor.getDate() - 1);
     }
+    return n;
+  }, [trained]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // тренировок в этом месяце
-    const ym = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
-    const thisMonth = [...byDate.keys()].filter((k) => k.startsWith(ym)).length;
+  const grid = useMemo(() => monthGrid(view.y, view.m), [view]);
+  const max = Math.max(1, ...trained.values());
 
-    const max = Math.max(1, ...byDate.values());
-    return { byDate, streak, thisMonth, max };
-  }, [entries]);
+  // Назад — не раньше месяца самой старой записи, вперёд — не дальше текущего
+  const earliest = useMemo(() => {
+    let min = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    for (const k of trained.keys()) if (k.slice(0, 7) < min) min = k.slice(0, 7);
+    return min;
+  }, [trained]); // eslint-disable-line react-hooks/exhaustive-deps
+  const viewYm = `${view.y}-${String(view.m + 1).padStart(2, "0")}`;
+  const canPrev = viewYm > earliest;
+  const canNext = view.y < today.getFullYear() || (view.y === today.getFullYear() && view.m < today.getMonth());
+  const shift = (d: number) => setView(({ y, m }) => {
+    const next = new Date(y, m + d, 1);
+    return { y: next.getFullYear(), m: next.getMonth() };
+  });
 
-  // сетка недель × 7 дней, заканчивается сегодняшней неделей
-  const weeks = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const grid: { date: string; count: number }[][] = [];
-    for (let w = WEEKS - 1; w >= 0; w--) {
-      const week: { date: string; count: number }[] = [];
-      for (let d = 0; d < 7; d++) {
-        const day = new Date(today);
-        const offset = w * 7 + (6 - d) - ((6 - today.getDay() + 7) % 7);
-        day.setDate(day.getDate() - offset);
-        const key = dateKey(day);
-        week.push({ date: key, count: byDate.get(key) ?? 0 });
-      }
-      grid.push(week);
-    }
-    return grid;
-  }, [byDate]);
+  const summary = frequency ? monthSummary(trained, frequency, view.y, view.m, today) : null;
 
   return (
     <section className="rounded-2xl border border-border bg-card p-4">
-      <div className="mb-3 flex items-center gap-4">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 text-sm font-semibold">
           <Flame className="h-4 w-4 text-orange-500" />
           {streak} {streak === 1 ? "день" : streak >= 2 && streak <= 4 ? "дня" : "дней"} подряд
         </span>
-        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <CalendarCheck className="h-3.5 w-3.5" />
-          {thisMonth} трен. в этом месяце
+        <span className="flex items-center gap-1 text-xs font-medium">
+          <button
+            onClick={() => shift(-1)}
+            disabled={!canPrev}
+            aria-label="Предыдущий месяц"
+            className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted disabled:opacity-30"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="w-24 text-center">{MONTHS[view.m]} {view.y}</span>
+          <button
+            onClick={() => shift(1)}
+            disabled={!canNext}
+            aria-label="Следующий месяц"
+            className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted disabled:opacity-30"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </span>
       </div>
-      <div className="overflow-x-auto">
-        <div className="flex gap-[3px]" style={{ minWidth: 260 }}>
-          {weeks.map((week, wi) => (
-            <div key={wi} className="flex flex-col gap-[3px]">
-              {week.map((day, di) => {
-                const intensity = day.count / max;
-                const bg =
-                  day.count === 0
-                    ? "var(--color-muted)"
-                    : `color-mix(in oklch, var(--color-primary) ${Math.round(Math.max(25, intensity * 100))}%, var(--color-muted))`;
-                return (
-                  <div
-                    key={di}
-                    className="h-3 w-3 rounded-[3px]"
-                    style={{ background: bg }}
-                    title={day.count > 0 ? `${day.date}: ${day.count}` : day.date}
-                  />
-                );
+
+      {/* Сетка: 7 дней + колонка недельной квоты */}
+      <div className="grid gap-[3px]" style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr)) 44px" }}>
+        {WEEKDAYS.map((w) => (
+          <span key={w} className="pb-0.5 text-center text-[10px] text-muted-foreground">{w}</span>
+        ))}
+        <span />
+        {grid.map((week) => {
+          const st = frequency ? weekStatus(week, trained, frequency, today) : null;
+          return (
+            <Fragment key={dayKey(week[0])}>
+              {week.map((day) => {
+              const key = dayKey(day);
+              const count = trained.get(key) ?? 0;
+              const inMonth = day.getMonth() === view.m;
+              const isToday = key === dayKey(today);
+              const overPlan = st?.overDates.has(key) ?? false;
+              const bg =
+                count === 0
+                  ? "var(--color-muted)"
+                  : `color-mix(in oklch, var(--color-primary) ${Math.round(Math.max(30, (count / max) * 100))}%, var(--color-muted))`;
+              return (
+                <div
+                  key={key}
+                  className={`relative grid h-8 place-items-center rounded-md text-[10px] tabular-nums ${
+                    inMonth ? "" : "opacity-35"
+                  } ${count > 0 ? "font-semibold text-primary-foreground" : "text-muted-foreground"}`}
+                  style={{ background: bg, boxShadow: isToday ? "inset 0 0 0 1.5px var(--color-primary)" : undefined }}
+                  title={count > 0 ? `${key}: техник ${count}${overPlan ? ", сверх плана" : ""}` : key}
+                >
+                  {day.getDate()}
+                  {overPlan && <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-amber-400" />}
+                </div>
+              );
               })}
-            </div>
-          ))}
-        </div>
+              {/* Квота недели: счётчик, пунктирные слоты недобора, «+n» за сверхплан */}
+              <div className="flex h-8 flex-col items-center justify-center gap-0.5">
+                {st && !st.future && (
+                  <>
+                    <span className={`text-[10px] tabular-nums ${st.closed && st.missed > 0 ? "text-muted-foreground" : st.over > 0 ? "font-semibold text-amber-500" : st.closed ? "font-semibold text-primary" : "text-muted-foreground"}`}>
+                      {st.over > 0 ? `+${st.over}` : `${Math.min(st.done, st.quota)}/${st.quota}`}
+                    </span>
+                    {st.missed > 0 && (
+                      <span className="flex gap-[2px]" title={`Пропущено: ${st.missed}`}>
+                        {Array.from({ length: st.missed }, (_, i) => (
+                          <span key={i} className="h-1.5 w-1.5 rounded-[2px] border border-dashed border-muted-foreground/60" />
+                        ))}
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+            </Fragment>
+          );
+        })}
+      </div>
+
+      {/* Итог месяца или приглашение задать частоту */}
+      <div className="mt-3 border-t border-border pt-2.5">
+        {summary ? (
+          <p className="text-xs text-muted-foreground">
+            Сделано <span className="font-semibold text-foreground">{summary.done}</span> из {summary.plan}{" "}
+            {summary.current ? "по плану месяца" : "за месяц"} ·{" "}
+            <span className={
+              summary.verdict === "over" ? "font-semibold text-amber-500"
+              : summary.verdict === "met" || summary.verdict === "on_track" ? "font-semibold text-primary"
+              : "font-medium"
+            }>
+              {VERDICT_LABEL[summary.verdict]}
+            </span>
+          </p>
+        ) : (
+          <button
+            onClick={onSetFrequency}
+            className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+          >
+            <CalendarCog className="h-3.5 w-3.5" />
+            Указать частоту тренировок — появится план и итог месяца
+          </button>
+        )}
       </div>
     </section>
   );

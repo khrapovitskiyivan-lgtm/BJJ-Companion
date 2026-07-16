@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
 import { ActivityHeatmap } from "@/components/bjj/ActivityHeatmap";
-import { useDiary, useProgress } from "@/lib/bjj/store";
+import { CharacterSheet } from "@/components/bjj/CharacterSheet";
+import { useDiary, useProfile, useProgress } from "@/lib/bjj/store";
 import { hapticSuccess } from "@/lib/telegram";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import { GROUP_LABEL } from "@/lib/bjj/constants";
@@ -34,8 +35,10 @@ function DiaryPage() {
 function Diary() {
   const { entries, addEntry, updateEntry, deleteEntry, hydrated } = useDiary();
   const { setStatus, progress } = useProgress();
+  const { profile } = useProfile();
 
   const [adding, setAdding] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [date, setDate] = useState("");
@@ -149,8 +152,11 @@ function Diary() {
         )}
       </header>
 
-      {/* Активность + тепловая карта — из записей дневника */}
-      {hydrated && entries.length > 0 && <ActivityHeatmap entries={entries} />}
+      {/* Календарь месяца: записи дневника + план от частоты из профиля */}
+      {hydrated && entries.length > 0 && (
+        <ActivityHeatmap entries={entries} frequency={profile.frequency} onSetFrequency={() => setSheetOpen(true)} />
+      )}
+      {sheetOpen && <CharacterSheet onClose={() => setSheetOpen(false)} />}
 
       {/* Форма новой тренировки */}
       {adding && (
