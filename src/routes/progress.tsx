@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TechniqueRow, TechniqueChip } from "@/components/bjj/TechniqueCard";
 import { GapCard } from "@/components/bjj/GapCard";
 import { CharacterSheet } from "@/components/bjj/CharacterSheet";
-import { PageHeader } from "@/components/bjj/ui";
+import { Button, PageHeader, buttonClass } from "@/components/bjj/ui";
 import { initials } from "@/components/bjj/AppShell";
 import { useProgress, useProfile, useDiary } from "@/lib/bjj/store";
 import { currentFocus, nextToLearn } from "@/lib/bjj/recommend";
@@ -21,6 +21,9 @@ import {
   CircleDot,
   BookOpen,
   Flag,
+  ChevronDown,
+  History,
+  ArrowRight,
 } from "lucide-react";
 
 export const Route = createFileRoute("/progress")({
@@ -31,7 +34,7 @@ export const Route = createFileRoute("/progress")({
 function ProgressPage() {
   const { progress } = useProgress();
   const { profile } = useProfile();
-  const { practiceCount } = useDiary();
+  const { entries, practiceCount } = useDiary();
 
   // Текущий фокус (в процессе) + следующая цель (рекомендации)
   const focusTech = useMemo(() => currentFocus(TECHNIQUES, progress), [progress]);
@@ -53,8 +56,32 @@ function ProgressPage() {
   );
   const doneCount = useMemo(() => countDone(progress), [progress]);
 
+  // «Пора повторить»: изученное, чего давно (3+ недели) или вообще не было в дневнике.
+  // Показываем только когда дневник ведётся — иначе кричали бы на всё изученное разом.
+  const staleTechniques = useMemo(() => {
+    if (entries.length === 0) return [];
+    const last = new Map<number, string>();
+    for (const e of entries) {
+      for (const id of e.techniqueIds) {
+        const prev = last.get(id);
+        if (!prev || e.date > prev) last.set(id, e.date);
+      }
+    }
+    const now = Date.now();
+    const staleDays = (id: number) => {
+      const iso = last.get(id);
+      if (!iso) return Infinity; // изучена, но в дневнике ни разу
+      return (now - new Date(iso).getTime()) / 86_400_000;
+    };
+    return TECHNIQUES.filter((t) => progress[t.id] === "done" && staleDays(t.id) >= 21)
+      .sort((a, b) => staleDays(b.id) - staleDays(a.id))
+      .slice(0, 5);
+  }, [entries, progress]);
+
   // Раскрытие списка техник по статусу: клик по карточке «Изучено» / «В процессе»
   const [openList, setOpenList] = useState<"done" | "in_progress" | null>(null);
+  // Раскрытая группа в «Прогрессе по группам»: тап по карточке — список её техник
+  const [openGroup, setOpenGroup] = useState<keyof typeof GROUP_LABEL | null>(null);
   // Лист персонажа (пояс, кимоно, стиль игры) — по тапу на аватара
   const [sheetOpen, setSheetOpen] = useState(false);
   const listTechniques = useMemo(() => {
@@ -63,6 +90,21 @@ function ProgressPage() {
       (a, b) => BELT_ORDER.indexOf(a.belt) - BELT_ORDER.indexOf(b.belt) || a.difficulty - b.difficulty,
     );
   }, [openList, progress]);
+
+  // Техники раскрытой группы: изученные и в процессе сверху, дальше по поясам
+  const groupTechniques = useMemo(() => {
+    if (!openGroup) return [];
+    const rank = (t: Technique) => {
+      const s = progress[t.id] ?? "not_started";
+      return s === "in_progress" ? 0 : s === "done" ? 1 : 2;
+    };
+    return TECHNIQUES.filter((t) => t.group === openGroup).sort(
+      (a, b) =>
+        rank(a) - rank(b) ||
+        BELT_ORDER.indexOf(a.belt) - BELT_ORDER.indexOf(b.belt) ||
+        a.difficulty - b.difficulty,
+    );
+  }, [openGroup, progress]);
 
   // === Общая статистика ===
   const stats = useMemo(() => {
@@ -178,12 +220,9 @@ function ProgressPage() {
                 {openList === "done" ? "Изученные техники" : "Техники в процессе"}{" "}
                 <span className="text-muted-foreground">({listTechniques.length})</span>
               </h2>
-              <button
-                onClick={() => setOpenList(null)}
-                className="text-xs text-muted-foreground hover:text-foreground"
-              >
+              <Button variant="ghost" size="sm" onClick={() => setOpenList(null)}>
                 Свернуть
-              </button>
+              </Button>
             </div>
             {listTechniques.length === 0 ? (
               <p className="text-xs text-muted-foreground">
@@ -220,6 +259,34 @@ function ProgressPage() {
             highlight
           />
         </section>
+
+        {/* Пора повторить: изученное выветривается — дневник это видит */}
+        {staleTechniques.length > 0 && (
+          <section className="rounded-2xl border border-border bg-card p-4">
+            <h2 className="mb-1 flex items-center gap-1.5 text-sm font-semibold">
+              <History className="h-4 w-4 text-primary" />
+              Пора повторить
+            </h2>
+            <p className="mb-3 text-[11px] text-muted-foreground">
+              Изучено, но в дневнике давно не появлялось. Изученное без повторения выветривается.
+            </p>
+            <ul className="space-y-1.5">
+              {staleTechniques.map((t) => (
+                <li key={t.id}>
+                  <TechniqueRow technique={t} inset />
+                </li>
+              ))}
+            </ul>
+            <Link
+              to="/workout"
+              search={{ src: "diary" }}
+              className={buttonClass("secondary", "sm", "mt-3 w-full text-muted-foreground")}
+            >
+              Собрать тренировку по дневнику
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </section>
+        )}
 
         <YourStyle scores={styleScores} doneCount={doneCount} />
 
@@ -296,9 +363,23 @@ function ProgressPage() {
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {groupStats.map(({ group, done, total, pct }) => (
-              <div key={group} className="rounded-xl border border-border bg-background p-3">
+              <button
+                key={group}
+                type="button"
+                onClick={() => setOpenGroup((g) => (g === group ? null : group))}
+                aria-expanded={openGroup === group}
+                className="rounded-xl border-2 bg-background p-3 text-left transition-all"
+                style={{
+                  borderColor: openGroup === group ? "var(--color-ring)" : "var(--color-border)",
+                }}
+              >
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-medium">{GROUP_LABEL[group]}</span>
+                  <span className="flex items-center gap-1 text-xs font-medium">
+                    {GROUP_LABEL[group]}
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${openGroup === group ? "rotate-180" : ""}`}
+                    />
+                  </span>
                   <span className="text-[11px] text-muted-foreground">
                     {done}/{total}
                   </span>
@@ -309,9 +390,31 @@ function ProgressPage() {
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-              </div>
+              </button>
             ))}
           </div>
+
+          {/* Раскрытый список техник группы: в работе, изученные, дальше по поясам */}
+          {openGroup && (
+            <div className="mt-3">
+              <div className="mb-2 flex items-center justify-between">
+                <h3 className="text-xs font-semibold">
+                  {GROUP_LABEL[openGroup]}{" "}
+                  <span className="font-normal text-muted-foreground">({groupTechniques.length})</span>
+                </h3>
+                <Button variant="ghost" size="sm" onClick={() => setOpenGroup(null)}>
+                  Свернуть
+                </Button>
+              </div>
+              <ul className="space-y-1.5">
+                {groupTechniques.map((t) => (
+                  <li key={t.id}>
+                    <TechniqueRow technique={t} inset />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </section>
 
       </div>
