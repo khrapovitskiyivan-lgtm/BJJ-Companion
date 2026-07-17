@@ -1,6 +1,7 @@
 // === ЛОГОТИП BJJ COMPANION ===
 // Logo — компактный SVG-знак для шапки (грэпплер в круге, navy+gold).
-// BrandLogo — полноразмерный PNG (public/logo.png) в белой карточке для заставок.
+// BrandLogo — полноразмерный webp (public/logo.webp, 1200px ~22 КБ; исходный
+// PNG 4.5 МБ остался в git-истории) в белой карточке для заставок.
 const NAVY = "#2b2f6b";
 const GOLD = "#c79a4e";
 
@@ -9,7 +10,7 @@ export function BrandLogo({ className = "" }: { className?: string }) {
   return (
     <div className={`mx-auto w-full max-w-xs overflow-hidden rounded-2xl bg-white p-2 shadow-sm ${className}`}>
       <img
-        src="/logo.png"
+        src="/logo.webp"
         alt="BJJ Companion"
         width={1200}
         height={686}
