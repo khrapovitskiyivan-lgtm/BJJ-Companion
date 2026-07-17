@@ -10,7 +10,8 @@ import { useProgress, useProfile, useDiary } from "@/lib/bjj/store";
 import { currentFocus, nextToLearn } from "@/lib/bjj/recommend";
 import { computeStyleAffinity, type StyleScore } from "@/lib/bjj/styleProfile";
 import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
-import { TECHNIQUES } from "@/lib/bjj/data";
+import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
+import { topCatchers, defensesFor } from "@/lib/bjj/caught";
 import { BELT_ORDER, BELT_LABEL, GROUP_LABEL, STYLE_META } from "@/lib/bjj/constants";
 import { computeStats, countDone, ARCHETYPE_MIN_DONE, STAT_META, ARCHETYPE_STATS } from "@/lib/bjj/stats";
 import type { Technique } from "@/lib/bjj/types";
@@ -24,6 +25,7 @@ import {
   ChevronDown,
   History,
   ArrowRight,
+  ShieldAlert,
 } from "lucide-react";
 
 export const Route = createFileRoute("/progress")({
@@ -55,6 +57,15 @@ function ProgressPage() {
     [progress, practiceCount],
   );
   const doneCount = useMemo(() => countDone(progress), [progress]);
+
+  // «Что тебя ловит»: сабмишены, которыми попадаются 2+ раз, и защиты от них из графа
+  const catchers = useMemo(() => {
+    return topCatchers(entries, 2).map(({ id, count }) => ({
+      tech: TECH_BY_ID[id],
+      count,
+      defenses: defensesFor(id, TECHNIQUES, 3),
+    })).filter((c) => c.tech);
+  }, [entries]);
 
   // «Пора повторить»: изученное, чего давно (3+ недели) или вообще не было в дневнике.
   // Показываем только когда дневник ведётся — иначе кричали бы на всё изученное разом.
@@ -259,6 +270,52 @@ function ProgressPage() {
             highlight
           />
         </section>
+
+        {/* Что тебя ловит: повторяющиеся сабмишены соперников и защиты от них */}
+        {catchers.length > 0 && (
+          <section className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
+            <h2 className="mb-1 flex items-center gap-1.5 text-sm font-semibold">
+              <ShieldAlert className="h-4 w-4 text-destructive" />
+              Что тебя ловит
+            </h2>
+            <p className="mb-3 text-[11px] text-muted-foreground">
+              Из «Чем поймали» в дневнике. Разучи защиты — генератор уже поднял их в приоритете.
+            </p>
+            <div className="space-y-4">
+              {catchers.map(({ tech, count, defenses }) => (
+                <div key={tech.id}>
+                  <div className="mb-1.5 flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate text-sm font-medium">{tech.nameRu}</span>
+                    <span className="shrink-0 text-[11px] tabular-nums text-destructive">
+                      {count} {count === 1 ? "раз" : count < 5 ? "раза" : "раз"}
+                    </span>
+                  </div>
+                  {defenses.length > 0 ? (
+                    <ul className="space-y-1.5">
+                      {defenses.map((d) => (
+                        <li key={d.id}>
+                          <TechniqueRow technique={d} inset />
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground">
+                      Прямых защит в базе нет — разбери позицию входа на карте.
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <Link
+              to="/workout"
+              search={{ src: "diary" }}
+              className={buttonClass("secondary", "sm", "mt-3 w-full text-muted-foreground")}
+            >
+              Собрать тренировку по дневнику
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </section>
+        )}
 
         {/* Пора повторить: изученное выветривается — дневник это видит */}
         {staleTechniques.length > 0 && (

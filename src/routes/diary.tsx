@@ -10,7 +10,7 @@ import { hapticSuccess } from "@/lib/telegram";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import { GROUP_LABEL } from "@/lib/bjj/constants";
 import type { Intensity } from "@/lib/bjj/types";
-import { Plus, Search, CalendarDays, Trash2, NotebookPen, HeartPulse, Pencil, Minus } from "lucide-react";
+import { Plus, Search, CalendarDays, Trash2, NotebookPen, HeartPulse, Pencil, Minus, ShieldAlert } from "lucide-react";
 
 const MAX_ROUNDS = 20;
 
@@ -47,6 +47,8 @@ function Diary() {
   const [picked, setPicked] = useState<number[]>([]);
   const [note, setNote] = useState("");
   const [query, setQuery] = useState("");
+  const [caught, setCaught] = useState<number[]>([]);
+  const [caughtQuery, setCaughtQuery] = useState("");
   const [intensity, setIntensity] = useState<Intensity | null>(null);
   const [wellbeing, setWellbeing] = useState<number | null>(null);
   const [rounds, setRounds] = useState(0);
@@ -56,6 +58,8 @@ function Diary() {
     setPicked([]);
     setNote("");
     setQuery("");
+    setCaught([]);
+    setCaughtQuery("");
     setIntensity(null);
     setWellbeing(null);
     setRounds(0);
@@ -70,6 +74,8 @@ function Diary() {
     setPicked([]);
     setNote("");
     setQuery("");
+    setCaught([]);
+    setCaughtQuery("");
     setIntensity(null);
     setWellbeing(null);
     setRounds(0);
@@ -87,6 +93,8 @@ function Diary() {
     setPicked(e.techniqueIds);
     setNote(e.note ?? "");
     setQuery("");
+    setCaught(e.caughtBy ?? []);
+    setCaughtQuery("");
     setIntensity(e.intensity ?? null);
     setWellbeing(e.wellbeing ?? null);
     setRounds(e.rounds ?? 0);
@@ -112,6 +120,20 @@ function Diary() {
     ).slice(0, 6);
   }, [query, picked]);
 
+  // «Чем поймали»: ищем только среди сабмишенов
+  const caughtResults = useMemo(() => {
+    const q = caughtQuery.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return TECHNIQUES.filter(
+      (t) =>
+        t.group === "submission" &&
+        !caught.includes(t.id) &&
+        (t.nameRu.toLowerCase().includes(q) ||
+          t.nameEn.toLowerCase().includes(q) ||
+          t.label.toLowerCase().includes(q)),
+    ).slice(0, 6);
+  }, [caughtQuery, caught]);
+
   const save = () => {
     if (!date || picked.length === 0) return;
     const payload = {
@@ -122,6 +144,7 @@ function Diary() {
       wellbeing: wellbeing ?? undefined,
       rounds: rounds > 0 ? rounds : undefined,
       injury: injury.trim() || undefined,
+      caughtBy: caught.length > 0 ? caught : undefined,
     };
     if (editingId) {
       updateEntry(editingId, payload);
@@ -201,6 +224,43 @@ function Diary() {
                   <button
                     key={t.id}
                     onClick={() => { setPicked((p) => [...p, t.id]); setQuery(""); }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted"
+                    style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
+                  >
+                    <span className="min-w-0 flex-1 truncate">{t.nameRu}</span>
+                    <span className="shrink-0 text-[10px] text-muted-foreground">{GROUP_LABEL[t.group]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Чем поймали: сабмишены соперника — кормят «Что тебя ловит» и генератор */}
+          {caught.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {caught.map((id) => (
+                <TechniqueChip
+                  key={id}
+                  technique={TECH_BY_ID[id]}
+                  onRemove={() => setCaught((p) => p.filter((x) => x !== id))}
+                />
+              ))}
+            </div>
+          )}
+          <div className="relative">
+            <ShieldAlert className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={caughtQuery}
+              onChange={(e) => setCaughtQuery(e.target.value)}
+              placeholder="Чем поймали? Добавить сабмишен…"
+              className="w-full rounded-xl border border-input bg-background py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+            {caughtResults.length > 0 && (
+              <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
+                {caughtResults.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => { setCaught((p) => [...p, t.id]); setCaughtQuery(""); }}
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted"
                     style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
                   >
@@ -369,6 +429,19 @@ function Diary() {
                 return <TechniqueChip key={id} technique={t} />;
               })}
             </div>
+            {e.caughtBy && e.caughtBy.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <ShieldAlert className="h-3.5 w-3.5 text-destructive/70" />
+                  Поймали:
+                </span>
+                {e.caughtBy.map((id) => {
+                  const t = TECH_BY_ID[id];
+                  if (!t) return null;
+                  return <TechniqueChip key={id} technique={t} />;
+                })}
+              </div>
+            )}
             {e.note && <p className="mt-2 text-xs text-muted-foreground">{e.note}</p>}
             {e.injury && (
               <p className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">

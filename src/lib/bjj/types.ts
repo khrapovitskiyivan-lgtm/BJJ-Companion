@@ -119,6 +119,7 @@ export interface DiaryEntry {
   wellbeing?: number;        // самочувствие 1..5
   rounds?: number;           // раундов спарринга
   injury?: string;           // заметка о травме / дискомфорте
+  caughtBy?: number[];       // «Чем поймали»: сабмишены соперника (id техник)
 }
 
 export interface WarmupItem {

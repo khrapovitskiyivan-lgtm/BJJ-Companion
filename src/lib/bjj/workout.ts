@@ -5,6 +5,7 @@ import { TECHNIQUES } from "./data";
 import type { StyleProfile } from "./types";
 import type { ProgressMap } from "./store";
 import { isUnlocked } from "./recommend";
+import { caughtCounts } from "./caught";
 
 const CRITICAL_TAGS = ["dangerous", "critical", "high_risk"];
 const BANNED_IDS = new Set<number>([384]); // Kani Basami — запрещён во всех режимах smart
@@ -175,6 +176,9 @@ export function generateWorkoutFromDiary(
   const today = Date.now();
   const daysSince = (iso: string) => Math.max(0, Math.round((today - new Date(iso).getTime()) / DAY_MS));
 
+  // «Чем поймали»: защиты от сабмишенов соперника получают приоритет
+  const caught = caughtCounts(entries);
+
   const score = (t: Technique): number => {
     const status = progress[t.id] ?? "not_started";
     let s = 0;
@@ -189,7 +193,15 @@ export function generateWorkoutFromDiary(
       s += Math.min(daysSince(st.last), 60) * 0.8; // давно не трогал — важнее
       s -= Math.min(st.count, 10) * 3; // отработано много раз — реже
     }
-    return s;
+
+    // Техника защищает от того, чем ловили (сабмишен в её setup_from):
+    // один буст по самому частому ловцу, растёт с числом попаданий до х3
+    let defenseBoost = 0;
+    for (const id of t.setup_from) {
+      const c = caught.get(id);
+      if (c) defenseBoost = Math.max(defenseBoost, 25 + Math.min(c, 3) * 10);
+    }
+    return s + defenseBoost;
   };
 
   const available = availableFor(config, profile);
