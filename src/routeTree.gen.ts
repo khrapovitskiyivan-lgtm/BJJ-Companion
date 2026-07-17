@@ -20,6 +20,7 @@ import { Route as DiaryRouteImport } from './routes/diary'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TechniqueIdRouteImport } from './routes/technique.$id'
+import { Route as ApiTgWebhookRouteImport } from './routes/api.tg-webhook'
 
 const WorkoutRoute = WorkoutRouteImport.update({
   id: '/workout',
@@ -76,6 +77,11 @@ const TechniqueIdRoute = TechniqueIdRouteImport.update({
   path: '/technique/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTgWebhookRoute = ApiTgWebhookRouteImport.update({
+  id: '/api/tg-webhook',
+  path: '/api/tg-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/progress': typeof ProgressRoute
   '/situations': typeof SituationsRoute
   '/workout': typeof WorkoutRoute
+  '/api/tg-webhook': typeof ApiTgWebhookRoute
   '/technique/$id': typeof TechniqueIdRoute
 }
 export interface FileRoutesByTo {
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/progress': typeof ProgressRoute
   '/situations': typeof SituationsRoute
   '/workout': typeof WorkoutRoute
+  '/api/tg-webhook': typeof ApiTgWebhookRoute
   '/technique/$id': typeof TechniqueIdRoute
 }
 export interface FileRoutesById {
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/progress': typeof ProgressRoute
   '/situations': typeof SituationsRoute
   '/workout': typeof WorkoutRoute
+  '/api/tg-webhook': typeof ApiTgWebhookRoute
   '/technique/$id': typeof TechniqueIdRoute
 }
 export interface FileRouteTypes {
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
     | '/progress'
     | '/situations'
     | '/workout'
+    | '/api/tg-webhook'
     | '/technique/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/progress'
     | '/situations'
     | '/workout'
+    | '/api/tg-webhook'
     | '/technique/$id'
   id:
     | '__root__'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/progress'
     | '/situations'
     | '/workout'
+    | '/api/tg-webhook'
     | '/technique/$id'
   fileRoutesById: FileRoutesById
 }
@@ -170,6 +182,7 @@ export interface RootRouteChildren {
   ProgressRoute: typeof ProgressRoute
   SituationsRoute: typeof SituationsRoute
   WorkoutRoute: typeof WorkoutRoute
+  ApiTgWebhookRoute: typeof ApiTgWebhookRoute
   TechniqueIdRoute: typeof TechniqueIdRoute
 }
 
@@ -252,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TechniqueIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/tg-webhook': {
+      id: '/api/tg-webhook'
+      path: '/api/tg-webhook'
+      fullPath: '/api/tg-webhook'
+      preLoaderRoute: typeof ApiTgWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -266,6 +286,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProgressRoute: ProgressRoute,
   SituationsRoute: SituationsRoute,
   WorkoutRoute: WorkoutRoute,
+  ApiTgWebhookRoute: ApiTgWebhookRoute,
   TechniqueIdRoute: TechniqueIdRoute,
 }
 export const routeTree = rootRouteImport
