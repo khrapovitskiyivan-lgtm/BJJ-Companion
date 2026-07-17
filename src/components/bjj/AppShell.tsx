@@ -4,8 +4,9 @@ import { Onboarding } from "./Onboarding";
 import { Logo } from "./Logo";
 import { AvatarMenu } from "./AvatarMenu";
 import { GlobalStatsModal } from "./GlobalStatsModal";
-import { useProfile, useProgress } from "@/lib/bjj/store";
+import { useDiary, useProfile, useProgress } from "@/lib/bjj/store";
 import { reportPlayer } from "@/lib/bjj/globalStats";
+import { reportTgPlan } from "@/lib/bjj/tgReport";
 import { initTelegram, haptic } from "@/lib/telegram";
 import { Moon, Sun, Settings } from "lucide-react";
 
@@ -25,6 +26,7 @@ export function initials(name: string): string {
 export function AppShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
   const { profile, update, hydrated } = useProfile();
   const { progress, setProgress } = useProgress();
+  const { entries } = useDiary();
   const [menuOpen, setMenuOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
 
@@ -38,6 +40,12 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
     if (!hydrated || !profile.onboardingDone) return;
     reportPlayer(profile.belt);
   }, [hydrated, profile.onboardingDone, profile.belt]);
+
+  // Отчёт для напоминаний бота (только внутри Telegram; троттлинг и гейт внутри)
+  useEffect(() => {
+    if (!hydrated || !profile.onboardingDone) return;
+    reportTgPlan(profile.frequency, entries);
+  }, [hydrated, profile.onboardingDone, profile.frequency, entries]);
 
   // Telegram Mini App: подтянуть имя/фото/язык из Telegram (один раз после гидратации)
   useEffect(() => {

@@ -21,6 +21,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TechniqueIdRouteImport } from './routes/technique.$id'
 import { Route as ApiTgWebhookRouteImport } from './routes/api.tg-webhook'
+import { Route as ApiTgCronRouteImport } from './routes/api.tg-cron'
 
 const WorkoutRoute = WorkoutRouteImport.update({
   id: '/workout',
@@ -82,6 +83,11 @@ const ApiTgWebhookRoute = ApiTgWebhookRouteImport.update({
   path: '/api/tg-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTgCronRoute = ApiTgCronRouteImport.update({
+  id: '/api/tg-cron',
+  path: '/api/tg-cron',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/progress': typeof ProgressRoute
   '/situations': typeof SituationsRoute
   '/workout': typeof WorkoutRoute
+  '/api/tg-cron': typeof ApiTgCronRoute
   '/api/tg-webhook': typeof ApiTgWebhookRoute
   '/technique/$id': typeof TechniqueIdRoute
 }
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/progress': typeof ProgressRoute
   '/situations': typeof SituationsRoute
   '/workout': typeof WorkoutRoute
+  '/api/tg-cron': typeof ApiTgCronRoute
   '/api/tg-webhook': typeof ApiTgWebhookRoute
   '/technique/$id': typeof TechniqueIdRoute
 }
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/progress': typeof ProgressRoute
   '/situations': typeof SituationsRoute
   '/workout': typeof WorkoutRoute
+  '/api/tg-cron': typeof ApiTgCronRoute
   '/api/tg-webhook': typeof ApiTgWebhookRoute
   '/technique/$id': typeof TechniqueIdRoute
 }
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
     | '/progress'
     | '/situations'
     | '/workout'
+    | '/api/tg-cron'
     | '/api/tg-webhook'
     | '/technique/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/progress'
     | '/situations'
     | '/workout'
+    | '/api/tg-cron'
     | '/api/tg-webhook'
     | '/technique/$id'
   id:
@@ -167,6 +178,7 @@ export interface FileRouteTypes {
     | '/progress'
     | '/situations'
     | '/workout'
+    | '/api/tg-cron'
     | '/api/tg-webhook'
     | '/technique/$id'
   fileRoutesById: FileRoutesById
@@ -182,6 +194,7 @@ export interface RootRouteChildren {
   ProgressRoute: typeof ProgressRoute
   SituationsRoute: typeof SituationsRoute
   WorkoutRoute: typeof WorkoutRoute
+  ApiTgCronRoute: typeof ApiTgCronRoute
   ApiTgWebhookRoute: typeof ApiTgWebhookRoute
   TechniqueIdRoute: typeof TechniqueIdRoute
 }
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTgWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/tg-cron': {
+      id: '/api/tg-cron'
+      path: '/api/tg-cron'
+      fullPath: '/api/tg-cron'
+      preLoaderRoute: typeof ApiTgCronRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -286,6 +306,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProgressRoute: ProgressRoute,
   SituationsRoute: SituationsRoute,
   WorkoutRoute: WorkoutRoute,
+  ApiTgCronRoute: ApiTgCronRoute,
   ApiTgWebhookRoute: ApiTgWebhookRoute,
   TechniqueIdRoute: TechniqueIdRoute,
 }

@@ -13,6 +13,7 @@ const COMMANDS_HINT = [
   "/about — что это за приложение",
   "/train — готовая тренировка",
   "/diary — отметить тренировку",
+  "/mute — выключить напоминания",
 ].join("\n");
 
 const WELCOME = [
@@ -32,6 +33,8 @@ const HELP = [
   "Тренировка — готовый комплекс по профилю или по дневнику, с таймером и звуком.",
   "Техники — библиотека, карта связей, разбор ситуаций «Что если» и словарь.",
   "Моя игра — стиль, характеристики, прогресс по поясам и группам.",
+  "",
+  "Напоминания: если план недели горит, бот напомнит вечером (пн-пт) и подведёт итог в воскресенье. Выключить: /mute, включить: /unmute.",
   "",
   COMMANDS_HINT,
 ].join("\n");
@@ -68,6 +71,36 @@ interface TgUpdate {
   message?: { chat?: { id?: number }; text?: string };
 }
 
+// /mute и /unmute: security definer RPC тем же anon-ключом, что у приложения
+async function setMuted(chatId: number, muted: boolean): Promise<boolean> {
+  const url = process.env.VITE_SUPABASE_URL;
+  const key = process.env.VITE_SUPABASE_ANON_KEY;
+  if (!url || !key) return false;
+  try {
+    const r = await fetch(`${url}/rest/v1/rpc/bjj_tg_set_muted`, {
+      method: "POST",
+      headers: { apikey: key, authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_tg: chatId, p_muted: muted }),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
+const MUTE_REPLIES: Record<string, { ok: string; fail: string; muted: boolean }> = {
+  "/mute": {
+    muted: true,
+    ok: "Напоминания выключены. Включить обратно: /unmute",
+    fail: "Не получилось выключить напоминания, попробуй позже.",
+  },
+  "/unmute": {
+    muted: false,
+    ok: "Напоминания включены: если план недели горит, напомню вечером (пн-пт), в воскресенье подведу итог.",
+    fail: "Не получилось включить напоминания, попробуй позже.",
+  },
+};
+
 export const Route = createFileRoute("/api/tg-webhook")({
   server: {
     handlers: {
@@ -84,8 +117,16 @@ export const Route = createFileRoute("/api/tg-webhook")({
           const text = update.message?.text ?? "";
           // «/команда» и «/команда@имябота» из меню команд
           const command = text.split(/[\s@]/, 1)[0];
+          const muteCmd = MUTE_REPLIES[command];
           const reply = REPLIES[command];
-          if (chatId && reply) {
+          if (chatId && muteCmd) {
+            const ok = await setMuted(chatId, muteCmd.muted);
+            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: chatId, text: ok ? muteCmd.ok : muteCmd.fail }),
+            });
+          } else if (chatId && reply) {
             await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
