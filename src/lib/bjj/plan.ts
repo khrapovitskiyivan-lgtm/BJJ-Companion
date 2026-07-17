@@ -62,6 +62,33 @@ export function weekStatus(week: Date[], trained: Map<string, number>, quota: nu
   };
 }
 
+// Дни недели Пн-Вс, в которую попадает дата
+export function weekDays(d: Date): Date[] {
+  const t0 = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const monday = new Date(t0);
+  monday.setDate(t0.getDate() - ((t0.getDay() + 6) % 7));
+  const out: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    const x = new Date(monday);
+    x.setDate(monday.getDate() + i);
+    out.push(x);
+  }
+  return out;
+}
+
+// Дневной стрик: дни с тренировками подряд, считая от сегодня
+// (или от вчера, если сегодня ещё не тренировался — серия не сгорает днём).
+export function dayStreak(trained: Map<string, number>, today: Date): number {
+  const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  if (!trained.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
+  let n = 0;
+  while (trained.has(dayKey(cursor))) {
+    n++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return n;
+}
+
 // Стрик недель в плане: сколько календарных недель подряд выполнена квота.
 // Текущая неделя засчитывается, как только квота добита; пока нет — стрик
 // прошлых недель не сгорает (нельзя терять серию в середине недели).

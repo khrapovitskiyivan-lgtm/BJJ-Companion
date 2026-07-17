@@ -26,12 +26,13 @@ export const ARCHETYPE_MIN_DONE = 5;
 
 export interface StatScore {
   stat: StatKey;
-  pct: number;  // 0..100, доля прокачки от доступного по стату
+  pct: number;      // 0..100 целые — для интерфейса
+  pctExact: number; // без округления — для дельт (экран награды)
   done: number; // освоено техник этого стата
   total: number; // всего техник этого стата в базе
 }
 
-function hasStat(t: Technique, stat: StatKey): boolean {
+export function hasStat(t: Technique, stat: StatKey): boolean {
   return t.tags.some((g) => STAT_META[stat].tags.includes(g));
 }
 
@@ -60,8 +61,8 @@ export function computeStatsFor(
       raw += w;
     }
     const max = total * 2;
-    const pct = max > 0 ? Math.min(100, Math.round((raw / max) * 100)) : 0;
-    return { stat, pct, done, total };
+    const pctExact = max > 0 ? Math.min(100, (raw / max) * 100) : 0;
+    return { stat, pct: Math.round(pctExact), pctExact, done, total };
   });
 }
 

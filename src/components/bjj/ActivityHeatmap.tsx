@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
 import type { DiaryEntry, Frequency } from "@/lib/bjj/types";
-import { dayKey, monthGrid, trainedByDate, weekStatus, monthSummary, planStreak } from "@/lib/bjj/plan";
+import { dayKey, dayStreak, monthGrid, trainedByDate, weekStatus, monthSummary, planStreak } from "@/lib/bjj/plan";
 import { IconButton } from "@/components/bjj/ui";
 import { Flame, ChevronLeft, ChevronRight, CalendarCog } from "lucide-react";
 
@@ -50,16 +50,7 @@ export function ActivityHeatmap({
 
   // Стрик: при заданной частоте — недели в плане подряд (дневной стрик для BJJ
   // почти всегда ноль: тренируются 2-4 раза в неделю). Без частоты — дни подряд.
-  const streak = useMemo(() => {
-    let n = 0;
-    const cursor = new Date(today);
-    if (!trained.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
-    while (trained.has(dayKey(cursor))) {
-      n++;
-      cursor.setDate(cursor.getDate() - 1);
-    }
-    return n;
-  }, [trained]); // eslint-disable-line react-hooks/exhaustive-deps
+  const streak = useMemo(() => dayStreak(trained, today), [trained]); // eslint-disable-line react-hooks/exhaustive-deps
   const weekStreak = useMemo(
     () => (frequency ? planStreak(trained, frequency, today) : 0),
     [trained, frequency], // eslint-disable-line react-hooks/exhaustive-deps

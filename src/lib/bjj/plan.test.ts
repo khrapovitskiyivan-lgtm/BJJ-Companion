@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dayKey, monthGrid, monthPlan, weekStatus, monthSummary, trainedByDate, planStreak } from "./plan";
+import { dayKey, dayStreak, monthGrid, monthPlan, weekDays, weekStatus, monthSummary, trainedByDate, planStreak } from "./plan";
 import type { DiaryEntry } from "./types";
 
 function entry(date: string, techs = 1): DiaryEntry {
@@ -145,5 +145,36 @@ describe("planStreak", () => {
   it("недобор квоты в неделе не считается", () => {
     const t = weeks(["2026-07-06", "2026-07-08"]);
     expect(planStreak(t, 3, today)).toBe(0);
+  });
+});
+
+describe("weekDays", () => {
+  it("среда 15 июля 2026 -> неделя Пн 13 .. Вс 19", () => {
+    const wk = weekDays(d(2026, 6, 15));
+    expect(wk.length).toBe(7);
+    expect(dayKey(wk[0])).toBe("2026-07-13");
+    expect(wk[0].getDay()).toBe(1); // понедельник
+    expect(dayKey(wk[6])).toBe("2026-07-19");
+  });
+});
+
+describe("dayStreak", () => {
+  it("пустой дневник — ноль", () => {
+    expect(dayStreak(trainedByDate([]), d(2026, 6, 16))).toBe(0);
+  });
+
+  it("сегодня и вчера — 2", () => {
+    const t = trainedByDate([entry("2026-07-15"), entry("2026-07-16")]);
+    expect(dayStreak(t, d(2026, 6, 16))).toBe(2);
+  });
+
+  it("сегодня ещё не тренировался — серия от вчера не сгорает", () => {
+    const t = trainedByDate([entry("2026-07-15")]);
+    expect(dayStreak(t, d(2026, 6, 16))).toBe(1);
+  });
+
+  it("разрыв обрывает серию", () => {
+    const t = trainedByDate([entry("2026-07-13"), entry("2026-07-15"), entry("2026-07-16")]);
+    expect(dayStreak(t, d(2026, 6, 16))).toBe(2);
   });
 });

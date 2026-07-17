@@ -1,0 +1,158 @@
+import { useEffect, useState } from "react";
+import { Button, Sheet } from "@/components/bjj/ui";
+import { STAT_META } from "@/lib/bjj/stats";
+import type { EntryReward } from "@/lib/bjj/reward";
+import { CalendarDays, Flame, ShieldCheck, TrendingUp } from "lucide-react";
+
+// Экран награды после сохранения записи дневника: 2-3 дельты каскадом.
+// Золото строго у достижений (квота недели, сверх плана, серия дней) —
+// правило языка цвета из дизайн-системы; защита и стат в тоне primary.
+
+function fmtPct(v: number): string {
+  return v.toFixed(1).replace(".", ",");
+}
+
+function weekWord(n: number): string {
+  const d10 = n % 10;
+  const d100 = n % 100;
+  if (d100 >= 11 && d100 <= 14) return "недель";
+  if (d10 === 1) return "неделя";
+  if (d10 >= 2 && d10 <= 4) return "недели";
+  return "недель";
+}
+
+function dayWord(n: number): string {
+  const d10 = n % 10;
+  const d100 = n % 100;
+  if (d100 >= 11 && d100 <= 14) return "дней";
+  if (d10 === 1) return "день";
+  if (d10 >= 2 && d10 <= 4) return "дня";
+  return "дней";
+}
+
+function trainWord(n: number): string {
+  const d10 = n % 10;
+  const d100 = n % 100;
+  if (d100 >= 11 && d100 <= 14) return "тренировок";
+  if (d10 === 1) return "тренировка";
+  if (d10 >= 2 && d10 <= 4) return "тренировки";
+  return "тренировок";
+}
+
+function razWord(n: number): string {
+  const d10 = n % 10;
+  const d100 = n % 100;
+  if (d100 >= 11 && d100 <= 14) return "раз";
+  if (d10 >= 2 && d10 <= 4) return "раза";
+  return "раз";
+}
+
+const CARD = "rounded-xl border border-border bg-card p-3 animate-in fade-in slide-in-from-bottom-2 duration-300";
+const cardDelay = (i: number) => ({ animationDelay: `${i * 130}ms`, animationFillMode: "both" as const });
+
+export function EntryRewardSheet({ reward, onClose }: { reward: EntryReward; onClose: () => void }) {
+  const { week, stat, defense } = reward;
+
+  // Бар стата: монтируемся на pctBefore, после появления карточек переезжаем на pctAfter
+  const [grow, setGrow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setGrow(true), 500);
+    return () => clearTimeout(t);
+  }, []);
+
+  const goldWeek = week.kind === "plan" ? week.hitNow || week.over : week.streak >= 2;
+  let weekTitle: string;
+  let weekSub: string;
+  if (week.kind === "plan") {
+    if (week.hitNow) {
+      weekTitle = "Неделя в плане!";
+      weekSub =
+        week.weekStreak > 1
+          ? `Серия: ${week.weekStreak} ${weekWord(week.weekStreak)} подряд`
+          : `Квота добита: ${week.done} из ${week.quota}`;
+    } else if (week.over) {
+      weekTitle = "Сверх плана!";
+      weekSub = `На этой неделе: ${week.done} при плане ${week.quota}`;
+    } else if (week.done < week.quota) {
+      weekTitle = `Неделя: ${week.done} из ${week.quota}`;
+      const left = week.quota - week.done;
+      weekSub = `Ещё ${left} ${trainWord(left)} до плана`;
+    } else {
+      // вторая запись в уже закрытый день или неделя уже была в плане
+      weekTitle = `Неделя: ${week.done} из ${week.quota}`;
+      weekSub = "План недели закрыт";
+    }
+  } else {
+    weekTitle = week.streak >= 2 ? `${week.streak} ${dayWord(week.streak)} подряд` : "Тренировка записана";
+    weekSub = week.streak >= 2 ? "Так держать" : "Отмечай каждую тренировку";
+  }
+
+  let idx = 0;
+  const statDelta = stat ? stat.pctAfter - stat.pctBefore : 0;
+
+  return (
+    <Sheet kicker="Дневник" title="Записано!" onClose={onClose}>
+      <div className="space-y-2.5">
+        <div className={CARD} style={cardDelay(idx++)}>
+          <div className="flex items-start gap-2.5">
+            {goldWeek ? (
+              <Flame className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "var(--brand-gold-ink)" }} />
+            ) : week.kind === "plan" ? (
+              <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+            ) : (
+              <Flame className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold" style={goldWeek ? { color: "var(--brand-gold-ink)" } : undefined}>
+                {weekTitle}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{weekSub}</p>
+            </div>
+          </div>
+        </div>
+
+        {stat && (
+          <div className={CARD} style={cardDelay(idx++)}>
+            <div className="flex items-start gap-2.5">
+              <TrendingUp className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-sm font-semibold">{STAT_META[stat.stat].ru}</p>
+                  <span className="text-xs font-bold tabular-nums text-primary">+{fmtPct(statDelta)}%</span>
+                </div>
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
+                    style={{ width: `${grow ? stat.pctAfter : stat.pctBefore}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  В записи: {stat.count} техн. этого стата
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {defense && (
+          <div className={CARD} style={cardDelay(idx++)}>
+            <div className="flex items-start gap-2.5">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">Закрываешь дыру</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {defense.defense.nameRu}: ответ на «{defense.catcher.nameRu}» (ловили{" "}
+                  {defense.timesCaught} {razWord(defense.timesCaught)})
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <Button variant="primary" size="lg" onClick={onClose} className="w-full">
+        Отлично
+      </Button>
+    </Sheet>
+  );
+}

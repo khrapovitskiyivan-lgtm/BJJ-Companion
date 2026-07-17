@@ -3,8 +3,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
 import { ActivityHeatmap } from "@/components/bjj/ActivityHeatmap";
 import { CharacterSheet } from "@/components/bjj/CharacterSheet";
+import { EntryRewardSheet } from "@/components/bjj/EntryReward";
 import { TechniqueChip } from "@/components/bjj/TechniqueCard";
 import { Button, EmptyState, PageHeader } from "@/components/bjj/ui";
+import { computeEntryReward, type EntryReward } from "@/lib/bjj/reward";
 import { useDiary, useProfile, useProgress } from "@/lib/bjj/store";
 import { hapticSuccess } from "@/lib/telegram";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
@@ -40,6 +42,7 @@ function Diary() {
   const { profile } = useProfile();
 
   const [adding, setAdding] = useState(false);
+  const [reward, setReward] = useState<EntryReward | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -149,6 +152,17 @@ function Diary() {
     if (editingId) {
       updateEntry(editingId, payload);
     } else {
+      // награда считается на данных «до»: entries и progress ещё не обновлены
+      setReward(
+        computeEntryReward({
+          entriesBefore: entries,
+          entry: payload,
+          progressBefore: progress,
+          techniques: TECHNIQUES,
+          frequency: profile.frequency,
+          today: new Date(),
+        }),
+      );
       addEntry(payload);
     }
     // ежедневный цикл: отмеченные техники минимум «в процессе»
@@ -179,6 +193,7 @@ function Diary() {
         <ActivityHeatmap entries={entries} frequency={profile.frequency} onSetFrequency={() => setSheetOpen(true)} />
       )}
       {sheetOpen && <CharacterSheet onClose={() => setSheetOpen(false)} />}
+      {reward && <EntryRewardSheet reward={reward} onClose={() => setReward(null)} />}
 
       {/* Форма новой тренировки */}
       {adding && (

@@ -33,6 +33,15 @@ describe("computeStatsFor", () => {
     const out = computeStatsFor([tech(1)], {}, {});
     for (const s of out) expect(Number.isNaN(s.pct)).toBe(false);
   });
+
+  it("pctExact дробный, pct — его округление", () => {
+    // 10 speed-техник, одна done с одной отработкой: raw 3.5 из 20 = 17.5%
+    const ts = Array.from({ length: 10 }, (_, i) => tech(i + 1, { tags: ["speed"] }));
+    const out = computeStatsFor(ts, { 1: "done" }, { 1: 1 });
+    const speed = out.find((s) => s.stat === "speed")!;
+    expect(speed.pctExact).toBeCloseTo(17.5, 5);
+    expect(speed.pct).toBe(18);
+  });
 });
 
 describe("deriveArchetypeStats", () => {
