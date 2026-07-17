@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { TechniqueRow } from "@/components/bjj/TechniqueCard";
+import { Link } from "@tanstack/react-router";
+import { TechniqueCard } from "@/components/bjj/TechniqueCard";
+import { useProgress } from "@/lib/bjj/store";
 import { Chip } from "@/components/bjj/ui";
 import { unlockAudio } from "@/lib/bjj/sound";
 import { useRunner } from "@/lib/bjj/useRunner";
@@ -145,13 +147,20 @@ function ScenarioRunner({ scenario, onExit }: { scenario: Scenario; onExit: () =
 }
 
 function PositionRow({ title, items }: { title: string; items: Technique[] }) {
+  const { progress, cycleStatus } = useProgress();
   return (
     <section>
       <h3 className="mb-2 text-sm font-semibold">{title}</h3>
       <ul className="space-y-2">
         {items.map((t) => (
           <li key={t.id}>
-            <TechniqueRow technique={t} />
+            <Link to="/technique/$id" params={{ id: String(t.id) }} className="block">
+              <TechniqueCard
+                technique={t}
+                status={progress[t.id] ?? "not_started"}
+                onCycleStatus={cycleStatus}
+              />
+            </Link>
           </li>
         ))}
       </ul>
