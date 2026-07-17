@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { TechniqueRow } from "@/components/bjj/TechniqueCard";
+import { Button } from "@/components/bjj/ui";
 import { buildSections, currentDrillIndex, type RunPhase } from "@/lib/bjj/runner";
 import { useRunner } from "@/lib/bjj/useRunner";
 import { unlockAudio } from "@/lib/bjj/sound";
@@ -87,24 +88,22 @@ export function WorkoutRunner({ workout, onExit }: { workout: Workout; onExit: (
 
         <div className="mt-4 flex justify-center gap-2">
           {!phase.finished && (
-            <button
+            <Button
+              variant="primary"
+              size="lg"
               onClick={() => {
                 unlockAudio();
                 setPaused((p) => !p);
               }}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
             >
               {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
               {paused ? (phase.sectionIdx === 0 && phase.left === section.seconds ? "Старт" : "Продолжить") : "Пауза"}
-            </button>
+            </Button>
           )}
-          <button
-            onClick={reset}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground"
-          >
+          <Button variant="secondary" onClick={reset} className="text-muted-foreground">
             <RotateCcw className="h-4 w-4" />
             Сброс
-          </button>
+          </Button>
         </div>
       </div>
 

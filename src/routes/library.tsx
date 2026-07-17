@@ -12,7 +12,7 @@ import {
 } from "@/lib/bjj/constants";
 import type { Belt, Group } from "@/lib/bjj/types";
 import { TechniquesTabs } from "@/components/bjj/TechniquesTabs";
-import { Chip, FilterRow, EmptyState } from "@/components/bjj/ui";
+import { Button, Chip, FilterRow, EmptyState, PageHeader } from "@/components/bjj/ui";
 import { Search, X, RotateCcw, Filter, ArrowLeft, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/library")({
@@ -116,10 +116,7 @@ function Library() {
   return (
     <div className="space-y-3">
       {/* Шапка — единая форма: кикер + заголовок, табы отдельной строкой ниже */}
-      <header className="px-1">
-        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Каталог</p>
-        <h1 className="text-xl font-bold tracking-tight">Библиотека техник</h1>
-      </header>
+      <PageHeader kicker="Каталог" title="Библиотека техник" className="px-1" />
       <TechniquesTabs />
 
       <p className="px-1 text-xs text-muted-foreground">
@@ -229,14 +226,10 @@ function Library() {
               {activeFiltersCount}
             </span>
           </span>
-          <button
-            type="button"
-            onClick={resetAllFilters}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
-          >
+          <Button variant="soft" size="sm" onClick={resetAllFilters}>
             <RotateCcw className="h-3.5 w-3.5" />
             Сбросить все
-          </button>
+          </Button>
         </div>
       )}
 
@@ -252,26 +245,21 @@ function Library() {
           action={
             hasActiveFilters ? (
               <>
-                <button
-                  type="button"
-                  onClick={resetAllFilters}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
-                >
+                <Button variant="primary" onClick={resetAllFilters}>
                   <RotateCcw className="h-4 w-4" />
                   Сбросить все фильтры
-                </button>
+                </Button>
                 {search && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="secondary"
                     onClick={() => {
                       setSearch("");
                       resetPage();
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-muted px-4 py-2.5 text-sm font-medium transition-colors hover:bg-muted/80"
                   >
                     <X className="h-4 w-4" />
                     Очистить поиск
-                  </button>
+                  </Button>
                 )}
               </>
             ) : undefined
@@ -303,27 +291,27 @@ function Library() {
           aria-label="Пагинация"
           className="flex items-center justify-between gap-3 pt-2"
         >
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             disabled={currentPage === 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card py-2.5 text-sm font-medium disabled:opacity-40"
+            className="flex-1"
           >
             <ArrowLeft className="h-4 w-4" />
             Назад
-          </button>
+          </Button>
           <span className="text-xs text-muted-foreground">
             {currentPage} / {totalPages}
           </span>
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             disabled={currentPage === totalPages}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card py-2.5 text-sm font-medium disabled:opacity-40"
+            className="flex-1"
           >
             Вперёд
             <ArrowRight className="h-4 w-4" />
-          </button>
+          </Button>
         </nav>
       )}
     </div>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { TechniqueCard } from "@/components/bjj/TechniqueCard";
 import { useProgress } from "@/lib/bjj/store";
-import { Chip } from "@/components/bjj/ui";
+import { Button, Chip } from "@/components/bjj/ui";
 import { unlockAudio } from "@/lib/bjj/sound";
 import { useRunner } from "@/lib/bjj/useRunner";
 import type { RunSection } from "@/lib/bjj/runner";
@@ -119,24 +119,26 @@ function ScenarioRunner({ scenario, onExit }: { scenario: Scenario; onExit: () =
           ))}
         </div>
         <div className="mt-4 flex justify-center gap-2">
-          <button
+          <Button
+            variant="primary"
+            size="lg"
             onClick={() => {
               unlockAudio();
               setPaused((p) => !p);
             }}
             disabled={left === 0}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
             {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
             {paused ? (left === duration ? "Старт" : "Продолжить") : "Пауза"}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => { setPhase({ sectionIdx: 0, left: duration, finished: false }); setPaused(true); }}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground"
+            className="text-muted-foreground"
           >
             <RotateCcw className="h-4 w-4" />
             Сброс
-          </button>
+          </Button>
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { AppShell } from "@/components/bjj/AppShell";
 import { TechniqueRow, TechniqueChip } from "@/components/bjj/TechniqueCard";
 import { GapCard } from "@/components/bjj/GapCard";
 import { CharacterSheet } from "@/components/bjj/CharacterSheet";
+import { PageHeader } from "@/components/bjj/ui";
 import { initials } from "@/components/bjj/AppShell";
 import { useProgress, useProfile, useDiary } from "@/lib/bjj/store";
 import { currentFocus, nextToLearn } from "@/lib/bjj/recommend";
@@ -102,12 +103,7 @@ function ProgressPage() {
     <AppShell>
       <div className="space-y-6 pb-20">
         {/* Шапка — единая форма с остальными разделами: кикер сверху, название ниже */}
-        <header className="px-1">
-          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
-            Статистика и путь до чёрного пояса
-          </p>
-          <h1 className="text-xl font-bold tracking-tight">Моя игра</h1>
-        </header>
+        <PageHeader kicker="Статистика и путь до чёрного пояса" title="Моя игра" className="px-1" />
 
         {/* Hero: верхний ряд — Прогресс и Профиль; нижний — Изучено и В процессе */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">

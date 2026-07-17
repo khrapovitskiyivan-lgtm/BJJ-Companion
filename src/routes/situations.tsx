@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TechniquesTabs } from "@/components/bjj/TechniquesTabs";
 import { TechniqueRow } from "@/components/bjj/TechniqueCard";
+import { PageHeader } from "@/components/bjj/ui";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import type { Technique } from "@/lib/bjj/types";
 import { ArrowLeft, Search } from "lucide-react";
@@ -49,10 +50,7 @@ function SituationsPage() {
   return (
     <AppShell>
       <div className="space-y-3">
-        <header className="px-1">
-          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Разбор ситуаций</p>
-          <h1 className="text-xl font-bold tracking-tight">Что если…</h1>
-        </header>
+        <PageHeader kicker="Разбор ситуаций" title="Что если…" className="px-1" />
         <TechniquesTabs />
         <Decide />
       </div>

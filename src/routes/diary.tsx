@@ -4,7 +4,7 @@ import { AppShell } from "@/components/bjj/AppShell";
 import { ActivityHeatmap } from "@/components/bjj/ActivityHeatmap";
 import { CharacterSheet } from "@/components/bjj/CharacterSheet";
 import { TechniqueChip } from "@/components/bjj/TechniqueCard";
-import { EmptyState } from "@/components/bjj/ui";
+import { Button, EmptyState, PageHeader } from "@/components/bjj/ui";
 import { useDiary, useProfile, useProgress } from "@/lib/bjj/store";
 import { hapticSuccess } from "@/lib/telegram";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
@@ -138,21 +138,18 @@ function Diary() {
 
   return (
     <div className="space-y-4">
-      <header className="flex items-center justify-between">
-        <div>
-          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Ежедневник</p>
-          <h1 className="text-xl font-bold tracking-tight">Дневник тренировок</h1>
-        </div>
-        {!adding && (
-          <button
-            onClick={startAdd}
-            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" />
-            Тренировка
-          </button>
-        )}
-      </header>
+      <PageHeader
+        kicker="Ежедневник"
+        title="Дневник тренировок"
+        action={
+          !adding && (
+            <Button variant="primary" onClick={startAdd}>
+              <Plus className="h-4 w-4" />
+              Тренировка
+            </Button>
+          )
+        }
+      />
 
       {/* Календарь месяца: записи дневника + план от частоты из профиля */}
       {hydrated && entries.length > 0 && (
@@ -299,19 +296,12 @@ function Diary() {
           </div>
 
           <div className="flex gap-2">
-            <button
-              onClick={resetForm}
-              className="flex-1 rounded-lg border border-border py-2 text-sm font-medium text-muted-foreground"
-            >
+            <Button variant="secondary" onClick={resetForm} className="flex-1 text-muted-foreground">
               Отмена
-            </button>
-            <button
-              onClick={save}
-              disabled={picked.length === 0}
-              className="flex-1 rounded-lg bg-primary py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-            >
+            </Button>
+            <Button variant="primary" onClick={save} disabled={picked.length === 0} className="flex-1">
               {editingId ? "Сохранить изменения" : "Сохранить"}
-            </button>
+            </Button>
           </div>
         </section>
       )}

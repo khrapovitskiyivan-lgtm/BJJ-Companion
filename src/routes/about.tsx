@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
+import { PageHeader } from "@/components/bjj/ui";
 import { TECHNIQUES } from "@/lib/bjj/data";
 import {
   Map,
@@ -23,10 +24,7 @@ function AboutPage() {
   return (
     <AppShell>
       <div className="space-y-4">
-        <header className="px-1">
-          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">BJJ Companion</p>
-          <h1 className="text-xl font-bold tracking-tight">Как пользоваться</h1>
-        </header>
+        <PageHeader kicker="BJJ Companion" title="Как пользоваться" className="px-1" />
 
         <Card
           icon={<BookOpen className="h-4 w-4" />}

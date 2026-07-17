@@ -16,6 +16,7 @@ import type { Belt, StyleProfile, Goal, Frequency, Technique } from "@/lib/bjj/t
 import { BELT_LABEL, BELT_LABEL_EN, BELT_ORDER, GROUP_LABEL } from "@/lib/bjj/constants";
 import { TECHNIQUES } from "@/lib/bjj/data";
 import { BrandLogo } from "./Logo";
+import { Button, IconButton } from "@/components/bjj/ui";
 
 type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -103,16 +104,13 @@ export function Onboarding({
         {/* Навигация */}
         <div className="mt-8 flex gap-2">
           {step > 0 && step < 6 && (
-            <button
-              type="button"
-              onClick={() => setStep((s) => (s - 1) as Step)}
-              className="flex-1 rounded-xl border border-border bg-card py-3 text-sm font-medium"
-            >
+            <Button variant="secondary" size="lg" onClick={() => setStep((s) => (s - 1) as Step)} className="flex-1">
               Назад
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
+          <Button
+            variant="primary"
+            size="lg"
             disabled={!canProceed()}
             onClick={() => {
               if (step < 6) {
@@ -131,10 +129,10 @@ export function Onboarding({
                 );
               }
             }}
-            className="flex-1 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            className="flex-1"
           >
             {step === 6 ? "Начать" : step === 5 && known.length === 0 ? "Пропустить" : "Далее"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -217,22 +215,22 @@ function WelcomeScreen() {
 
         {/* Кнопки-стрелки */}
         <div className="mt-4 flex justify-between">
-          <button
-            type="button"
+          <IconButton
+            label="Предыдущий слайд"
+            size="md"
             onClick={() => setSlide((s) => Math.max(0, s - 1))}
             disabled={slide === 0}
-            className="rounded-lg p-2 disabled:opacity-30"
           >
             <ChevronLeft className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
+            label="Следующий слайд"
+            size="md"
             onClick={() => setSlide((s) => Math.min(slides.length - 1, s + 1))}
             disabled={slide === slides.length - 1}
-            className="rounded-lg p-2 disabled:opacity-30"
           >
             <ChevronRight className="h-5 w-5" />
-          </button>
+          </IconButton>
         </div>
       </div>
     </div>

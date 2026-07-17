@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useState } from "react";
 import type { DiaryEntry, Frequency } from "@/lib/bjj/types";
 import { dayKey, monthGrid, trainedByDate, weekStatus, monthSummary } from "@/lib/bjj/plan";
+import { IconButton } from "@/components/bjj/ui";
 import { Flame, ChevronLeft, ChevronRight, CalendarCog } from "lucide-react";
 
 // Календарь месяца от плановой частоты: тренировочные дни, недельные квоты,
@@ -76,23 +77,13 @@ export function ActivityHeatmap({
           {streak} {streak === 1 ? "день" : streak >= 2 && streak <= 4 ? "дня" : "дней"} подряд
         </span>
         <span className="flex items-center gap-1 text-xs font-medium">
-          <button
-            onClick={() => shift(-1)}
-            disabled={!canPrev}
-            aria-label="Предыдущий месяц"
-            className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted disabled:opacity-30"
-          >
+          <IconButton label="Предыдущий месяц" onClick={() => shift(-1)} disabled={!canPrev}>
             <ChevronLeft className="h-4 w-4" />
-          </button>
+          </IconButton>
           <span className="w-24 text-center">{MONTHS[view.m]} {view.y}</span>
-          <button
-            onClick={() => shift(1)}
-            disabled={!canNext}
-            aria-label="Следующий месяц"
-            className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted disabled:opacity-30"
-          >
+          <IconButton label="Следующий месяц" onClick={() => shift(1)} disabled={!canNext}>
             <ChevronRight className="h-4 w-4" />
-          </button>
+          </IconButton>
         </span>
       </div>
 

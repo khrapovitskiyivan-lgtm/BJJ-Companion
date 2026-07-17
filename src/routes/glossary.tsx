@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TechniquesTabs } from "@/components/bjj/TechniquesTabs";
-import { Chip, EmptyState } from "@/components/bjj/ui";
+import { Chip, EmptyState, PageHeader } from "@/components/bjj/ui";
 import {
   GLOSSARY,
   GLOSSARY_CATEGORY_LABEL,
@@ -52,10 +52,7 @@ function Glossary() {
 
   return (
     <div className="space-y-3">
-      <header className="px-1">
-        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Справочник</p>
-        <h1 className="text-xl font-bold tracking-tight">Словарь терминов</h1>
-      </header>
+      <PageHeader kicker="Справочник" title="Словарь терминов" className="px-1" />
       <TechniquesTabs />
 
       <p className="px-1 text-xs text-muted-foreground">

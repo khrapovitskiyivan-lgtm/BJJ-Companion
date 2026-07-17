@@ -8,6 +8,7 @@ import {
   type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { IconButton } from "@/components/bjj/ui";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import { useProgress, useProfile } from "@/lib/bjj/store";
 import { nextToLearn, currentFocus } from "@/lib/bjj/recommend";
@@ -131,14 +132,10 @@ export function TechniqueFlow() {
     <div className="flex flex-col">
       {/* Панель: назад + поиск техники */}
       <div className="mb-2 flex items-center gap-2">
-        <button
-          onClick={goBack}
-          disabled={history.length === 0}
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border text-muted-foreground transition hover:bg-muted disabled:opacity-40"
-          aria-label="Назад"
-        >
+        {/* Круглая, а не rounded-xl: парная кнопка к полю поиска справа */}
+        <IconButton label="Назад" size="md" variant="outline" onClick={goBack} disabled={history.length === 0} className="rounded-full">
           <ArrowLeft className="h-4 w-4" />
-        </button>
+        </IconButton>
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input

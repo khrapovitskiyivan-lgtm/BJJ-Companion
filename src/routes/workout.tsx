@@ -13,7 +13,7 @@ import type {
   Workout,
   WorkoutConfig,
 } from "@/lib/bjj/types";
-import { Chip, FilterRow } from "@/components/bjj/ui";
+import { Button, Chip, FilterRow, PageHeader } from "@/components/bjj/ui";
 import { WorkoutRunner } from "@/components/bjj/WorkoutRunner";
 import { Flame, Snowflake, Sparkles, Timer, Dumbbell, Swords, NotebookPen, Play } from "lucide-react";
 
@@ -59,12 +59,11 @@ function WorkoutPage() {
   return (
     <AppShell>
       <div className="space-y-4">
-        <header className="px-1">
-          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Тренировка</p>
-          <h1 className="text-xl font-bold tracking-tight">
-            {tab === "generator" ? "Умная тренировка" : "Отработка сценариев"}
-          </h1>
-        </header>
+        <PageHeader
+          kicker="Тренировка"
+          title={tab === "generator" ? "Умная тренировка" : "Отработка сценариев"}
+          className="px-1"
+        />
 
         <div className="grid grid-cols-2 gap-2">
           <SubTab active={tab === "generator"} onClick={() => navigate({ search: {} })} icon={<Dumbbell className="h-4 w-4" />}>
@@ -246,25 +245,18 @@ function WorkoutGenerator({
           ))}
         </FilterRow>
 
-        <button
-          type="button"
-          onClick={handleGenerate}
-          className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-90"
-        >
+        <Button variant="primary" size="lg" fullWidth onClick={handleGenerate} className="shadow-sm">
           {workout ? "Сгенерировать заново" : "Сгенерировать тренировку"}
-        </button>
+        </Button>
       </section>
 
       {workout && (
         <section className="space-y-4">
-          <button
-            type="button"
-            onClick={onRun}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-ring bg-primary/10 py-3 text-sm font-semibold text-foreground transition hover:bg-primary/15"
-          >
+          {/* Рамкой, а не заливкой: главное действие экрана выше — генератор */}
+          <Button variant="soft" size="lg" fullWidth onClick={onRun} className="border-2 border-ring text-foreground">
             <Play className="h-4 w-4" />
             Запустить тренировку
-          </button>
+          </Button>
           <div className="rounded-2xl border border-border bg-card p-4">
             <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
               План · {workout.totalMinutes} мин
