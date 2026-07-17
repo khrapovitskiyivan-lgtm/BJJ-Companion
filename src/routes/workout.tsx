@@ -15,17 +15,21 @@ import type {
 } from "@/lib/bjj/types";
 import { Button, Chip, FilterRow, PageHeader } from "@/components/bjj/ui";
 import { WorkoutRunner } from "@/components/bjj/WorkoutRunner";
-import { Flame, Snowflake, Sparkles, Timer, Dumbbell, Swords, NotebookPen, Play } from "lucide-react";
+import { Flame, Snowflake, Sparkles, Timer, Dumbbell, Swords, NotebookPen, Play, UserRound } from "lucide-react";
 
 export const Route = createFileRoute("/workout")({
   component: WorkoutPage,
-  // Вкладка, активный сценарий и режим раннера в search-параметрах:
-  // переживают уход на карточку техники и возврат
-  validateSearch: (search: Record<string, unknown>): { tab?: "scenarios"; s?: string; run?: boolean } => {
-    const out: { tab?: "scenarios"; s?: string; run?: boolean } = {};
+  // Вкладка, активный сценарий, режим раннера и источник подбора в search-параметрах:
+  // переживают уход на карточку техники и возврат. ?src=diary — вход из «Моей игры»
+  // («Хочу и тренирую») сразу на готовый план по дневнику.
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { tab?: "scenarios"; s?: string; run?: boolean; src?: "diary" } => {
+    const out: { tab?: "scenarios"; s?: string; run?: boolean; src?: "diary" } = {};
     if (search.tab === "scenarios") out.tab = "scenarios";
     if (typeof search.s === "string" && search.s) out.s = search.s;
     if (search.run === true || search.run === "true") out.run = true;
+    if (search.src === "diary") out.src = "diary";
     return out;
   },
 });
@@ -53,7 +57,7 @@ const FOCUSES: (Group | "all")[] = [
 ];
 
 function WorkoutPage() {
-  const { tab: tabParam, s, run } = Route.useSearch();
+  const { tab: tabParam, s, run, src } = Route.useSearch();
   const navigate = Route.useNavigate();
   const tab = tabParam ?? "generator";
   return (
@@ -77,6 +81,7 @@ function WorkoutPage() {
         {tab === "generator" ? (
           <WorkoutGenerator
             running={!!run}
+            initialSource={src}
             onRun={() => navigate({ search: { run: true } })}
             onExitRun={() => navigate({ search: {} })}
           />
@@ -122,16 +127,20 @@ let workoutCache: { workout: Workout; config: WorkoutConfig; source: "profile" |
 
 function WorkoutGenerator({
   running,
+  initialSource,
   onRun,
   onExitRun,
 }: {
   running: boolean;
+  initialSource?: "diary";
   onRun: () => void;
   onExitRun: () => void;
 }) {
-  const { profile } = useProfile();
-  const { progress, cycleStatus } = useProgress();
-  const { entries } = useDiary();
+  const { profile, hydrated: profileHydrated } = useProfile();
+  const { progress, cycleStatus, hydrated: progressHydrated } = useProgress();
+  const { entries, hydrated: diaryHydrated } = useDiary();
+  // Генерация зависит от всех трёх сторов: ждём полной гидратации
+  const hydrated = profileHydrated && progressHydrated && diaryHydrated;
 
   const [config, setConfig] = useState<WorkoutConfig>(
     () =>
@@ -142,9 +151,29 @@ function WorkoutGenerator({
         focus: "all",
       },
   );
-  // Источник подбора техник: профиль (пояс/цель) или дневник (что реально отрабатывал)
-  const [source, setSource] = useState<"profile" | "diary">(() => workoutCache?.source ?? "profile");
-  const [workout, setWorkout] = useState<Workout | null>(() => workoutCache?.workout ?? null);
+  // Источник подбора техник: профиль (пояс/цель) или дневник (что реально отрабатывал).
+  // Явный ?src= из «Моей игры» важнее кэша.
+  const [source, setSource] = useState<"profile" | "diary">(
+    () => initialSource ?? workoutCache?.source ?? "profile",
+  );
+  // Кэш с другим источником не подходит: ?src=diary должен дать план по дневнику
+  const [workout, setWorkout] = useState<Workout | null>(() =>
+    initialSource && workoutCache && workoutCache.source !== initialSource
+      ? null
+      : workoutCache?.workout ?? null,
+  );
+
+  const generate = (cfg: WorkoutConfig, src: "profile" | "diary"): Workout =>
+    src === "diary"
+      ? generateWorkoutFromDiary(cfg, profile, progress, entries)
+      : generateWorkout(cfg, profile);
+
+  // Готовый план сразу при заходе: генерация только на клиенте после гидратации
+  // (в генераторе Math.random — на SSR дал бы hydration mismatch)
+  useEffect(() => {
+    if (hydrated && !workout) setWorkout(generate(config, source));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, workout]);
 
   // Держим кэш в актуальном состоянии для восстановления после возврата
   useEffect(() => {
@@ -153,56 +182,58 @@ function WorkoutGenerator({
 
   // ?run=true без тренировки (свежая загрузка страницы) — выходим из режима раннера
   useEffect(() => {
-    if (running && !workout) onExitRun();
-  }, [running, workout, onExitRun]);
+    if (running && hydrated && !workout) onExitRun();
+  }, [running, hydrated, workout, onExitRun]);
 
   if (running && workout) {
     return <WorkoutRunner workout={workout} onExit={onExitRun} />;
   }
 
-  const handleGenerate = () => {
-    setWorkout(
-      source === "diary"
-        ? generateWorkoutFromDiary(config, profile, progress, entries)
-        : generateWorkout(config, profile),
-    );
+  // Смена источника или настроек сразу пересобирает план: экран никогда не пустой
+  const pickSource = (src: "profile" | "diary") => {
+    setSource(src);
+    if (hydrated) setWorkout(generate(config, src));
   };
+  const applyConfig = (patch: Partial<WorkoutConfig>) => {
+    const next = { ...config, ...patch };
+    setConfig(next);
+    if (hydrated) setWorkout(generate(next, source));
+  };
+  const handleGenerate = () => setWorkout(generate(config, source));
 
   return (
     <div className="space-y-5">
-      <section className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
-        <FilterRow label="Подбор" icon={<NotebookPen className="h-4 w-4" />}>
-          <Chip
-            active={source === "profile"}
-            onClick={() => setSource("profile")}
-            title="По поясу и настройкам профиля"
-          >
-            По профилю
-          </Chip>
-          <Chip
-            active={source === "diary"}
-            onClick={() => setSource("diary")}
-            title="По дневнику: что учишь сейчас и что давно не отрабатывал"
-          >
-            По дневнику
-          </Chip>
-        </FilterRow>
+      {/* Источник — две кнопки отдельно на поле: тап сразу даёт готовый план */}
+      <div className="grid grid-cols-2 gap-2">
+        <SourceTile
+          active={source === "profile"}
+          onClick={() => pickSource("profile")}
+          icon={<UserRound className="h-4 w-4" />}
+          title="По профилю"
+          desc="Пояс, формат и цель"
+        />
+        <SourceTile
+          active={source === "diary"}
+          onClick={() => pickSource("diary")}
+          icon={<NotebookPen className="h-4 w-4" />}
+          title="По дневнику"
+          desc="Что реально тренируешь"
+        />
+      </div>
 
-        {source === "diary" && (
-          <p className="-mt-2 text-[11px] text-muted-foreground">
-            {entries.length === 0
-              ? "Дневник пуст — план соберётся по профилю. Отмечайте тренировки, и он станет точнее."
-              : `Учтём ${entries.length} ${entries.length === 1 ? "запись" : entries.length < 5 ? "записи" : "записей"}: приоритет — техники в процессе и те, что давно не отрабатывали.`}
-          </p>
-        )}
+      {source === "diary" && (
+        <p className="px-1 text-[11px] text-muted-foreground">
+          {entries.length === 0
+            ? "Дневник пуст — план соберётся по профилю. Отмечайте тренировки, и он станет точнее."
+            : `Учтём ${entries.length} ${entries.length === 1 ? "запись" : entries.length < 5 ? "записи" : "записей"}: приоритет — техники в процессе и те, что давно не отрабатывали.`}
+        </p>
+      )}
+
+      <section className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
 
         <FilterRow label="Длительность" icon={<Timer className="h-4 w-4" />}>
           {DURATIONS.map((d) => (
-            <Chip
-              key={d}
-              active={config.duration === d}
-              onClick={() => setConfig((c) => ({ ...c, duration: d }))}
-            >
+            <Chip key={d} active={config.duration === d} onClick={() => applyConfig({ duration: d })}>
               {d} мин
             </Chip>
           ))}
@@ -213,7 +244,7 @@ function WorkoutGenerator({
             <Chip
               key={i.value}
               active={config.intensity === i.value}
-              onClick={() => setConfig((c) => ({ ...c, intensity: i.value }))}
+              onClick={() => applyConfig({ intensity: i.value })}
             >
               {i.label}
             </Chip>
@@ -225,7 +256,7 @@ function WorkoutGenerator({
             <Chip
               key={s.value}
               active={config.safety === s.value}
-              onClick={() => setConfig((c) => ({ ...c, safety: s.value }))}
+              onClick={() => applyConfig({ safety: s.value })}
               title={s.desc}
             >
               {s.label}
@@ -235,18 +266,14 @@ function WorkoutGenerator({
 
         <FilterRow label="Фокус">
           {FOCUSES.map((g) => (
-            <Chip
-              key={g}
-              active={config.focus === g}
-              onClick={() => setConfig((c) => ({ ...c, focus: g }))}
-            >
+            <Chip key={g} active={config.focus === g} onClick={() => applyConfig({ focus: g })}>
               {g === "all" ? "Все" : GROUP_LABEL[g]}
             </Chip>
           ))}
         </FilterRow>
 
         <Button variant="primary" size="lg" fullWidth onClick={handleGenerate} className="shadow-sm">
-          {workout ? "Сгенерировать заново" : "Сгенерировать тренировку"}
+          Сгенерировать заново
         </Button>
       </section>
 
@@ -322,6 +349,37 @@ function WorkoutGenerator({
         </section>
       )}
     </div>
+  );
+}
+
+// Кнопка источника подбора: та же семья, что плитки выбора (border-2 + подсветка)
+function SourceTile({
+  active,
+  onClick,
+  icon,
+  title,
+  desc,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-col items-start gap-0.5 rounded-xl border-2 p-3 text-left transition-all ${
+        active ? "border-ring bg-primary/10" : "border-border bg-card"
+      }`}
+    >
+      <span className={`flex items-center gap-1.5 text-sm font-semibold ${active ? "" : "text-muted-foreground"}`}>
+        {icon}
+        {title}
+      </span>
+      <span className="text-[11px] text-muted-foreground">{desc}</span>
+    </button>
   );
 }
 

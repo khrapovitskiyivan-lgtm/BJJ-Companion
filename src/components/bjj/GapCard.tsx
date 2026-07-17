@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { TECHNIQUES } from "@/lib/bjj/data";
 import { TechniqueRow } from "@/components/bjj/TechniqueCard";
+import { buttonClass } from "@/components/bjj/ui";
 import { nextForStyle } from "@/lib/bjj/recommend";
 import { ARCHETYPE_MIN_DONE } from "@/lib/bjj/stats";
 import { STYLE_META } from "@/lib/bjj/constants";
@@ -62,7 +63,8 @@ export function GapCard({
           )}
           <Link
             to="/workout"
-            className="mt-3 flex items-center justify-center gap-1.5 rounded-lg border border-border bg-card py-2 text-xs font-medium text-muted-foreground transition hover:bg-muted"
+            search={{ src: "diary" }}
+            className={buttonClass("secondary", "sm", "mt-3 w-full text-muted-foreground")}
           >
             Собрать тренировку по дневнику
             <ArrowRight className="h-3.5 w-3.5" />
