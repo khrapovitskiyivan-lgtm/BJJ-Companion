@@ -5,15 +5,15 @@ import { ActivityHeatmap } from "@/components/bjj/ActivityHeatmap";
 import { CharacterSheet } from "@/components/bjj/CharacterSheet";
 import { EntryRewardSheet } from "@/components/bjj/EntryReward";
 import { TechniqueChip } from "@/components/bjj/TechniqueCard";
-import { Button, EmptyState, PageHeader } from "@/components/bjj/ui";
+import { Button, Chip, EmptyState, PageHeader } from "@/components/bjj/ui";
 import { computeEntryReward, type EntryReward } from "@/lib/bjj/reward";
 import { track } from "@/lib/bjj/telemetry";
 import { useDiary, useProfile, useProgress } from "@/lib/bjj/store";
 import { hapticSuccess } from "@/lib/telegram";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
-import { GROUP_LABEL } from "@/lib/bjj/constants";
-import type { Intensity } from "@/lib/bjj/types";
-import { Plus, Search, CalendarDays, Trash2, NotebookPen, HeartPulse, Pencil, Minus, ShieldAlert } from "lucide-react";
+import { BELT_ORDER, GROUP_LABEL } from "@/lib/bjj/constants";
+import type { Group, Intensity, Technique } from "@/lib/bjj/types";
+import { Plus, Search, CalendarDays, ChevronDown, Trash2, NotebookPen, HeartPulse, Pencil, Minus, ShieldAlert } from "lucide-react";
 
 const MAX_ROUNDS = 20;
 
@@ -57,6 +57,10 @@ function Diary() {
   const [wellbeing, setWellbeing] = useState<number | null>(null);
   const [rounds, setRounds] = useState(0);
   const [injury, setInjury] = useState("");
+  // Выбор техник из групп: раскрытая группа под рядом чипов
+  const [openGroup, setOpenGroup] = useState<Group | null>(null);
+  // Вторичные поля (интенсивность/раунды/самочувствие/травма) под «Подробнее»
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const resetForm = () => {
     setPicked([]);
@@ -68,6 +72,8 @@ function Diary() {
     setWellbeing(null);
     setRounds(0);
     setInjury("");
+    setOpenGroup(null);
+    setDetailsOpen(false);
     setAdding(false);
     setEditingId(null);
   };
@@ -84,6 +90,8 @@ function Diary() {
     setWellbeing(null);
     setRounds(0);
     setInjury("");
+    setOpenGroup(null);
+    setDetailsOpen(false);
     setDate(new Date().toISOString().slice(0, 10));
     setConfirmDelete(null);
     setAdding(true);
@@ -103,6 +111,9 @@ function Diary() {
     setWellbeing(e.wellbeing ?? null);
     setRounds(e.rounds ?? 0);
     setInjury(e.injury ?? "");
+    setOpenGroup(null);
+    // При редактировании с заполненными вторичными полями раскрываем сразу, иначе они «пропали»
+    setDetailsOpen(Boolean(e.intensity || e.wellbeing || e.rounds || e.injury));
     setConfirmDelete(null);
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -123,6 +134,21 @@ function Diary() {
           t.label.toLowerCase().includes(q)),
     ).slice(0, 6);
   }, [query, picked]);
+
+  // Техники раскрытой группы: не выбранные, в процессе и изученные сверху, дальше по поясам
+  const groupList = useMemo(() => {
+    if (!openGroup) return [];
+    const rank = (t: Technique) => {
+      const s = progress[t.id] ?? "not_started";
+      return s === "in_progress" ? 0 : s === "done" ? 1 : 2;
+    };
+    return TECHNIQUES.filter((t) => t.group === openGroup && !picked.includes(t.id)).sort(
+      (a, b) =>
+        rank(a) - rank(b) ||
+        BELT_ORDER.indexOf(a.belt) - BELT_ORDER.indexOf(b.belt) ||
+        a.difficulty - b.difficulty,
+    );
+  }, [openGroup, picked, progress]);
 
   // «Чем поймали»: ищем только среди сабмишенов
   const caughtResults = useMemo(() => {
@@ -253,6 +279,35 @@ function Diary() {
             )}
           </div>
 
+          {/* Выбор из групп: ряд чипов, тап раскрывает список техник группы */}
+          <div className="flex gap-1.5 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
+            {(Object.keys(GROUP_LABEL) as Group[]).map((g) => (
+              <span key={g} className="shrink-0">
+                <Chip active={openGroup === g} onClick={() => setOpenGroup((v) => (v === g ? null : g))}>
+                  {GROUP_LABEL[g]}
+                </Chip>
+              </span>
+            ))}
+          </div>
+          {openGroup && (
+            <div className="max-h-56 overflow-y-auto rounded-xl border border-border">
+              {groupList.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setPicked((p) => [...p, t.id])}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-muted"
+                  style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
+                >
+                  <span className="min-w-0 flex-1 truncate">{t.nameRu}</span>
+                  <Plus className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                </button>
+              ))}
+              {groupList.length === 0 && (
+                <p className="px-3 py-2 text-xs text-muted-foreground">Все техники группы уже в записи</p>
+              )}
+            </div>
+          )}
+
           {/* Чем поймали: сабмишены соперника — кормят «Что тебя ловит» и генератор */}
           {caught.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
@@ -298,6 +353,19 @@ function Diary() {
             className="w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
 
+          {/* Вторичные поля свёрнуты: запись в два тапа, детали по желанию */}
+          <button
+            type="button"
+            onClick={() => setDetailsOpen((v) => !v)}
+            aria-expanded={detailsOpen}
+            className="flex w-full items-center gap-1.5 rounded-xl px-1 py-1 text-xs font-medium text-muted-foreground transition hover:text-foreground"
+          >
+            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${detailsOpen ? "rotate-180" : ""}`} />
+            Подробнее: интенсивность, раунды, самочувствие
+          </button>
+
+          {detailsOpen && (
+          <>
           {/* Интенсивность + раунды */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-muted-foreground">Интенсивность</span>
@@ -372,6 +440,8 @@ function Diary() {
               className="w-full rounded-xl border border-input bg-background py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
+          </>
+          )}
 
           <div className="flex gap-2">
             <Button variant="secondary" onClick={resetForm} className="flex-1 text-muted-foreground">
