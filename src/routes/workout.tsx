@@ -5,6 +5,7 @@ import { TechniqueCard } from "@/components/bjj/TechniqueCard";
 import { Scenarios } from "@/components/bjj/Scenarios";
 import { useDiary, useProfile, useProgress } from "@/lib/bjj/store";
 import { generateWorkout, generateWorkoutFromDiary } from "@/lib/bjj/workout";
+import { track } from "@/lib/bjj/telemetry";
 import { GROUP_LABEL } from "@/lib/bjj/constants";
 import type {
   Group,
@@ -198,6 +199,7 @@ function WorkoutGenerator({
     const next = { ...config, ...patch };
     setConfig(next);
     if (hydrated) setWorkout(generate(next, source));
+    track("workout_filter", undefined, { dailyDedup: true });
   };
   const handleGenerate = () => setWorkout(generate(config, source));
 
@@ -280,7 +282,13 @@ function WorkoutGenerator({
       {workout && (
         <section className="space-y-4">
           {/* Рамкой, а не заливкой: главное действие экрана выше — генератор */}
-          <Button variant="soft" size="lg" fullWidth onClick={onRun} className="border-2 border-ring text-foreground">
+          <Button
+            variant="soft"
+            size="lg"
+            fullWidth
+            onClick={() => { track("workout_run", source); onRun(); }}
+            className="border-2 border-ring text-foreground"
+          >
             <Play className="h-4 w-4" />
             Запустить тренировку
           </Button>

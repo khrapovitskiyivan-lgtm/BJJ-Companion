@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useLocation } from "@tanstack/react-router";
 import { BottomNav } from "./BottomNav";
 import { Onboarding } from "./Onboarding";
 import { Logo } from "./Logo";
@@ -7,7 +8,8 @@ import { GlobalStatsModal } from "./GlobalStatsModal";
 import { useDiary, useProfile, useProgress } from "@/lib/bjj/store";
 import { reportPlayer } from "@/lib/bjj/globalStats";
 import { reportTgPlan } from "@/lib/bjj/tgReport";
-import { initTelegram, haptic, markThemeManual } from "@/lib/telegram";
+import { track } from "@/lib/bjj/telemetry";
+import { initTelegram, haptic, markThemeManual, isTelegram } from "@/lib/telegram";
 import { Moon, Sun, Settings } from "lucide-react";
 
 // Инициалы из имени для фоллбэк-аватара (когда фото из Telegram недоступно).
@@ -20,6 +22,17 @@ export function initials(name: string): string {
     .join("");
 }
 
+// Разделы для телеметрии section_open (карточки техник и /about не считаем)
+const TELEMETRY_SECTIONS: Record<string, string> = {
+  "/progress": "progress",
+  "/diary": "diary",
+  "/map": "map",
+  "/library": "library",
+  "/situations": "situations",
+  "/glossary": "glossary",
+  "/workout": "workout",
+};
+
 // === APP SHELL ===
 // Шапка: тема слева · лого+название по центру · аватар справа.
 // Тап по аватару открывает меню (статистика · настройки · о приложении) — AvatarMenu.
@@ -27,6 +40,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
   const { profile, update, hydrated } = useProfile();
   const { progress, setProgress } = useProgress();
   const { entries } = useDiary();
+  const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
 
@@ -54,6 +68,14 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
 
+  // Телеметрия: app_open без гейта онбординга (видна конверсия), разделы — после
+  useEffect(() => {
+    if (!hydrated) return;
+    track("app_open", isTelegram() ? "tg" : "web", { dailyDedup: true });
+    const section = TELEMETRY_SECTIONS[pathname];
+    if (section && profile.onboardingDone) track("section_open", section, { dailyDedup: true });
+  }, [hydrated, profile.onboardingDone, pathname]);
+
   if (!hydrated) {
     return <div className="min-h-screen bg-background" />;
   }
@@ -69,6 +91,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
             setProgress(next);
           }
           update({ ...p, onboardingDone: true });
+          track("onboarding_done");
         }}
       />
     );

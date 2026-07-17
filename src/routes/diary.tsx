@@ -7,6 +7,7 @@ import { EntryRewardSheet } from "@/components/bjj/EntryReward";
 import { TechniqueChip } from "@/components/bjj/TechniqueCard";
 import { Button, EmptyState, PageHeader } from "@/components/bjj/ui";
 import { computeEntryReward, type EntryReward } from "@/lib/bjj/reward";
+import { track } from "@/lib/bjj/telemetry";
 import { useDiary, useProfile, useProgress } from "@/lib/bjj/store";
 import { hapticSuccess } from "@/lib/telegram";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
@@ -164,6 +165,8 @@ function Diary() {
         }),
       );
       addEntry(payload);
+      track("entry_saved");
+      if (caught.length > 0) track("caught_logged");
     }
     // ежедневный цикл: отмеченные техники минимум «в процессе»
     for (const id of picked) {

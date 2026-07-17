@@ -4,6 +4,7 @@ import { TechniqueCard } from "@/components/bjj/TechniqueCard";
 import { useProgress } from "@/lib/bjj/store";
 import { Button, Chip } from "@/components/bjj/ui";
 import { unlockAudio } from "@/lib/bjj/sound";
+import { track } from "@/lib/bjj/telemetry";
 import { useRunner } from "@/lib/bjj/useRunner";
 import type { RunSection } from "@/lib/bjj/runner";
 import { TECH_BY_ID } from "@/lib/bjj/data";
@@ -124,6 +125,8 @@ function ScenarioRunner({ scenario, onExit }: { scenario: Scenario; onExit: () =
             size="lg"
             onClick={() => {
               unlockAudio();
+              // телеметрия только на старт раунда с нуля (не пауза/продолжить)
+              if (paused && left === duration) track("scenario_run");
               setPaused((p) => !p);
             }}
             disabled={left === 0}

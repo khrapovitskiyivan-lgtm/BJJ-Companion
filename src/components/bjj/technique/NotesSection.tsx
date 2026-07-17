@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNotes } from "@/lib/bjj/store";
+import { track } from "@/lib/bjj/telemetry";
 import { PencilLine } from "lucide-react";
 
 // «Мои заметки» на карточке техники: личный блокнот (детали от тренера, свои
@@ -23,7 +24,10 @@ export function NotesSection({ techniqueId }: { techniqueId: number }) {
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current);
-      if (pending.current.dirty) setNote(techniqueId, pending.current.value);
+      if (pending.current.dirty) {
+        setNote(techniqueId, pending.current.value);
+        if (pending.current.value.trim()) track("note_saved", undefined, { dailyDedup: true });
+      }
     },
     [techniqueId, setNote],
   );
@@ -35,6 +39,7 @@ export function NotesSection({ techniqueId }: { techniqueId: number }) {
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       setNote(techniqueId, value);
+      if (value.trim()) track("note_saved", undefined, { dailyDedup: true });
       setDirty(false);
       pending.current = { dirty: false, value };
     }, 600);

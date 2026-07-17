@@ -12,6 +12,7 @@ import { computeStyleAffinity, type StyleScore } from "@/lib/bjj/styleProfile";
 import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import { topCatchers, defensesFor } from "@/lib/bjj/caught";
+import { track } from "@/lib/bjj/telemetry";
 import { BELT_ORDER, BELT_LABEL, GROUP_LABEL, STYLE_META } from "@/lib/bjj/constants";
 import { computeStats, countDone, ARCHETYPE_MIN_DONE, STAT_META, ARCHETYPE_STATS } from "@/lib/bjj/stats";
 import type { Technique } from "@/lib/bjj/types";
@@ -268,12 +269,16 @@ function ProgressPage() {
             extra={recommendations.slice(1)}
             empty="Всё доступное освоено!"
             highlight
+            onNav={() => track("reco_click", "next")}
           />
         </section>
 
         {/* Что тебя ловит: повторяющиеся сабмишены соперников и защиты от них */}
         {catchers.length > 0 && (
-          <section className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
+          <section
+            onClickCapture={() => track("reco_click", "catcher")}
+            className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4"
+          >
             <h2 className="mb-1 flex items-center gap-1.5 text-sm font-semibold">
               <ShieldAlert className="h-4 w-4 text-destructive" />
               Что тебя ловит
@@ -319,7 +324,10 @@ function ProgressPage() {
 
         {/* Пора повторить: изученное выветривается — дневник это видит */}
         {staleTechniques.length > 0 && (
-          <section className="rounded-2xl border border-border bg-card p-4">
+          <section
+            onClickCapture={() => track("reco_click", "repeat")}
+            className="rounded-2xl border border-border bg-card p-4"
+          >
             <h2 className="mb-1 flex items-center gap-1.5 text-sm font-semibold">
               <History className="h-4 w-4 text-primary" />
               Пора повторить
@@ -369,13 +377,16 @@ function ProgressPage() {
           </p>
         </section>
 
-        <GapCard
-          scores={styleScores}
-          preferredStyles={profile.preferredStyles}
-          progress={progress}
-          belt={profile.belt}
-          doneCount={doneCount}
-        />
+        {/* Обёртка только для телеметрии кликов по «Разрыву» */}
+        <div onClickCapture={() => track("reco_click", "gap")}>
+          <GapCard
+            scores={styleScores}
+            preferredStyles={profile.preferredStyles}
+            progress={progress}
+            belt={profile.belt}
+            doneCount={doneCount}
+          />
+        </div>
 
         {/* Статистика по поясам */}
         <section className="rounded-2xl border border-border bg-card p-4">
@@ -610,6 +621,7 @@ function FocusCard({
   extra,
   empty,
   highlight,
+  onNav,
 }: {
   icon: React.ReactNode;
   caption: string;
@@ -617,9 +629,11 @@ function FocusCard({
   extra?: Technique[];
   empty: string;
   highlight?: boolean;
+  onNav?: () => void; // телеметрия кликов по рекомендации (капчур, не мешает Link)
 }) {
   return (
     <div
+      onClickCapture={onNav}
       className={`rounded-2xl border p-4 ${
         highlight ? "border-ring/50 bg-primary/5" : "border-border bg-card"
       }`}
