@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TechniquesTabs } from "@/components/bjj/TechniquesTabs";
+import { TechniqueRow } from "@/components/bjj/TechniqueCard";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
-import { BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
 import type { Technique } from "@/lib/bjj/types";
 import { ChevronLeft, Search } from "lucide-react";
 
@@ -168,19 +168,7 @@ function OptionSection({ title, items }: { title: string; items: Technique[] }) 
       <ul className="space-y-1.5">
         {items.map((t) => (
           <li key={t.id}>
-            <Link
-              to="/technique/$id"
-              params={{ id: String(t.id) }}
-              className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card p-2.5 transition hover:bg-muted"
-              style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
-            >
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-medium">{t.nameRu}</span>
-                <span className="block text-[11px] text-muted-foreground">
-                  {GROUP_LABEL[t.group]} · {BELT_LABEL[t.belt]} · сложность {t.difficulty}/5
-                </span>
-              </span>
-            </Link>
+            <TechniqueRow technique={t} />
           </li>
         ))}
       </ul>

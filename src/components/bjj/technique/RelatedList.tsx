@@ -1,6 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import { Link2, ChevronDown } from "lucide-react";
-import { BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
+import { TechniqueRow } from "@/components/bjj/TechniqueCard";
 import type { Technique } from "@/lib/bjj/types";
 
 // Раскрываемая вкладка со связанными техниками (нативный <details>, SSR-безопасно).
@@ -37,20 +36,11 @@ export function RelatedList({
           <ul className="space-y-1.5">
             {items.map((t) => (
               <li key={t.id}>
-                <Link
-                  to="/technique/$id"
-                  params={{ id: String(t.id) }}
-                  className="flex items-center justify-between gap-2 rounded-xl border border-border bg-background p-2.5 transition-colors hover:bg-muted"
-                  style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
-                >
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium">{t.nameRu}</span>
-                    <span className="block truncate text-[11px] text-muted-foreground">
-                      {GROUP_LABEL[t.group]} · {BELT_LABEL[t.belt]}
-                    </span>
-                  </span>
-                  <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                </Link>
+                <TechniqueRow
+                  technique={t}
+                  inset
+                  right={<Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
+                />
               </li>
             ))}
           </ul>

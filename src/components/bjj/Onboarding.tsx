@@ -528,16 +528,13 @@ function TechChip({
       className="inline-flex items-center gap-1.5 rounded-full border-2 px-3 py-1.5 text-xs font-medium transition-all"
       style={{
         borderColor: active ? "var(--color-primary)" : "var(--color-border)",
+        borderLeft: `3px solid var(--belt-${tech.belt})`,
         background: active
           ? "color-mix(in oklch, var(--color-primary) 10%, var(--color-card))"
           : "var(--color-card)",
       }}
       title={`${GROUP_LABEL[tech.group]} · ${BELT_LABEL[tech.belt]}`}
     >
-      <span
-        className="inline-block h-2 w-2 shrink-0 rounded-full ring-1 ring-black/10"
-        style={{ background: `var(--belt-${tech.belt})` }}
-      />
       {tech.nameRu}
       {active && <Check className="h-3 w-3 text-primary" />}
     </button>

@@ -1,6 +1,7 @@
+import { Link } from "@tanstack/react-router";
 import type { Technique, ProgressStatus } from "@/lib/bjj/types";
 import { BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
-import { Check, Circle, CircleDot } from "lucide-react";
+import { Check, Circle, CircleDot, X } from "lucide-react";
 import { Badge } from "@/components/bjj/ui";
 
 // === TECHNIQUE CARD ===
@@ -21,6 +22,66 @@ const STATUS_LABEL: Record<ProgressStatus, string> = {
   in_progress: "В процессе",
   done: "Готово",
 };
+
+// Строка-ссылка на технику: единый вид списков во всех разделах
+// (Что если, Моя игра, связанные и похожие на карточке техники, Разрыв).
+// inset — для строк внутри карточек-секций (фон background вместо card).
+export function TechniqueRow({
+  technique,
+  inset = false,
+  right,
+}: {
+  technique: Technique;
+  inset?: boolean;
+  right?: React.ReactNode;
+}) {
+  return (
+    <Link
+      to="/technique/$id"
+      params={{ id: String(technique.id) }}
+      className={`flex items-center justify-between gap-2 rounded-xl border border-border p-2.5 transition hover:bg-muted ${
+        inset ? "bg-background" : "bg-card"
+      }`}
+      style={{ borderLeft: `3px solid var(--belt-${technique.belt})` }}
+    >
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-medium">{technique.nameRu}</span>
+        <span className="block truncate text-[11px] text-muted-foreground">
+          {GROUP_LABEL[technique.group]} · {BELT_LABEL[technique.belt]} · сложность {technique.difficulty}/5
+        </span>
+      </span>
+      {right}
+    </Link>
+  );
+}
+
+// Чип техники: компактная ссылка с маркером пояса (дневник, сценарии, «Разрыв»).
+// С onRemove — не ссылка, а элемент формы с крестиком (выбранные в дневнике).
+const CHIP_CLS = "inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-xs transition";
+
+export function TechniqueChip({ technique, onRemove }: { technique: Technique; onRemove?: () => void }) {
+  const marker = { borderLeft: `3px solid var(--belt-${technique.belt})` };
+  if (onRemove) {
+    return (
+      <span className={CHIP_CLS} style={marker}>
+        {technique.nameRu}
+        <button type="button" onClick={onRemove} aria-label="Убрать">
+          <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+        </button>
+      </span>
+    );
+  }
+  return (
+    <Link
+      to="/technique/$id"
+      params={{ id: String(technique.id) }}
+      className={`${CHIP_CLS} hover:bg-muted`}
+      style={marker}
+    >
+      {technique.nameRu}
+    </Link>
+  );
+}
 
 export function TechniqueCard({
   technique,

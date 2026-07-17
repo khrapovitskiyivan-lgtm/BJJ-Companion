@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 // Новые компоненты
+import { TechniqueRow } from "@/components/bjj/TechniqueCard";
 import { Breadcrumbs } from "@/components/bjj/technique/Breadcrumbs";
 import { VideoBlock } from "@/components/bjj/technique/VideoBlock";
 import {
@@ -284,21 +285,12 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
           </h2>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {similar.map((t) => (
-              <Link
+              <TechniqueRow
                 key={t.id}
-                to="/technique/$id"
-                params={{ id: String(t.id) }}
-                className="flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition hover:bg-muted"
-                style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{t.nameRu}</div>
-                  <div className="truncate text-[11px] text-muted-foreground">
-                    {GROUP_LABEL[t.group]} · сложность {t.difficulty}/5
-                  </div>
-                </div>
-                <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              </Link>
+                technique={t}
+                inset
+                right={<Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
+              />
             ))}
           </div>
         </section>

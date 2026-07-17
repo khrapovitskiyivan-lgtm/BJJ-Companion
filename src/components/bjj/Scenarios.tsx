@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { TechniqueChip } from "@/components/bjj/TechniqueCard";
 import { TECH_BY_ID } from "@/lib/bjj/data";
 import type { Technique } from "@/lib/bjj/types";
 import { Timer, Play, Pause, X, RotateCcw } from "lucide-react";
@@ -130,15 +130,7 @@ function PositionRow({ title, items }: { title: string; items: Technique[] }) {
       <h3 className="mb-2 text-sm font-semibold">{title}</h3>
       <div className="flex flex-wrap gap-1.5">
         {items.map((t) => (
-          <Link
-            key={t.id}
-            to="/technique/$id"
-            params={{ id: String(t.id) }}
-            className="rounded-full border border-border bg-card px-3 py-1 text-xs transition hover:bg-muted"
-            style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
-          >
-            {t.nameRu}
-          </Link>
+          <TechniqueChip key={t.id} technique={t} />
         ))}
       </div>
     </section>

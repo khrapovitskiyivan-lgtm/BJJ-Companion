@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
+import { TechniqueRow, TechniqueChip } from "@/components/bjj/TechniqueCard";
 import { GapCard } from "@/components/bjj/GapCard";
 import { CharacterSheet } from "@/components/bjj/CharacterSheet";
 import { initials } from "@/components/bjj/AppShell";
@@ -200,19 +201,7 @@ function ProgressPage() {
               <ul className="space-y-1.5">
                 {listTechniques.map((t) => (
                   <li key={t.id}>
-                    <Link
-                      to="/technique/$id"
-                      params={{ id: String(t.id) }}
-                      className="flex items-center justify-between gap-2 rounded-xl border border-border bg-background p-2.5 transition hover:bg-muted"
-                      style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium">{t.nameRu}</span>
-                        <span className="block text-[11px] text-muted-foreground">
-                          {GROUP_LABEL[t.group]} · {BELT_LABEL[t.belt]} · сложность {t.difficulty}/5
-                        </span>
-                      </span>
-                    </Link>
+                    <TechniqueRow technique={t} inset />
                   </li>
                 ))}
               </ul>
@@ -486,27 +475,13 @@ function FocusCard({
       </p>
       {tech ? (
         <>
-          <Link
-            to="/technique/$id"
-            params={{ id: String(tech.id) }}
-            className="mt-1.5 block text-sm font-semibold hover:underline"
-          >
-            {tech.nameRu}
-          </Link>
-          <p className="text-[11px] text-muted-foreground">
-            {GROUP_LABEL[tech.group]} · {BELT_LABEL[tech.belt]} · сложность {tech.difficulty}/5
-          </p>
+          <div className="mt-2">
+            <TechniqueRow technique={tech} inset />
+          </div>
           {extra && extra.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">
+            <div className="mt-2 flex flex-wrap gap-1.5">
               {extra.map((t) => (
-                <Link
-                  key={t.id}
-                  to="/technique/$id"
-                  params={{ id: String(t.id) }}
-                  className="rounded-md border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
-                >
-                  {t.label}
-                </Link>
+                <TechniqueChip key={t.id} technique={t} />
               ))}
             </div>
           )}

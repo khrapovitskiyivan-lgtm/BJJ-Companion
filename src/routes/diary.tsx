@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
 import { ActivityHeatmap } from "@/components/bjj/ActivityHeatmap";
 import { CharacterSheet } from "@/components/bjj/CharacterSheet";
+import { TechniqueChip } from "@/components/bjj/TechniqueCard";
 import { useDiary, useProfile, useProgress } from "@/lib/bjj/store";
 import { hapticSuccess } from "@/lib/telegram";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import { GROUP_LABEL } from "@/lib/bjj/constants";
 import type { Intensity } from "@/lib/bjj/types";
-import { Plus, Search, X, CalendarDays, Trash2, NotebookPen, HeartPulse, Pencil, Minus } from "lucide-react";
+import { Plus, Search, CalendarDays, Trash2, NotebookPen, HeartPulse, Pencil, Minus } from "lucide-react";
 
 const MAX_ROUNDS = 20;
 
@@ -177,21 +178,13 @@ function Diary() {
           {/* Выбранные техники */}
           {picked.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {picked.map((id) => {
-                const t = TECH_BY_ID[id];
-                return (
-                  <span
-                    key={id}
-                    className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-1 text-xs"
-                    style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
-                  >
-                    {t.nameRu}
-                    <button onClick={() => setPicked((p) => p.filter((x) => x !== id))}>
-                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                    </button>
-                  </span>
-                );
-              })}
+              {picked.map((id) => (
+                <TechniqueChip
+                  key={id}
+                  technique={TECH_BY_ID[id]}
+                  onRemove={() => setPicked((p) => p.filter((x) => x !== id))}
+                />
+              ))}
             </div>
           )}
 
@@ -211,8 +204,8 @@ function Diary() {
                     key={t.id}
                     onClick={() => { setPicked((p) => [...p, t.id]); setQuery(""); }}
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted"
+                    style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
                   >
-                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: `var(--belt-${t.belt})` }} />
                     <span className="min-w-0 flex-1 truncate">{t.nameRu}</span>
                     <span className="shrink-0 text-[10px] text-muted-foreground">{GROUP_LABEL[t.group]}</span>
                   </button>
@@ -384,17 +377,7 @@ function Diary() {
               {e.techniqueIds.map((id) => {
                 const t = TECH_BY_ID[id];
                 if (!t) return null;
-                return (
-                  <Link
-                    key={id}
-                    to="/technique/$id"
-                    params={{ id: String(id) }}
-                    className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] transition hover:bg-background"
-                    style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
-                  >
-                    {t.nameRu}
-                  </Link>
-                );
+                return <TechniqueChip key={id} technique={t} />;
               })}
             </div>
             {e.note && <p className="mt-2 text-xs text-muted-foreground">{e.note}</p>}

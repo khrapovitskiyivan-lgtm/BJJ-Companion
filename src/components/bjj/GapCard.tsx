@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { TECHNIQUES } from "@/lib/bjj/data";
+import { TechniqueRow } from "@/components/bjj/TechniqueCard";
 import { nextForStyle } from "@/lib/bjj/recommend";
 import { ARCHETYPE_MIN_DONE } from "@/lib/bjj/stats";
-import { BELT_LABEL, GROUP_LABEL, STYLE_META } from "@/lib/bjj/constants";
+import { STYLE_META } from "@/lib/bjj/constants";
 import type { StyleScore } from "@/lib/bjj/styleProfile";
 import type { ProgressMap } from "@/lib/bjj/store";
 import type { Belt, Style } from "@/lib/bjj/types";
@@ -53,19 +54,7 @@ export function GapCard({
               <ul className="space-y-1.5">
                 {next.map((t) => (
                   <li key={t.id}>
-                    <Link
-                      to="/technique/$id"
-                      params={{ id: String(t.id) }}
-                      className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card p-2.5 transition hover:bg-muted"
-                      style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium">{t.nameRu}</span>
-                        <span className="block text-[11px] text-muted-foreground">
-                          {GROUP_LABEL[t.group]} · {BELT_LABEL[t.belt]} · сложность {t.difficulty}/5
-                        </span>
-                      </span>
-                    </Link>
+                    <TechniqueRow technique={t} />
                   </li>
                 ))}
               </ul>

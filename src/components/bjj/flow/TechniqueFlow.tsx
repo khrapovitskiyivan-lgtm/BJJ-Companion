@@ -164,8 +164,8 @@ export function TechniqueFlow() {
                   key={t.id}
                   onClick={() => { goTo(t.id); setQuery(""); }}
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted"
+                  style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
                 >
-                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: `var(--belt-${t.belt})` }} />
                   <span className="min-w-0 flex-1 truncate">{t.nameRu}</span>
                   <span className="shrink-0 text-[10px] text-muted-foreground">{GROUP_LABEL[t.group]}</span>
                 </button>
