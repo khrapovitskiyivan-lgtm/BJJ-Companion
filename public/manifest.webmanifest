@@ -1,0 +1,16 @@
+{
+  "name": "BJJ Companion",
+  "short_name": "BJJ Companion",
+  "description": "Ежедневник для бразильского джиу-джитсу: дневник, план, техники и умные тренировки",
+  "lang": "ru",
+  "start_url": "/progress",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#faf9f5",
+  "theme_color": "#2b2f6b",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

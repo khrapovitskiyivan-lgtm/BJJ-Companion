@@ -80,6 +80,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Компаньон для бразильского джиу-джитсу: библиотека техник, генератор тренировок и трекинг прогресса по поясам.",
       },
       { name: "author", content: "BJJ Companion" },
+      { name: "theme-color", content: "#2b2f6b" },
       { property: "og:title", content: "BJJ Companion — библиотека техник и умные тренировки" },
       {
         property: "og:description",
@@ -102,6 +103,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/icon-192.png" },
     ],
   }),
   shellComponent: RootShell,
@@ -136,6 +139,16 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  // Оффлайн PWA: регистрация service worker (public/sw.js). Только прод — в dev
+  // SW ломал бы HMR; гейт по наличию API (в iOS-webview Telegram его нет — молча мимо).
+  useEffect(() => {
+    if (!import.meta.env.PROD) return;
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      /* молча: оффлайн — бонус, не должен ломать запуск */
+    });
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
