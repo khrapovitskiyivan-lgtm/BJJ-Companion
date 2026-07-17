@@ -7,7 +7,7 @@
 // - кросс-доменное (Supabase, Telegram) не трогаем.
 // При смене VERSION старые кэши вычищаются на activate.
 
-const VERSION = "bjj-sw-v1";
+const VERSION = "bjj-sw-v2";
 const ASSETS = `${VERSION}-assets`;
 const PAGES = `${VERSION}-pages`;
 
@@ -33,10 +33,11 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Статика: хэшированные ассеты и файлы из public
+// Статика: хэшированные ассеты и файлы из public (включая intro.mp4 —
+// 1 МБ заставки не должен качаться на каждую новую сессию)
 function isStaticAsset(url) {
   if (url.pathname.startsWith("/assets/")) return true;
-  return /\.(js|css|woff2?|webp|png|ico|svg|webmanifest)$/.test(url.pathname);
+  return /\.(js|css|woff2?|webp|png|ico|svg|webmanifest|mp4)$/.test(url.pathname);
 }
 
 self.addEventListener("fetch", (event) => {
@@ -45,16 +46,18 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // Supabase/Telegram мимо
 
-  // Иммутабельная статика: cache-first
+  // Иммутабельная статика: cache-first. Матчим и фетчим по pathname без
+  // заголовков запроса: видео браузер просит с Range, Cache API не хранит
+  // 206-ответы — а полный 200 в ответ на Range валиден (сервер вправе игнорировать).
   if (isStaticAsset(url)) {
     event.respondWith(
-      caches.match(req).then(
+      caches.match(url.pathname).then(
         (hit) =>
           hit ??
-          fetch(req).then((res) => {
-            if (res.ok) {
+          fetch(url.pathname).then((res) => {
+            if (res.ok && res.status === 200) {
               const clone = res.clone();
-              caches.open(ASSETS).then((c) => c.put(req, clone));
+              caches.open(ASSETS).then((c) => c.put(url.pathname, clone));
             }
             return res;
           }),
