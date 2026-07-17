@@ -126,7 +126,7 @@ export function ActivityHeatmap({
                   title={count > 0 ? `${key}: техник ${count}${overPlan ? ", сверх плана" : ""}` : key}
                 >
                   {day.getDate()}
-                  {overPlan && <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-amber-400" />}
+                  {overPlan && <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full" style={{ background: "var(--brand-gold)" }} />}
                 </div>
               );
               })}
@@ -134,7 +134,10 @@ export function ActivityHeatmap({
               <div className="flex h-8 flex-col items-center justify-center gap-0.5">
                 {st && !st.future && (
                   <>
-                    <span className={`text-[10px] tabular-nums ${st.closed && st.missed > 0 ? "text-muted-foreground" : st.over > 0 ? "font-semibold text-amber-500" : st.closed ? "font-semibold text-primary" : "text-muted-foreground"}`}>
+                    <span
+                      className={`text-[10px] tabular-nums ${st.closed && st.missed > 0 ? "text-muted-foreground" : st.over > 0 ? "font-semibold" : st.closed ? "font-semibold text-primary" : "text-muted-foreground"}`}
+                      style={st.over > 0 ? { color: "var(--brand-gold-ink)" } : undefined}
+                    >
                       {st.over > 0 ? `+${st.over}` : `${Math.min(st.done, st.quota)}/${st.quota}`}
                     </span>
                     {st.missed > 0 && (
@@ -158,11 +161,14 @@ export function ActivityHeatmap({
           <p className="text-xs text-muted-foreground">
             Сделано <span className="font-semibold text-foreground">{summary.done}</span> из {summary.plan}{" "}
             {summary.current ? "по плану месяца" : "за месяц"} ·{" "}
-            <span className={
-              summary.verdict === "over" ? "font-semibold text-amber-500"
-              : summary.verdict === "met" || summary.verdict === "on_track" ? "font-semibold text-primary"
-              : "font-medium"
-            }>
+            <span
+              className={
+                summary.verdict === "over" ? "font-semibold"
+                : summary.verdict === "met" || summary.verdict === "on_track" ? "font-semibold text-primary"
+                : "font-medium"
+              }
+              style={summary.verdict === "over" ? { color: "var(--brand-gold-ink)" } : undefined}
+            >
               {VERDICT_LABEL[summary.verdict]}
             </span>
           </p>

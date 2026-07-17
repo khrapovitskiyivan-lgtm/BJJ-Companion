@@ -285,7 +285,7 @@ function WorkoutGenerator({
           <Section
             title="Разминка"
             subtitle={`${workout.warmupMinutes} мин`}
-            icon={<Flame className="h-4 w-4" style={{ color: "var(--status-progress)" }} />}
+            icon={<Flame className="h-4 w-4" style={{ color: "var(--brand-gold-ink)" }} />}
           >
             <ul className="space-y-2">
               {workout.warmup.map((w, i) => (

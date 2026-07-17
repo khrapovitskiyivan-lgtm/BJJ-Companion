@@ -11,7 +11,7 @@ import { ArrowLeft, Play, Pause, RotateCcw, Flame, Sparkles, Snowflake, CheckCir
 // громкий сигнал в конце раздела и тройной в конце тренировки.
 
 const SECTION_ICON: Record<string, React.ReactNode> = {
-  warmup: <Flame className="h-3.5 w-3.5" style={{ color: "var(--status-progress)" }} />,
+  warmup: <Flame className="h-3.5 w-3.5" style={{ color: "var(--brand-gold-ink)" }} />,
   main: <Sparkles className="h-3.5 w-3.5" style={{ color: "var(--color-primary)" }} />,
   cooldown: <Snowflake className="h-3.5 w-3.5" style={{ color: "var(--status-done)" }} />,
 };
