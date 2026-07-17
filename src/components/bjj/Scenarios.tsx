@@ -25,9 +25,19 @@ const SCENARIOS: Scenario[] = [
   { id: "turtle_attack", title: "Атака черепахи", description: "Начните сверху в черепахе. Цель: взять спину.", startPositions: [19], goalPositions: [17], duration: 180 },
 ];
 
-export function Scenarios() {
-  const [active, setActive] = useState<Scenario | null>(null);
-  if (active) return <ScenarioRunner scenario={active} onExit={() => setActive(null)} />;
+// Активный сценарий приходит search-параметром из /workout: переживает уход
+// на карточку техники, «назад» возвращает в текущий сценарий, а не к выбору.
+export function Scenarios({
+  activeId,
+  onSelect,
+  onExit,
+}: {
+  activeId?: string;
+  onSelect: (id: string) => void;
+  onExit: () => void;
+}) {
+  const active = activeId ? SCENARIOS.find((x) => x.id === activeId) ?? null : null;
+  if (active) return <ScenarioRunner scenario={active} onExit={onExit} />;
   return (
     <div className="space-y-3">
       <p className="px-1 text-xs text-muted-foreground">
@@ -36,7 +46,7 @@ export function Scenarios() {
       {SCENARIOS.map((s) => (
         <button
           key={s.id}
-          onClick={() => setActive(s)}
+          onClick={() => onSelect(s.id)}
           className="w-full rounded-2xl border border-border bg-card p-4 text-left transition hover:bg-muted"
         >
           <div className="flex items-center justify-between gap-2">
@@ -53,9 +63,18 @@ export function Scenarios() {
   );
 }
 
+// Остаток таймера на время сессии: заглянул в технику и вернулся — таймер не сбросился (на паузе)
+let runnerCache: { id: string; left: number } | null = null;
+
 function ScenarioRunner({ scenario, onExit }: { scenario: Scenario; onExit: () => void }) {
-  const [left, setLeft] = useState(scenario.duration);
+  const [left, setLeft] = useState(() =>
+    runnerCache?.id === scenario.id ? runnerCache.left : scenario.duration,
+  );
   const [paused, setPaused] = useState(true);
+
+  useEffect(() => {
+    runnerCache = { id: scenario.id, left };
+  }, [scenario.id, left]);
 
   useEffect(() => {
     if (paused || left <= 0) return;

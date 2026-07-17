@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TechniqueCard } from "@/components/bjj/TechniqueCard";
 import { Scenarios } from "@/components/bjj/Scenarios";
@@ -18,6 +18,13 @@ import { Flame, Snowflake, Sparkles, Timer, Dumbbell, Swords, NotebookPen } from
 
 export const Route = createFileRoute("/workout")({
   component: WorkoutPage,
+  // Вкладка и активный сценарий в search-параметрах: переживают уход на карточку техники
+  validateSearch: (search: Record<string, unknown>): { tab?: "scenarios"; s?: string } => {
+    const out: { tab?: "scenarios"; s?: string } = {};
+    if (search.tab === "scenarios") out.tab = "scenarios";
+    if (typeof search.s === "string" && search.s) out.s = search.s;
+    return out;
+  },
 });
 
 const DURATIONS: WorkoutConfig["duration"][] = [15, 30, 45, 60];
@@ -43,7 +50,9 @@ const FOCUSES: (Group | "all")[] = [
 ];
 
 function WorkoutPage() {
-  const [tab, setTab] = useState<"generator" | "scenarios">("generator");
+  const { tab: tabParam, s } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const tab = tabParam ?? "generator";
   return (
     <AppShell>
       <div className="space-y-4">
@@ -55,15 +64,23 @@ function WorkoutPage() {
         </header>
 
         <div className="grid grid-cols-2 gap-2">
-          <SubTab active={tab === "generator"} onClick={() => setTab("generator")} icon={<Dumbbell className="h-4 w-4" />}>
+          <SubTab active={tab === "generator"} onClick={() => navigate({ search: {} })} icon={<Dumbbell className="h-4 w-4" />}>
             Генератор
           </SubTab>
-          <SubTab active={tab === "scenarios"} onClick={() => setTab("scenarios")} icon={<Swords className="h-4 w-4" />}>
+          <SubTab active={tab === "scenarios"} onClick={() => navigate({ search: { tab: "scenarios" } })} icon={<Swords className="h-4 w-4" />}>
             Сценарии
           </SubTab>
         </div>
 
-        {tab === "generator" ? <WorkoutGenerator /> : <Scenarios />}
+        {tab === "generator" ? (
+          <WorkoutGenerator />
+        ) : (
+          <Scenarios
+            activeId={s}
+            onSelect={(id) => navigate({ search: { tab: "scenarios", s: id } })}
+            onExit={() => navigate({ search: { tab: "scenarios" } })}
+          />
+        )}
       </div>
     </AppShell>
   );
@@ -93,20 +110,32 @@ function SubTab({
   );
 }
 
+// Кэш сгенерированной тренировки на время сессии: переживает уход на карточку
+// техники и возврат (иначе «назад» перегенерировало бы тренировку). Как в library.
+let workoutCache: { workout: Workout; config: WorkoutConfig; source: "profile" | "diary" } | null = null;
+
 function WorkoutGenerator() {
   const { profile } = useProfile();
   const { progress, cycleStatus } = useProgress();
   const { entries } = useDiary();
 
-  const [config, setConfig] = useState<WorkoutConfig>({
-    duration: 45,
-    intensity: "medium",
-    safety: "smart",
-    focus: "all",
-  });
+  const [config, setConfig] = useState<WorkoutConfig>(
+    () =>
+      workoutCache?.config ?? {
+        duration: 45,
+        intensity: "medium",
+        safety: "smart",
+        focus: "all",
+      },
+  );
   // Источник подбора техник: профиль (пояс/цель) или дневник (что реально отрабатывал)
-  const [source, setSource] = useState<"profile" | "diary">("profile");
-  const [workout, setWorkout] = useState<Workout | null>(null);
+  const [source, setSource] = useState<"profile" | "diary">(() => workoutCache?.source ?? "profile");
+  const [workout, setWorkout] = useState<Workout | null>(() => workoutCache?.workout ?? null);
+
+  // Держим кэш в актуальном состоянии для восстановления после возврата
+  useEffect(() => {
+    if (workout) workoutCache = { workout, config, source };
+  }, [workout, config, source]);
 
   const handleGenerate = () => {
     setWorkout(
@@ -242,11 +271,13 @@ function WorkoutGenerator() {
               <ul className="space-y-2">
                 {workout.drills.map((d) => (
                   <li key={d.technique.id}>
-                    <TechniqueCard
-                      technique={d.technique}
-                      status={progress[d.technique.id] ?? "not_started"}
-                      onCycleStatus={cycleStatus}
-                    />
+                    <Link to="/technique/$id" params={{ id: String(d.technique.id) }} className="block">
+                      <TechniqueCard
+                        technique={d.technique}
+                        status={progress[d.technique.id] ?? "not_started"}
+                        onCycleStatus={cycleStatus}
+                      />
+                    </Link>
                   </li>
                 ))}
               </ul>
