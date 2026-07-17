@@ -14,6 +14,7 @@ import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import { topCatchers, defensesFor } from "@/lib/bjj/caught";
 import { track } from "@/lib/bjj/telemetry";
+import { buildStyleShare, shareText } from "@/lib/bjj/share";
 import { BELT_ORDER, BELT_LABEL, STYLE_META } from "@/lib/bjj/constants";
 import { computeStats, countDone, ARCHETYPE_MIN_DONE, STAT_META, ARCHETYPE_STATS } from "@/lib/bjj/stats";
 import type { Technique } from "@/lib/bjj/types";
@@ -26,6 +27,8 @@ import {
   History,
   ArrowRight,
   ShieldAlert,
+  Share2,
+  Check,
 } from "lucide-react";
 
 export const Route = createFileRoute("/progress")({
@@ -427,6 +430,8 @@ function techWordAcc(n: number): string {
 
 // «Твой стиль» — аффинити к игровым архетипам
 function YourStyle({ scores, doneCount }: { scores: StyleScore[]; doneCount: number }) {
+  // «Скопировано» после шеринга через буфер (браузер без Web Share)
+  const [shared, setShared] = useState(false);
   if (doneCount < ARCHETYPE_MIN_DONE) {
     const left = ARCHETYPE_MIN_DONE - doneCount;
     // Квест холодного старта: пустота становится целью — сегменты N из 5 и путь к действию
@@ -469,9 +474,27 @@ function YourStyle({ scores, doneCount }: { scores: StyleScore[]; doneCount: num
   const bars = scores.slice(0, 5);
   const max = bars[0]?.pct || 1;
 
+  const onShare = async () => {
+    const res = await shareText(buildStyleShare(top, doneCount, TECHNIQUES.length));
+    if (res === "copied") {
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
+    }
+  };
+
   return (
     <section className="rounded-2xl border border-border bg-card p-4">
-      <h2 className="mb-3 text-sm font-semibold">Твой стиль</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold">Твой стиль</h2>
+        <button
+          type="button"
+          onClick={onShare}
+          aria-label="Поделиться стилем"
+          className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
+        >
+          {shared ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+        </button>
+      </div>
       <div className="flex items-center gap-3">
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
           <TopIcon className="h-6 w-6" strokeWidth={1.9} />

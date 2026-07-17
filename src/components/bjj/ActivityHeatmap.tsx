@@ -1,8 +1,9 @@
 import { Fragment, useMemo, useState } from "react";
 import type { DiaryEntry, Frequency } from "@/lib/bjj/types";
-import { dayKey, dayStreak, monthGrid, trainedByDate, weekStatus, monthSummary, planStreak } from "@/lib/bjj/plan";
+import { dayKey, dayStreak, monthGrid, trainedByDate, weekDays, weekStatus, monthSummary, planStreak } from "@/lib/bjj/plan";
+import { buildWeekShare, shareText } from "@/lib/bjj/share";
 import { IconButton } from "@/components/bjj/ui";
-import { Flame, ChevronLeft, ChevronRight, CalendarCog } from "lucide-react";
+import { Flame, ChevronLeft, ChevronRight, CalendarCog, Share2, Check } from "lucide-react";
 
 // Календарь месяца от плановой частоты: тренировочные дни, недельные квоты,
 // недобор закрытых недель, сверхплановые дни и итог месяца.
@@ -75,6 +76,17 @@ export function ActivityHeatmap({
 
   const summary = frequency ? monthSummary(trained, frequency, view.y, view.m, today) : null;
 
+  // Шеринг итога текущей недели; «Скопировано» при фоллбэке в буфер
+  const [shared, setShared] = useState(false);
+  const onShare = async () => {
+    const done = weekDays(today).map(dayKey).filter((k) => trained.has(k)).length;
+    const res = await shareText(buildWeekShare(done, frequency, weekStreak));
+    if (res === "copied") {
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
+    }
+  };
+
   return (
     <section className="rounded-2xl border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
@@ -97,6 +109,9 @@ export function ActivityHeatmap({
           </span>
         )}
         <span className="flex items-center gap-1 text-xs font-medium">
+          <IconButton label="Поделиться итогом недели" onClick={onShare}>
+            {shared ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+          </IconButton>
           <IconButton label="Предыдущий месяц" onClick={() => shift(-1)} disabled={!canPrev}>
             <ChevronLeft className="h-4 w-4" />
           </IconButton>

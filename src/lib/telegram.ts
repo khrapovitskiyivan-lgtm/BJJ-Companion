@@ -31,6 +31,7 @@ interface TgWebApp {
   requestFullscreen?(): void;
   setHeaderColor?(color: string): void;
   onEvent?(event: string, cb: () => void): void;
+  openTelegramLink?(url: string): void;
 }
 
 const USER_CACHE_KEY = "bjj_telegram_user";
