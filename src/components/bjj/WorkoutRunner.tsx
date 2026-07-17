@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { TechniqueRow } from "@/components/bjj/TechniqueCard";
-import { buildSections, initialPhase, tick, currentDrillIndex, type RunPhase } from "@/lib/bjj/runner";
-import { unlockAudio, beepWarn, beepSection, beepFinish } from "@/lib/bjj/sound";
+import { buildSections, currentDrillIndex, type RunPhase } from "@/lib/bjj/runner";
+import { useRunner } from "@/lib/bjj/useRunner";
+import { unlockAudio } from "@/lib/bjj/sound";
 import type { Workout } from "@/lib/bjj/types";
 import { ArrowLeft, Play, Pause, RotateCcw, Flame, Sparkles, Snowflake, CheckCircle2 } from "lucide-react";
 
@@ -20,29 +21,14 @@ let runCache: { w: Workout; phase: RunPhase } | null = null;
 
 export function WorkoutRunner({ workout, onExit }: { workout: Workout; onExit: () => void }) {
   const sections = useMemo(() => buildSections(workout), [workout]);
-  const [phase, setPhase] = useState<RunPhase>(() =>
-    runCache?.w === workout ? runCache.phase : initialPhase(sections),
+  const { phase, paused, setPaused, reset } = useRunner(
+    sections,
+    runCache?.w === workout ? runCache.phase : undefined,
   );
-  const [paused, setPaused] = useState(true);
 
   useEffect(() => {
     runCache = { w: workout, phase };
   }, [workout, phase]);
-
-  // Секундный тик: сигнал играем по результату редьюсера
-  useEffect(() => {
-    if (paused || phase.finished) return;
-    const t = setInterval(() => {
-      setPhase((p) => {
-        const { next, signal } = tick(sections, p);
-        if (signal === "warn") beepWarn();
-        else if (signal === "section") beepSection();
-        else if (signal === "finish") beepFinish();
-        return next;
-      });
-    }, 1000);
-    return () => clearInterval(t);
-  }, [paused, phase.finished, sections]);
 
   const section = sections[phase.sectionIdx];
   if (!section) return null;
@@ -53,11 +39,6 @@ export function WorkoutRunner({ workout, onExit }: { workout: Workout; onExit: (
     section.key === "main"
       ? currentDrillIndex(workout.drills.map((d) => d.minutes), section.seconds, phase.left)
       : -1;
-
-  const reset = () => {
-    setPhase(initialPhase(sections));
-    setPaused(true);
-  };
 
   return (
     <div className="space-y-4">

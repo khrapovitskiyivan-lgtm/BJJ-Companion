@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildSections, initialPhase, tick, currentDrillIndex, type RunSection } from "./runner";
+import { buildSections, initialPhase, tick, advanceBy, currentDrillIndex, type RunSection } from "./runner";
 import type { Workout } from "./types";
 
 const SECTIONS: RunSection[] = [
@@ -77,6 +77,31 @@ describe("tick", () => {
   it("initialPhase: старт с первого раздела; пустой список сразу finished", () => {
     expect(initialPhase(SECTIONS)).toEqual({ sectionIdx: 0, left: 10, finished: false });
     expect(initialPhase([]).finished).toBe(true);
+  });
+});
+
+describe("advanceBy (догон после сна телефона)", () => {
+  it("обычная секунда: один тик", () => {
+    const { next, signals } = advanceBy(SECTIONS, { sectionIdx: 0, left: 9, finished: false }, 1);
+    expect(next.left).toBe(8);
+    expect(signals).toEqual([]);
+  });
+
+  it("сон через границу раздела: собирает warn и section, попадает в нужное место", () => {
+    // 8 секунд от left=10 первого раздела: 5 warn (5..1) + section, остаток во втором
+    const { next, signals } = advanceBy(SECTIONS, { sectionIdx: 0, left: 10, finished: false }, 12);
+    expect(signals.filter((s) => s === "warn").length).toBe(5);
+    expect(signals).toContain("section");
+    expect(next.sectionIdx).toBe(1);
+    expect(next.left).toBe(18); // 12 - 10 = 2 секунды во втором разделе (20 - 2)
+  });
+
+  it("долгий сон до конца: finish, дальше не идёт", () => {
+    const total = 10 + 20 + 8;
+    const { next, signals } = advanceBy(SECTIONS, { sectionIdx: 0, left: 10, finished: false }, total + 100);
+    expect(next.finished).toBe(true);
+    expect(signals).toContain("finish");
+    expect(signals.filter((s) => s === "section").length).toBe(2);
   });
 });
 

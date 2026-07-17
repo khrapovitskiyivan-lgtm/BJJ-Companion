@@ -44,6 +44,23 @@ export function tick(sections: RunSection[], p: RunPhase): { next: RunPhase; sig
   return { next: { sectionIdx: nextIdx, left: sections[nextIdx].seconds, finished: false }, signal: "section" };
 }
 
+// Догон по настенным часам: телефон спал N секунд — прокручиваем тики разом.
+// Сигналы копятся списком; кто их играть и какие — решает вызывающий.
+export function advanceBy(
+  sections: RunSection[],
+  p: RunPhase,
+  elapsedSec: number,
+): { next: RunPhase; signals: RunSignal[] } {
+  let cur = p;
+  const signals: RunSignal[] = [];
+  for (let i = 0; i < elapsedSec && !cur.finished; i++) {
+    const r = tick(sections, cur);
+    cur = r.next;
+    if (r.signal) signals.push(r.signal);
+  }
+  return { next: cur, signals };
+}
+
 // Индекс текущей техники основной части по прошедшему времени раздела
 export function currentDrillIndex(drillMinutes: number[], sectionSeconds: number, left: number): number {
   const elapsed = sectionSeconds - left;

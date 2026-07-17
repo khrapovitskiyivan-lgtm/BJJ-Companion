@@ -149,9 +149,7 @@ function ProgressPage() {
                 {profile.name || "Боец"}
               </span>
               <span className="block truncate text-[11px] text-muted-foreground">
-                {doneCount >= ARCHETYPE_MIN_DONE && styleScores.length > 0
-                  ? STYLE_META[styleScores[0].style].ru
-                  : `${BELT_LABEL[profile.belt]} пояс`}
+                {BELT_LABEL[profile.belt]} пояс
               </span>
             </span>
           </button>

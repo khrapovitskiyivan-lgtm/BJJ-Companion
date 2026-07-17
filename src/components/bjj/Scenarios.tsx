@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
-import { TechniqueChip } from "@/components/bjj/TechniqueCard";
+import { useEffect, useMemo, useState } from "react";
+import { TechniqueRow } from "@/components/bjj/TechniqueCard";
 import { Chip } from "@/components/bjj/ui";
-import { unlockAudio, beepWarn, beepFinish } from "@/lib/bjj/sound";
+import { unlockAudio } from "@/lib/bjj/sound";
+import { useRunner } from "@/lib/bjj/useRunner";
+import type { RunSection } from "@/lib/bjj/runner";
 import { TECH_BY_ID } from "@/lib/bjj/data";
 import type { Technique } from "@/lib/bjj/types";
-import { Timer, Play, Pause, ArrowLeft, RotateCcw } from "lucide-react";
+import { Play, Pause, ArrowLeft, RotateCcw } from "lucide-react";
 
 // Сценарии спаррингов из заданной позиции + таймер (перенесено из «Решений»).
 interface Scenario {
@@ -51,13 +53,7 @@ export function Scenarios({
           onClick={() => onSelect(s.id)}
           className="w-full rounded-2xl border border-border bg-card p-4 text-left transition hover:bg-muted"
         >
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold">{s.title}</h3>
-            <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-              <Timer className="h-3 w-3" />
-              {Math.floor(s.duration / 60)} мин
-            </span>
-          </div>
+          <h3 className="text-sm font-semibold">{s.title}</h3>
           <p className="mt-1 text-xs text-muted-foreground">{s.description}</p>
         </button>
       ))}
@@ -74,33 +70,25 @@ const SCENARIO_MINUTES = [3, 5];
 function ScenarioRunner({ scenario, onExit }: { scenario: Scenario; onExit: () => void }) {
   const cached = runnerCache?.id === scenario.id ? runnerCache : null;
   const [duration, setDuration] = useState(cached?.duration ?? scenario.duration);
-  const [left, setLeft] = useState(cached?.left ?? cached?.duration ?? scenario.duration);
-  const [paused, setPaused] = useState(true);
+  // Один «раздел» на весь раунд: сигналы и настенные часы даёт общий useRunner
+  const sections = useMemo<RunSection[]>(
+    () => [{ key: "scenario", title: scenario.title, seconds: duration }],
+    [scenario.title, duration],
+  );
+  const { phase, setPhase, paused, setPaused } = useRunner(
+    sections,
+    cached ? { sectionIdx: 0, left: cached.left, finished: cached.left === 0 } : undefined,
+  );
+  const left = phase.left;
 
   useEffect(() => {
     runnerCache = { id: scenario.id, left, duration };
   }, [scenario.id, left, duration]);
 
-  // Тик с сигналами: последние 5 секунд — короткий гудок, ноль — громкий финал
-  useEffect(() => {
-    if (paused || left <= 0) return;
-    const t = setInterval(
-      () =>
-        setLeft((v) => {
-          const next = Math.max(0, v - 1);
-          if (next > 0 && next <= 5) beepWarn();
-          else if (next === 0) beepFinish();
-          return next;
-        }),
-      1000,
-    );
-    return () => clearInterval(t);
-  }, [paused, left]);
-
   // Смена времени раунда: сброс таймера на новую длительность
   const chooseMinutes = (mins: number) => {
     setDuration(mins * 60);
-    setLeft(mins * 60);
+    setPhase({ sectionIdx: 0, left: mins * 60, finished: false });
     setPaused(true);
   };
 
@@ -141,7 +129,7 @@ function ScenarioRunner({ scenario, onExit }: { scenario: Scenario; onExit: () =
             {paused ? (left === duration ? "Старт" : "Продолжить") : "Пауза"}
           </button>
           <button
-            onClick={() => { setLeft(duration); setPaused(true); }}
+            onClick={() => { setPhase({ sectionIdx: 0, left: duration, finished: false }); setPaused(true); }}
             className="inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground"
           >
             <RotateCcw className="h-4 w-4" />
@@ -160,11 +148,13 @@ function PositionRow({ title, items }: { title: string; items: Technique[] }) {
   return (
     <section>
       <h3 className="mb-2 text-sm font-semibold">{title}</h3>
-      <div className="flex flex-wrap gap-1.5">
+      <ul className="space-y-2">
         {items.map((t) => (
-          <TechniqueChip key={t.id} technique={t} />
+          <li key={t.id}>
+            <TechniqueRow technique={t} />
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }

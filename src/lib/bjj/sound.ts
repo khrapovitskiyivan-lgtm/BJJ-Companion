@@ -11,6 +11,12 @@ export function unlockAudio(): void {
     if (!AC) return;
     if (!ctx) ctx = new AC();
     if (ctx.state === "suspended") void ctx.resume();
+    // Тихий однокадровый буфер прямо в жесте — полная разблокировка звука на iOS
+    const buf = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
   } catch {
     // звук не критичен — молча живём без него
   }
