@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { TechniqueChip } from "@/components/bjj/TechniqueCard";
+import { Chip } from "@/components/bjj/ui";
+import { unlockAudio, beepWarn, beepFinish } from "@/lib/bjj/sound";
 import { TECH_BY_ID } from "@/lib/bjj/data";
 import type { Technique } from "@/lib/bjj/types";
 import { Timer, Play, Pause, X, RotateCcw } from "lucide-react";
@@ -64,23 +66,43 @@ export function Scenarios({
 }
 
 // Остаток таймера на время сессии: заглянул в технику и вернулся — таймер не сбросился (на паузе)
-let runnerCache: { id: string; left: number } | null = null;
+let runnerCache: { id: string; left: number; duration: number } | null = null;
+
+// Выбор времени раунда сценария
+const SCENARIO_MINUTES = [3, 5];
 
 function ScenarioRunner({ scenario, onExit }: { scenario: Scenario; onExit: () => void }) {
-  const [left, setLeft] = useState(() =>
-    runnerCache?.id === scenario.id ? runnerCache.left : scenario.duration,
-  );
+  const cached = runnerCache?.id === scenario.id ? runnerCache : null;
+  const [duration, setDuration] = useState(cached?.duration ?? scenario.duration);
+  const [left, setLeft] = useState(cached?.left ?? cached?.duration ?? scenario.duration);
   const [paused, setPaused] = useState(true);
 
   useEffect(() => {
-    runnerCache = { id: scenario.id, left };
-  }, [scenario.id, left]);
+    runnerCache = { id: scenario.id, left, duration };
+  }, [scenario.id, left, duration]);
 
+  // Тик с сигналами: последние 5 секунд — короткий гудок, ноль — громкий финал
   useEffect(() => {
     if (paused || left <= 0) return;
-    const t = setInterval(() => setLeft((v) => Math.max(0, v - 1)), 1000);
+    const t = setInterval(
+      () =>
+        setLeft((v) => {
+          const next = Math.max(0, v - 1);
+          if (next > 0 && next <= 5) beepWarn();
+          else if (next === 0) beepFinish();
+          return next;
+        }),
+      1000,
+    );
     return () => clearInterval(t);
   }, [paused, left]);
+
+  // Смена времени раунда: сброс таймера на новую длительность
+  const chooseMinutes = (mins: number) => {
+    setDuration(mins * 60);
+    setLeft(mins * 60);
+    setPaused(true);
+  };
 
   const mm = String(Math.floor(left / 60)).padStart(2, "0");
   const ss = String(left % 60).padStart(2, "0");
@@ -99,17 +121,27 @@ function ScenarioRunner({ scenario, onExit }: { scenario: Scenario; onExit: () =
           {mm}:{ss}
         </p>
         <p className="mt-2 text-xs text-muted-foreground">{scenario.description}</p>
+        <div className="mt-3 flex justify-center gap-2">
+          {SCENARIO_MINUTES.map((m) => (
+            <Chip key={m} active={duration === m * 60} onClick={() => chooseMinutes(m)}>
+              {m} мин
+            </Chip>
+          ))}
+        </div>
         <div className="mt-4 flex justify-center gap-2">
           <button
-            onClick={() => setPaused((p) => !p)}
+            onClick={() => {
+              unlockAudio();
+              setPaused((p) => !p);
+            }}
             disabled={left === 0}
             className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
           >
             {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-            {paused ? (left === scenario.duration ? "Старт" : "Продолжить") : "Пауза"}
+            {paused ? (left === duration ? "Старт" : "Продолжить") : "Пауза"}
           </button>
           <button
-            onClick={() => { setLeft(scenario.duration); setPaused(true); }}
+            onClick={() => { setLeft(duration); setPaused(true); }}
             className="inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground"
           >
             <RotateCcw className="h-4 w-4" />

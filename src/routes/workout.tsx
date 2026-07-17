@@ -14,15 +14,18 @@ import type {
   WorkoutConfig,
 } from "@/lib/bjj/types";
 import { Chip, FilterRow } from "@/components/bjj/ui";
-import { Flame, Snowflake, Sparkles, Timer, Dumbbell, Swords, NotebookPen } from "lucide-react";
+import { WorkoutRunner } from "@/components/bjj/WorkoutRunner";
+import { Flame, Snowflake, Sparkles, Timer, Dumbbell, Swords, NotebookPen, Play } from "lucide-react";
 
 export const Route = createFileRoute("/workout")({
   component: WorkoutPage,
-  // Вкладка и активный сценарий в search-параметрах: переживают уход на карточку техники
-  validateSearch: (search: Record<string, unknown>): { tab?: "scenarios"; s?: string } => {
-    const out: { tab?: "scenarios"; s?: string } = {};
+  // Вкладка, активный сценарий и режим раннера в search-параметрах:
+  // переживают уход на карточку техники и возврат
+  validateSearch: (search: Record<string, unknown>): { tab?: "scenarios"; s?: string; run?: boolean } => {
+    const out: { tab?: "scenarios"; s?: string; run?: boolean } = {};
     if (search.tab === "scenarios") out.tab = "scenarios";
     if (typeof search.s === "string" && search.s) out.s = search.s;
+    if (search.run === true || search.run === "true") out.run = true;
     return out;
   },
 });
@@ -50,7 +53,7 @@ const FOCUSES: (Group | "all")[] = [
 ];
 
 function WorkoutPage() {
-  const { tab: tabParam, s } = Route.useSearch();
+  const { tab: tabParam, s, run } = Route.useSearch();
   const navigate = Route.useNavigate();
   const tab = tabParam ?? "generator";
   return (
@@ -73,7 +76,11 @@ function WorkoutPage() {
         </div>
 
         {tab === "generator" ? (
-          <WorkoutGenerator />
+          <WorkoutGenerator
+            running={!!run}
+            onRun={() => navigate({ search: { run: true } })}
+            onExitRun={() => navigate({ search: {} })}
+          />
         ) : (
           <Scenarios
             activeId={s}
@@ -114,7 +121,15 @@ function SubTab({
 // техники и возврат (иначе «назад» перегенерировало бы тренировку). Как в library.
 let workoutCache: { workout: Workout; config: WorkoutConfig; source: "profile" | "diary" } | null = null;
 
-function WorkoutGenerator() {
+function WorkoutGenerator({
+  running,
+  onRun,
+  onExitRun,
+}: {
+  running: boolean;
+  onRun: () => void;
+  onExitRun: () => void;
+}) {
   const { profile } = useProfile();
   const { progress, cycleStatus } = useProgress();
   const { entries } = useDiary();
@@ -136,6 +151,15 @@ function WorkoutGenerator() {
   useEffect(() => {
     if (workout) workoutCache = { workout, config, source };
   }, [workout, config, source]);
+
+  // ?run=true без тренировки (свежая загрузка страницы) — выходим из режима раннера
+  useEffect(() => {
+    if (running && !workout) onExitRun();
+  }, [running, workout, onExitRun]);
+
+  if (running && workout) {
+    return <WorkoutRunner workout={workout} onExit={onExitRun} />;
+  }
 
   const handleGenerate = () => {
     setWorkout(
@@ -233,6 +257,14 @@ function WorkoutGenerator() {
 
       {workout && (
         <section className="space-y-4">
+          <button
+            type="button"
+            onClick={onRun}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-ring bg-primary/10 py-3 text-sm font-semibold text-foreground transition hover:bg-primary/15"
+          >
+            <Play className="h-4 w-4" />
+            Запустить тренировку
+          </button>
           <div className="rounded-2xl border border-border bg-card p-4">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">
               План · {workout.totalMinutes} мин
