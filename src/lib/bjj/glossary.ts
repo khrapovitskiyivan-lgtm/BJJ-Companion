@@ -14,7 +14,7 @@ export const GLOSSARY_CATEGORY_LABEL: Record<GlossaryCategory, string> = {
   control: "Контроль и захваты",
   attacks: "Атаки",
   movement: "Действия и движение",
-  training: "Зал, правила, жаргон",
+  training: "Зал, правила, сленг",
 };
 
 export const GLOSSARY_CATEGORY_ORDER: GlossaryCategory[] = [
@@ -91,7 +91,7 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: "Постура", en: "Posture", category: "movement", definition: "Прямая осанка с выпрямленной спиной. В чужом гарде это главная защита от удушений и армбаров." },
   { term: "Позиция перед приёмом", en: "Position before submission", category: "movement", definition: "Базовый принцип: сначала закрепи контроль, потом атакуй. Спешка с приёмом возвращает соперника в игру." },
 
-  // === Зал, правила, жаргон ===
+  // === Зал, правила, сленг ===
   { term: "Ги, кимоно", en: "Gi", category: "training", definition: "Форма для тренировок: куртка, штаны и пояс. Захваты за ткань меняют игру и замедляют темп." },
   { term: "Но-ги", en: "No-Gi", category: "training", definition: "Борьба без кимоно, в рашгарде и шортах. Быстрее, захваты только за тело." },
   { term: "Ролл, спарринг", en: "Roll", category: "training", definition: "Свободный спарринг. Основная часть тренировки и главный источник прогресса." },

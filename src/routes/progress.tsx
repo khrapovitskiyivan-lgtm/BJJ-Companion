@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { Fragment, useState, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TechniqueRow, TechniqueChip } from "@/components/bjj/TechniqueCard";
@@ -420,58 +420,59 @@ function ProgressPage() {
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {groupStats.map(({ group, done, total, pct }) => (
-              <button
-                key={group}
-                type="button"
-                onClick={() => setOpenGroup((g) => (g === group ? null : group))}
-                aria-expanded={openGroup === group}
-                className="rounded-xl border-2 bg-background p-3 text-left transition-all"
-                style={{
-                  borderColor: openGroup === group ? "var(--color-ring)" : "var(--color-border)",
-                }}
-              >
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="flex items-center gap-1 text-xs font-medium">
-                    {GROUP_LABEL[group]}
-                    <ChevronDown
-                      className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${openGroup === group ? "rotate-180" : ""}`}
+              <Fragment key={group}>
+                <button
+                  type="button"
+                  onClick={() => setOpenGroup((g) => (g === group ? null : group))}
+                  aria-expanded={openGroup === group}
+                  className="rounded-xl border-2 bg-background p-3 text-left transition-all"
+                  style={{
+                    borderColor: openGroup === group ? "var(--color-ring)" : "var(--color-border)",
+                  }}
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="flex items-center gap-1 text-xs font-medium">
+                      {GROUP_LABEL[group]}
+                      <ChevronDown
+                        className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${openGroup === group ? "rotate-180" : ""}`}
+                      />
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {done}/{total}
+                    </span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all duration-500"
+                      style={{ width: `${pct}%` }}
                     />
-                  </span>
-                  <span className="text-[11px] text-muted-foreground">
-                    {done}/{total}
-                  </span>
-                </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-500"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              </button>
+                  </div>
+                </button>
+
+                {/* Аккордеон: список техник сразу под нажатой группой, на всю ширину ряда */}
+                {openGroup === group && (
+                  <div className="sm:col-span-2">
+                    <div className="mb-2 flex items-center justify-between">
+                      <h3 className="text-xs font-semibold">
+                        {GROUP_LABEL[group]}{" "}
+                        <span className="font-normal text-muted-foreground">({groupTechniques.length})</span>
+                      </h3>
+                      <Button variant="ghost" size="sm" onClick={() => setOpenGroup(null)}>
+                        Свернуть
+                      </Button>
+                    </div>
+                    <ul className="space-y-1.5">
+                      {groupTechniques.map((t) => (
+                        <li key={t.id}>
+                          <TechniqueRow technique={t} inset />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </Fragment>
             ))}
           </div>
-
-          {/* Раскрытый список техник группы: в работе, изученные, дальше по поясам */}
-          {openGroup && (
-            <div className="mt-3">
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-xs font-semibold">
-                  {GROUP_LABEL[openGroup]}{" "}
-                  <span className="font-normal text-muted-foreground">({groupTechniques.length})</span>
-                </h3>
-                <Button variant="ghost" size="sm" onClick={() => setOpenGroup(null)}>
-                  Свернуть
-                </Button>
-              </div>
-              <ul className="space-y-1.5">
-                {groupTechniques.map((t) => (
-                  <li key={t.id}>
-                    <TechniqueRow technique={t} inset />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </section>
 
       </div>
