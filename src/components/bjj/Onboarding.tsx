@@ -3,6 +3,7 @@ import {
   BookOpen,
   Dumbbell,
   HelpCircle,
+  NotebookPen,
   ChevronRight,
   ChevronLeft,
   Shield,
@@ -142,7 +143,14 @@ export function Onboarding({
 // === ШАГ 0: Welcome-слайдер ===
 function WelcomeScreen() {
   const [slide, setSlide] = useState(0);
+  // Первый слайд — дневник: приложение в первую очередь ежедневник
   const slides = [
+    {
+      icon: NotebookPen,
+      title: "Дневник и план",
+      description: "Отмечай тренировки — календарь покажет план недели, твой стиль и прогресс.",
+      accent: "var(--brand-gold)",
+    },
     {
       icon: BookOpen,
       title: "293 техники",
@@ -152,13 +160,13 @@ function WelcomeScreen() {
     {
       icon: Dumbbell,
       title: "Умные тренировки",
-      description: "Генератор подбирает комплекс под твой уровень и время.",
+      description: "Готовый комплекс под твой уровень, время и записи дневника.",
       accent: "var(--belt-purple)",
     },
     {
       icon: HelpCircle,
       title: "Что делать, если…",
-      description: "Быстрые решения для спарринга: escapes, sweeps, submissions.",
+      description: "Быстрые решения для спарринга: побеги, свипы, сабмишены.",
       accent: "var(--belt-brown)",
     },
   ];
@@ -167,7 +175,7 @@ function WelcomeScreen() {
     <div className="space-y-6">
       <div>
         <BrandLogo className="mb-4" />
-        <h1 className="text-center text-2xl font-bold tracking-tight">Добро пожаловать</h1>
+        <h1 className="text-center text-xl font-bold tracking-tight">Добро пожаловать</h1>
         <p className="mt-2 text-center text-sm text-muted-foreground">
           Пройдём короткую настройку — это займёт 30 секунд.
         </p>
@@ -184,7 +192,7 @@ function WelcomeScreen() {
               <div key={i} className="min-w-full px-2">
                 <div
                   className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl"
-                  style={{ background: `${s.accent}20` }}
+                  style={{ background: `color-mix(in oklch, ${s.accent} 14%, transparent)` }}
                 >
                   <Icon className="h-8 w-8" style={{ color: s.accent }} />
                 </div>
@@ -242,9 +250,9 @@ function BeltStep({ belt, setBelt }: { belt: Belt; setBelt: (b: Belt) => void })
   return (
     <section aria-label="Выбор пояса" className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold">Ваш пояс</h2>
+        <h2 className="text-xl font-bold">Твой пояс</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Мы покажем техники вашего уровня и следующие цели.
+          Покажем техники твоего уровня и следующие цели.
         </p>
       </div>
 
@@ -291,9 +299,9 @@ function StyleStep({
   return (
     <section aria-label="Формат" className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold">Формат тренировок</h2>
+        <h2 className="text-xl font-bold">Формат тренировок</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Выберите один или оба режима. Можно изменить позже.
+          Выбери один или оба режима. Можно изменить позже.
         </p>
       </div>
 
@@ -313,7 +321,7 @@ function StyleStep({
       </div>
 
       {!gi && !noGi && (
-        <p className="text-xs text-destructive">Выберите хотя бы один формат</p>
+        <p className="text-xs text-destructive">Выбери хотя бы один формат</p>
       )}
     </section>
   );
@@ -332,7 +340,7 @@ function GoalStep({
   return (
     <section aria-label="Цель" className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold">Ваша цель</h2>
+        <h2 className="text-xl font-bold">Твоя цель</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Это повлияет на рекомендации в тренировках.
         </p>
@@ -389,9 +397,9 @@ function FrequencyStep({
   return (
     <section aria-label="Частота" className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold">Как часто тренируетесь?</h2>
+        <h2 className="text-xl font-bold">Как часто тренируешься?</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Подберём оптимальную длину комплексов.
+          От частоты считается план в календаре дневника и длина комплексов.
         </p>
       </div>
 
@@ -474,9 +482,9 @@ function KnownStep({
   return (
     <section aria-label="Знакомые техники" className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold">Что уже знаете?</h2>
+        <h2 className="text-xl font-bold">Что уже знаешь?</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Отметьте техники, которые уже освоили. Будем отталкиваться от них в рекомендациях.
+          Отметь знакомые техники — от них оттолкнёмся в рекомендациях.
           Необязательно — можно пропустить.
         </p>
       </div>
@@ -506,7 +514,7 @@ function KnownStep({
       </div>
 
       {shown.length === 0 && (
-        <p className="text-xs text-muted-foreground">Ничего не найдено — попробуйте другой запрос.</p>
+        <p className="text-xs text-muted-foreground">Ничего не найдено — попробуй другой запрос.</p>
       )}
 
       <p className="text-xs text-muted-foreground">
@@ -561,9 +569,9 @@ function FinalScreen({
       </div>
 
       <div>
-        <h2 className="text-2xl font-bold">Всё готово!</h2>
+        <h2 className="text-xl font-bold">Всё готово!</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Мы подготовили библиотеку под ваш уровень.
+          Библиотека настроена под твой уровень.
         </p>
       </div>
 
@@ -575,7 +583,7 @@ function FinalScreen({
         />
         <SummaryRow label="Фокус" value={goalLabel} />
         {knownCount > 0 && (
-          <SummaryRow label="Уже знаете" value={`${knownCount} техн.`} />
+          <SummaryRow label="Уже знаешь" value={`${knownCount} техн.`} />
         )}
       </div>
 
