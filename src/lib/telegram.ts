@@ -139,6 +139,18 @@ export function initTelegram(apply: (patch: Partial<StyleProfile>) => void): voi
       /* ignore */
     }
 
+    // Тема следует за Telegram (день/ночь): при старте и по событию themeChanged.
+    // Только внутри Telegram: в обычном браузере SDK тоже грузится, но colorScheme
+    // там всегда light — затирал бы тёмную тему web-PWA. Ручной тумблер в шапке
+    // продолжает работать до следующей смены темы в Telegram.
+    if (isTelegram()) {
+      if (tg.colorScheme) apply({ theme: tg.colorScheme });
+      tg.onEvent?.("themeChanged", () => {
+        const cs = getTelegram()?.colorScheme;
+        if (cs) apply({ theme: cs });
+      });
+    }
+
     const u = getTelegramUser();
     if (!u) return;
 
