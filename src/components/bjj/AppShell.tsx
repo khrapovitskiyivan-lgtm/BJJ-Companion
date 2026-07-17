@@ -7,7 +7,7 @@ import { GlobalStatsModal } from "./GlobalStatsModal";
 import { useDiary, useProfile, useProgress } from "@/lib/bjj/store";
 import { reportPlayer } from "@/lib/bjj/globalStats";
 import { reportTgPlan } from "@/lib/bjj/tgReport";
-import { initTelegram, haptic } from "@/lib/telegram";
+import { initTelegram, haptic, markThemeManual } from "@/lib/telegram";
 import { Moon, Sun, Settings } from "lucide-react";
 
 // Инициалы из имени для фоллбэк-аватара (когда фото из Telegram недоступно).
@@ -85,7 +85,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
           <div className="justify-self-start">
             <button
               type="button"
-              onClick={() => { haptic("light"); update({ theme: profile.theme === "dark" ? "light" : "dark" }); }}
+              onClick={() => { haptic("light"); markThemeManual(); update({ theme: profile.theme === "dark" ? "light" : "dark" }); }}
               style={{ marginTop: "var(--tg-content-safe-area-inset-top, 0px)" }}
               className="rounded-full p-2 text-muted-foreground transition hover:bg-muted"
               aria-label="Переключить тему"

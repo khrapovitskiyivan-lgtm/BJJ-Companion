@@ -111,6 +111,16 @@ export function getTelegramUser(): TgUser | null {
   return user;
 }
 
+// === Тема сессии ===
+// Модульные флаги живут ровно один запуск webview: новая сессия — снова авто.
+let themeSynced = false; // авто-тема из colorScheme уже применена в этом запуске
+let themeManual = false; // пользователь выбрал тему руками — авто молчит до конца сессии
+
+// Зовётся тумблером темы в шапке: ручной выбор главнее авто до следующего запуска
+export function markThemeManual(): void {
+  themeManual = true;
+}
+
 // Инициализация: дождаться SDK → ready/expand/fullscreen → вытащить имя/фото/язык.
 export function initTelegram(apply: (patch: Partial<StyleProfile>) => void): void {
   if (typeof window === "undefined") return;
@@ -139,13 +149,17 @@ export function initTelegram(apply: (patch: Partial<StyleProfile>) => void): voi
       /* ignore */
     }
 
-    // Тема следует за Telegram (день/ночь): при старте и по событию themeChanged.
-    // Только внутри Telegram: в обычном браузере SDK тоже грузится, но colorScheme
-    // там всегда light — затирал бы тёмную тему web-PWA. Ручной тумблер в шапке
-    // продолжает работать до следующей смены темы в Telegram.
-    if (isTelegram()) {
-      if (tg.colorScheme) apply({ theme: tg.colorScheme });
+    // Тема следует за Telegram (день/ночь) один раз на запуск сессии + по событию
+    // themeChanged. Только внутри Telegram: в обычном браузере SDK тоже грузится,
+    // но colorScheme там всегда light — затирал бы тёмную тему web-PWA.
+    // themeSynced: AppShell перемонтируется на каждой навигации и зовёт initTelegram
+    // заново — без флага авто-тема затирала бы ручной выбор при каждом переходе.
+    // Ручной выбор (markThemeManual) держится до конца сессии.
+    if (isTelegram() && !themeSynced) {
+      themeSynced = true;
+      if (tg.colorScheme && !themeManual) apply({ theme: tg.colorScheme });
       tg.onEvent?.("themeChanged", () => {
+        if (themeManual) return;
         const cs = getTelegram()?.colorScheme;
         if (cs) apply({ theme: cs });
       });
