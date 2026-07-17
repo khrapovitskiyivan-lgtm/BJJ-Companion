@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dayKey, monthGrid, monthPlan, weekStatus, monthSummary, trainedByDate } from "./plan";
+import { dayKey, monthGrid, monthPlan, weekStatus, monthSummary, trainedByDate, planStreak } from "./plan";
 import type { DiaryEntry } from "./types";
 
 function entry(date: string, techs = 1): DiaryEntry {
@@ -103,5 +103,47 @@ describe("monthSummary", () => {
     expect(monthSummary(july(6), 3, 2026, 6, today).verdict).toBe("behind");
     expect(onTrack.plan).toBe(13);
     expect(onTrack.done).toBe(7);
+  });
+});
+
+describe("planStreak", () => {
+  // 16 июля 2026 — четверг; текущая неделя Пн 13 — Вс 19
+  const today = d(2026, 6, 16);
+  const weeks = (dates: string[]) => trainedByDate(dates.map((x) => entry(x)));
+
+  it("пустой дневник — стрик 0", () => {
+    expect(planStreak(weeks([]), 3, today)).toBe(0);
+  });
+
+  it("прошлые недели с квотой считаются, недобитая текущая стрик не сжигает", () => {
+    // три прошлые недели по 3 тренировки (Пн/Ср/Пт), текущая пустая
+    const t = weeks([
+      "2026-06-22", "2026-06-24", "2026-06-26",
+      "2026-06-29", "2026-07-01", "2026-07-03",
+      "2026-07-06", "2026-07-08", "2026-07-10",
+    ]);
+    expect(planStreak(t, 3, today)).toBe(3);
+  });
+
+  it("текущая неделя добавляется, как только квота добита", () => {
+    const t = weeks([
+      "2026-07-06", "2026-07-08", "2026-07-10",
+      "2026-07-13", "2026-07-14", "2026-07-15",
+    ]);
+    expect(planStreak(t, 3, today)).toBe(2);
+  });
+
+  it("разрыв обнуляет более старые недели", () => {
+    const t = weeks([
+      "2026-06-22", "2026-06-24", "2026-06-26",
+      // неделя 29.06-05.07 пропущена
+      "2026-07-06", "2026-07-08", "2026-07-10",
+    ]);
+    expect(planStreak(t, 3, today)).toBe(1);
+  });
+
+  it("недобор квоты в неделе не считается", () => {
+    const t = weeks(["2026-07-06", "2026-07-08"]);
+    expect(planStreak(t, 3, today)).toBe(0);
   });
 });

@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
 import type { DiaryEntry, Frequency } from "@/lib/bjj/types";
-import { dayKey, monthGrid, trainedByDate, weekStatus, monthSummary } from "@/lib/bjj/plan";
+import { dayKey, monthGrid, trainedByDate, weekStatus, monthSummary, planStreak } from "@/lib/bjj/plan";
 import { IconButton } from "@/components/bjj/ui";
 import { Flame, ChevronLeft, ChevronRight, CalendarCog } from "lucide-react";
 
@@ -13,6 +13,16 @@ const MONTHS = [
   "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
 ];
 const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+// Склонение недель: 1 неделя, 2-4 недели, 5+ недель (с учётом 11-14)
+function weekWord(n: number): string {
+  const d10 = n % 10;
+  const d100 = n % 100;
+  if (d100 >= 11 && d100 <= 14) return "недель";
+  if (d10 === 1) return "неделя";
+  if (d10 >= 2 && d10 <= 4) return "недели";
+  return "недель";
+}
 
 const VERDICT_LABEL: Record<string, string> = {
   under: "план не выполнен",
@@ -38,7 +48,8 @@ export function ActivityHeatmap({
 
   const trained = useMemo(() => trainedByDate(entries), [entries]);
 
-  // Стрик: подряд идущие дни с активностью, считая от сегодня (или вчера)
+  // Стрик: при заданной частоте — недели в плане подряд (дневной стрик для BJJ
+  // почти всегда ноль: тренируются 2-4 раза в неделю). Без частоты — дни подряд.
   const streak = useMemo(() => {
     let n = 0;
     const cursor = new Date(today);
@@ -49,6 +60,10 @@ export function ActivityHeatmap({
     }
     return n;
   }, [trained]); // eslint-disable-line react-hooks/exhaustive-deps
+  const weekStreak = useMemo(
+    () => (frequency ? planStreak(trained, frequency, today) : 0),
+    [trained, frequency], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   const grid = useMemo(() => monthGrid(view.y, view.m), [view]);
   const max = Math.max(1, ...trained.values());
@@ -72,10 +87,24 @@ export function ActivityHeatmap({
   return (
     <section className="rounded-2xl border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1.5 text-sm font-semibold">
-          <Flame className="h-4 w-4 text-orange-500" />
-          {streak} {streak === 1 ? "день" : streak >= 2 && streak <= 4 ? "дня" : "дней"} подряд
-        </span>
+        {frequency ? (
+          // Золото = достижение: огонёк загорается с первой недели в плане
+          <span className="flex items-center gap-1.5 text-sm font-semibold">
+            <Flame
+              className="h-4 w-4"
+              style={{ color: weekStreak > 0 ? "var(--brand-gold-ink)" : "var(--color-muted-foreground)" }}
+            />
+            {weekStreak} {weekWord(weekStreak)} в плане подряд
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5 text-sm font-semibold">
+            <Flame
+              className="h-4 w-4"
+              style={{ color: streak > 0 ? "var(--brand-gold-ink)" : "var(--color-muted-foreground)" }}
+            />
+            {streak} {streak === 1 ? "день" : streak >= 2 && streak <= 4 ? "дня" : "дней"} подряд
+          </span>
+        )}
         <span className="flex items-center gap-1 text-xs font-medium">
           <IconButton label="Предыдущий месяц" onClick={() => shift(-1)} disabled={!canPrev}>
             <ChevronLeft className="h-4 w-4" />

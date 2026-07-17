@@ -62,6 +62,36 @@ export function weekStatus(week: Date[], trained: Map<string, number>, quota: nu
   };
 }
 
+// Стрик недель в плане: сколько календарных недель подряд выполнена квота.
+// Текущая неделя засчитывается, как только квота добита; пока нет — стрик
+// прошлых недель не сгорает (нельзя терять серию в середине недели).
+export function planStreak(trained: Map<string, number>, quota: Frequency, today: Date): number {
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const monday = new Date(t0);
+  monday.setDate(t0.getDate() - ((t0.getDay() + 6) % 7));
+
+  const weekDone = (start: Date): number => {
+    let n = 0;
+    const c = new Date(start);
+    for (let i = 0; i < 7; i++) {
+      if (trained.has(dayKey(c))) n++;
+      c.setDate(c.getDate() + 1);
+    }
+    return n;
+  };
+
+  let streak = 0;
+  const cursor = new Date(monday);
+  if (weekDone(cursor) >= quota) streak++;
+  // Назад по закрытым неделям; предохранитель — 10 лет
+  for (let i = 0; i < 520; i++) {
+    cursor.setDate(cursor.getDate() - 7);
+    if (weekDone(cursor) >= quota) streak++;
+    else break;
+  }
+  return streak;
+}
+
 // План месяца: квота в неделю, приведённая к длине месяца
 export function monthPlan(quota: Frequency, year: number, month: number): number {
   const days = new Date(year, month + 1, 0).getDate();
