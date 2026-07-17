@@ -30,6 +30,7 @@ import {
   PracticeSection,
 } from "@/components/bjj/technique/TechniqueSections";
 import { RelatedList } from "@/components/bjj/technique/RelatedList";
+import { NotesSection } from "@/components/bjj/technique/NotesSection";
 import { StyleBadges } from "@/components/bjj/StyleBadges";
 
 import { Clock3, AlertTriangle } from "lucide-react";
@@ -276,6 +277,8 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
           <PracticeSection html={content.drills} />
         </>
       )}
+
+      <NotesSection techniqueId={tech.id} />
 
       {similar.length > 0 && (
         <section className="rounded-2xl border border-border bg-card p-4">

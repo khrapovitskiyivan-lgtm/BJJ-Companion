@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 const PROFILE_KEY = "bjj.profile.v1";
 const PROGRESS_KEY = "bjj.progress.v1";
 const DIARY_KEY = "bjj.diary.v1";
+const NOTES_KEY = "bjj.notes.v1";
 const DEVICE_KEY = "bjj.device.v1";
 
 const DEFAULT_PROFILE: StyleProfile = {
@@ -228,6 +229,58 @@ export function useDiary() {
   return { entries, addEntry, updateEntry, deleteEntry, practiceCount, persist, hydrated };
 }
 
+// === NOTES HOOK ===
+// Заметки к техникам: Record<techId, string>. Та же схема, что у useProgress:
+// общая шина + localStorage + облако (отдельная колонка notes_data, чтобы не
+// толкаться с progress_data при синхронизации с двух устройств).
+export type NotesMap = Record<number, string>;
+
+let notesSnapshot: NotesMap | null = null;
+const notesListeners = new Set<(m: NotesMap) => void>();
+
+function publishNotes(next: NotesMap) {
+  notesSnapshot = next;
+  for (const listener of notesListeners) listener(next);
+}
+
+export function useNotes() {
+  const [notes, setNotesState] = useState<NotesMap>({});
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    const initial = notesSnapshot ?? readJSON<NotesMap>(NOTES_KEY, {});
+    notesSnapshot = initial;
+    setNotesState(initial);
+    setHydrated(true);
+    notesListeners.add(setNotesState);
+
+    trySyncNotesFromCloud().then((remote) => {
+      if (remote) {
+        // Как у прогресса: облако + локальное, локальное главнее по ключу
+        const merged = { ...remote, ...(notesSnapshot ?? {}) };
+        writeJSON(NOTES_KEY, merged);
+        publishNotes(merged);
+      }
+    });
+
+    return () => {
+      notesListeners.delete(setNotesState);
+    };
+  }, []);
+
+  // Пустая строка удаляет заметку (не копим пустые ключи)
+  const setNote = useCallback((techniqueId: number, text: string) => {
+    const next = { ...(notesSnapshot ?? {}) };
+    if (text.trim()) next[techniqueId] = text;
+    else delete next[techniqueId];
+    writeJSON(NOTES_KEY, next);
+    void trySyncNotesToCloud(next);
+    publishNotes(next);
+  }, []);
+
+  return { notes, setNote, hydrated };
+}
+
 // === CLOUD SYNC (best-effort, 3s timeout) ===
 async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
   return await Promise.race([
@@ -264,6 +317,54 @@ async function trySyncFromCloud(): Promise<ProgressMap | null> {
   } catch (e) {
     console.warn("Ошибка синхронизации из облака:", e);
     return null;
+  }
+}
+
+async function trySyncNotesFromCloud(): Promise<NotesMap | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const query = supabase
+      .from("bjj_progress")
+      .select("notes_data")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const result = await withTimeout(query, 3000);
+    if (!result || result.error || !result.data) return null;
+
+    const map: NotesMap = {};
+    const data = (result.data.notes_data ?? {}) as Record<string, string>;
+    for (const [key, value] of Object.entries(data)) {
+      const numKey = Number(key);
+      if (!isNaN(numKey) && typeof value === "string" && value) map[numKey] = value;
+    }
+    return map;
+  } catch {
+    return null;
+  }
+}
+
+async function trySyncNotesToCloud(notes: NotesMap): Promise<void> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Upsert только своей колонки: progress_data не трогаем
+    const notesData: Record<string, string> = {};
+    for (const [key, value] of Object.entries(notes)) notesData[String(key)] = value;
+
+    const query = supabase.from("bjj_progress").upsert(
+      { user_id: user.id, notes_data: notesData },
+      { onConflict: "user_id" },
+    );
+    const result = await withTimeout(query, 3000);
+    if (result && "error" in result && result.error) {
+      console.warn("Ошибка сохранения заметок в облако:", result.error.message);
+    }
+  } catch {
+    /* молча: заметки не должны ломать приложение */
   }
 }
 
