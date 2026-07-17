@@ -549,16 +549,42 @@ function StatCard({
 }
 
 
+// Винительный падеж для «отметь N техник(у/и)»
+function techWordAcc(n: number): string {
+  const d10 = n % 10;
+  const d100 = n % 100;
+  if (d100 >= 11 && d100 <= 14) return "техник";
+  if (d10 === 1) return "технику";
+  if (d10 >= 2 && d10 <= 4) return "техники";
+  return "техник";
+}
+
 // «Твой стиль» — аффинити к игровым архетипам
 function YourStyle({ scores, doneCount }: { scores: StyleScore[]; doneCount: number }) {
   if (doneCount < ARCHETYPE_MIN_DONE) {
+    const left = ARCHETYPE_MIN_DONE - doneCount;
+    // Квест холодного старта: пустота становится целью — сегменты N из 5 и путь к действию
     return (
       <section className="rounded-2xl border border-border bg-card p-4">
         <h2 className="mb-1 text-sm font-semibold">Твой стиль</h2>
         <p className="text-xs text-muted-foreground">
-          Стиль определяется. Отметь ещё {ARCHETYPE_MIN_DONE - doneCount} техник как изученные,
-          и приложение вычислит твой игровой архетип.
+          Отметь ещё {left} {techWordAcc(left)} как {left === 1 ? "изученную" : "изученные"}, и
+          приложение вычислит твой игровой архетип.
         </p>
+        <div className="mt-3 flex items-center gap-1.5">
+          {Array.from({ length: ARCHETYPE_MIN_DONE }, (_, i) => (
+            <span
+              key={i}
+              className={`h-2 flex-1 rounded-full ${i < doneCount ? "bg-primary" : "bg-muted"}`}
+            />
+          ))}
+        </div>
+        <p className="mt-1.5 text-[11px] tabular-nums text-muted-foreground">
+          {doneCount} из {ARCHETYPE_MIN_DONE}
+        </p>
+        <Link to="/library" className={buttonClass("secondary", "sm", "mt-3 w-full text-muted-foreground")}>
+          Отметить изученное
+        </Link>
       </section>
     );
   }
