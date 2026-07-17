@@ -201,6 +201,9 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
       {/* Под описанием: видео (платная) или фото (бесплатная — ассет добавится позже) */}
       {videoUrl && <VideoBlock url={videoUrl} title={tech.nameRu} />}
 
+      {/* Личные заметки — сразу после описания/видео: свои детали ценнее справочных */}
+      <NotesSection techniqueId={tech.id} />
+
       {/* «Когда применять» — сразу под описанием */}
       {content?.when && (
         <NeutralSection icon={<Clock3 className="h-4 w-4" />} title="Когда применять" html={content.when} />
@@ -277,8 +280,6 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
           <PracticeSection html={content.drills} />
         </>
       )}
-
-      <NotesSection techniqueId={tech.id} />
 
       {similar.length > 0 && (
         <section className="rounded-2xl border border-border bg-card p-4">
