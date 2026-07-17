@@ -62,6 +62,29 @@ export function Badge({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Пустое состояние раздела: пунктирная карточка с иконкой, заголовком и подсказкой.
+// Иконку передавать уже с размером (обычно h-8 w-8), цвет задаётся здесь.
+export function EmptyState({
+  icon,
+  title,
+  hint,
+  action,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  hint?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
+      <span className="mx-auto grid w-fit place-items-center text-muted-foreground">{icon}</span>
+      <p className="mt-3 text-sm font-medium">{title}</p>
+      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+      {action && <div className="mt-4 flex flex-wrap justify-center gap-2">{action}</div>}
+    </div>
+  );
+}
+
 // Крупный переключатель-плитка (язык, формат Gi/No-Gi)
 export function Toggle({
   label,

@@ -266,7 +266,7 @@ function WorkoutGenerator({
             Запустить тренировку
           </button>
           <div className="rounded-2xl border border-border bg-card p-4">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
               План · {workout.totalMinutes} мин
             </p>
             <div className="mt-2 grid grid-cols-3 gap-2 text-center text-[11px]">

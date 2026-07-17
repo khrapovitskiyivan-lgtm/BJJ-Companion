@@ -5,7 +5,7 @@ import { TechniquesTabs } from "@/components/bjj/TechniquesTabs";
 import { TechniqueRow } from "@/components/bjj/TechniqueCard";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import type { Technique } from "@/lib/bjj/types";
-import { ChevronLeft, Search } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
 
 export const Route = createFileRoute("/situations")({
   component: SituationsPage,
@@ -94,11 +94,11 @@ function Decide() {
           onClick={() => navigate({ search: {} })}
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
-          <ChevronLeft className="h-3.5 w-3.5" />
+          <ArrowLeft className="h-3.5 w-3.5" />
           К ситуациям
         </button>
         <div className="rounded-2xl border border-border bg-card p-4">
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Ваша ситуация</p>
+          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Ваша ситуация</p>
           <h2 className="mt-0.5 text-base font-semibold">
             {SITUATIONS.find((s) => s.id === situationId)?.label ?? situation.nameRu}
           </h2>
@@ -131,7 +131,7 @@ function Decide() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Найти позицию…"
-          className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+          className="w-full rounded-xl border border-input bg-card py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
       {groups.map((g) => {

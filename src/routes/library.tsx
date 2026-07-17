@@ -12,8 +12,8 @@ import {
 } from "@/lib/bjj/constants";
 import type { Belt, Group } from "@/lib/bjj/types";
 import { TechniquesTabs } from "@/components/bjj/TechniquesTabs";
-import { Chip, FilterRow } from "@/components/bjj/ui";
-import { Search, X, RotateCcw, Filter } from "lucide-react";
+import { Chip, FilterRow, EmptyState } from "@/components/bjj/ui";
+import { Search, X, RotateCcw, Filter, ArrowLeft, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/library")({
   component: LibraryPage,
@@ -240,25 +240,17 @@ function Library() {
         </div>
       )}
 
-      {/* ✅ Умное пустое состояние */}
       {pageItems.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card py-16 px-6 text-center">
-          {/* Иконка */}
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted/50">
-            <Search className="h-8 w-8 text-muted-foreground" />
-          </div>
-
-          {/* Заголовок и описание */}
-          <h3 className="mb-1.5 text-lg font-semibold">Техники не найдены</h3>
-          <p className="mb-6 max-w-sm text-sm text-muted-foreground">
-            {hasActiveFilters
-              ? "Попробуйте изменить или сбросить фильтры, чтобы увидеть больше результатов."
-              : "В базе пока нет техник. Проверьте подключение к данным."}
-          </p>
-
-          {/* Кнопки действий */}
-          <div className="flex flex-wrap justify-center gap-3">
-            {hasActiveFilters && (
+        <EmptyState
+          icon={<Search className="h-8 w-8" />}
+          title="Техники не найдены"
+          hint={
+            hasActiveFilters
+              ? `Попробуйте изменить или сбросить фильтры. Всего в базе: ${TECHNIQUES.length} техник.`
+              : "В базе пока нет техник. Проверьте подключение к данным."
+          }
+          action={
+            hasActiveFilters ? (
               <>
                 <button
                   type="button"
@@ -282,18 +274,9 @@ function Library() {
                   </button>
                 )}
               </>
-            )}
-          </div>
-
-          {/* Подсказка: сколько всего техник в базе */}
-          <p className="mt-6 text-xs text-muted-foreground">
-            Всего в базе:{" "}
-            <span className="font-semibold text-foreground">
-              {TECHNIQUES.length}
-            </span>{" "}
-            техник
-          </p>
-        </div>
+            ) : undefined
+          }
+        />
       ) : (
         <ul className="grid grid-cols-1 gap-2">
           {pageItems.map((t) => (
@@ -324,9 +307,10 @@ function Library() {
             type="button"
             disabled={currentPage === 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="flex-1 rounded-xl border border-border bg-card py-2.5 text-sm font-medium disabled:opacity-40"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card py-2.5 text-sm font-medium disabled:opacity-40"
           >
-            ← Назад
+            <ArrowLeft className="h-4 w-4" />
+            Назад
           </button>
           <span className="text-xs text-muted-foreground">
             {currentPage} / {totalPages}
@@ -335,9 +319,10 @@ function Library() {
             type="button"
             disabled={currentPage === totalPages}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            className="flex-1 rounded-xl border border-border bg-card py-2.5 text-sm font-medium disabled:opacity-40"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card py-2.5 text-sm font-medium disabled:opacity-40"
           >
-            Вперёд →
+            Вперёд
+            <ArrowRight className="h-4 w-4" />
           </button>
         </nav>
       )}

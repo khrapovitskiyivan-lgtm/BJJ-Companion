@@ -489,7 +489,7 @@ function KnownStep({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Найти технику…"
-          className="w-full rounded-xl border border-border bg-card py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+          className="w-full rounded-xl border border-input bg-card py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
 

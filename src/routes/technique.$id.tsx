@@ -162,7 +162,7 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-lg font-bold tracking-tight">{tech.nameRu}</h1>
+            <h1 className="text-xl font-bold tracking-tight">{tech.nameRu}</h1>
             <p className="text-xs text-muted-foreground">{tech.nameEn}</p>
           </div>
           <button

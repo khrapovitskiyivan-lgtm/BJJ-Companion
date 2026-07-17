@@ -4,6 +4,7 @@ import { AppShell } from "@/components/bjj/AppShell";
 import { ActivityHeatmap } from "@/components/bjj/ActivityHeatmap";
 import { CharacterSheet } from "@/components/bjj/CharacterSheet";
 import { TechniqueChip } from "@/components/bjj/TechniqueCard";
+import { EmptyState } from "@/components/bjj/ui";
 import { useDiary, useProfile, useProgress } from "@/lib/bjj/store";
 import { hapticSuccess } from "@/lib/telegram";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
@@ -171,7 +172,7 @@ function Diary() {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-ring"
+              className="rounded-xl border border-input bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
@@ -195,7 +196,7 @@ function Diary() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Добавить отработанную технику…"
-              className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+              className="w-full rounded-xl border border-input bg-background py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
             {searchResults.length > 0 && (
               <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
@@ -219,7 +220,7 @@ function Diary() {
             onChange={(e) => setNote(e.target.value)}
             placeholder="Заметка: что получилось, над чем работать…"
             rows={2}
-            className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
+            className="w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
 
           {/* Интенсивность + раунды */}
@@ -293,7 +294,7 @@ function Diary() {
               value={injury}
               onChange={(e) => setInjury(e.target.value)}
               placeholder="Травма / дискомфорт — зона (необязательно)"
-              className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+              className="w-full rounded-xl border border-input bg-background py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
@@ -317,13 +318,11 @@ function Diary() {
 
       {/* Список записей */}
       {hydrated && entries.length === 0 && !adding && (
-        <div className="rounded-2xl border border-dashed border-border p-8 text-center">
-          <NotebookPen className="mx-auto h-8 w-8 text-muted-foreground" />
-          <p className="mt-3 text-sm font-medium">Пока нет записей</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Отмечайте каждую тренировку — приложение подскажет, что повторить и куда двигаться.
-          </p>
-        </div>
+        <EmptyState
+          icon={<NotebookPen className="h-8 w-8" />}
+          title="Пока нет записей"
+          hint="Отмечайте каждую тренировку — приложение подскажет, что повторить и куда двигаться."
+        />
       )}
 
       <ul className="space-y-2">

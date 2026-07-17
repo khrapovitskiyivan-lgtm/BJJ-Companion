@@ -69,7 +69,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
         {/* Заголовок */}
         <div className="mb-4">
-          <h2 className="text-lg font-bold tracking-tight">
+          <h2 className="text-base font-bold tracking-tight">
             {mode === "login" ? "Вход в аккаунт" : "Регистрация"}
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -90,7 +90,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
                 required
                 autoComplete="email"
                 placeholder="your@email.com"
-                className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm outline-none transition focus:border-ring focus:ring-1 focus:ring-ring"
+                className="w-full rounded-xl border border-input bg-background py-2.5 pl-9 pr-3 text-sm outline-none transition focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>
@@ -107,7 +107,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
                 minLength={6}
                 autoComplete={mode === "login" ? "current-password" : "new-password"}
                 placeholder="Минимум 6 символов"
-                className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm outline-none transition focus:border-ring focus:ring-1 focus:ring-ring"
+                className="w-full rounded-xl border border-input bg-background py-2.5 pl-9 pr-3 text-sm outline-none transition focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>

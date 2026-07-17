@@ -469,7 +469,7 @@ function FocusCard({
         highlight ? "border-ring/50 bg-primary/5" : "border-border bg-card"
       }`}
     >
-      <p className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+      <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-muted-foreground">
         {icon}
         {caption}
       </p>

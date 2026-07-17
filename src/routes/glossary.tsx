@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TechniquesTabs } from "@/components/bjj/TechniquesTabs";
-import { Chip } from "@/components/bjj/ui";
+import { Chip, EmptyState } from "@/components/bjj/ui";
 import {
   GLOSSARY,
   GLOSSARY_CATEGORY_LABEL,
@@ -97,11 +97,11 @@ function Glossary() {
       </div>
 
       {grouped.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
-          <Search className="mx-auto h-7 w-7 text-muted-foreground" />
-          <p className="mt-3 text-sm font-medium">Ничего не найдено</p>
-          <p className="mt-1 text-xs text-muted-foreground">Попробуйте другой запрос или снимите фильтр.</p>
-        </div>
+        <EmptyState
+          icon={<Search className="h-8 w-8" />}
+          title="Ничего не найдено"
+          hint="Попробуйте другой запрос или снимите фильтр."
+        />
       ) : (
         grouped.map((g) => (
           <section key={g.category}>

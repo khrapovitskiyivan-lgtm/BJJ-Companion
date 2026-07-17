@@ -4,7 +4,7 @@ import { Chip } from "@/components/bjj/ui";
 import { unlockAudio, beepWarn, beepFinish } from "@/lib/bjj/sound";
 import { TECH_BY_ID } from "@/lib/bjj/data";
 import type { Technique } from "@/lib/bjj/types";
-import { Timer, Play, Pause, X, RotateCcw } from "lucide-react";
+import { Timer, Play, Pause, ArrowLeft, RotateCcw } from "lucide-react";
 
 // Сценарии спаррингов из заданной позиции + таймер (перенесено из «Решений»).
 interface Scenario {
@@ -112,11 +112,11 @@ function ScenarioRunner({ scenario, onExit }: { scenario: Scenario; onExit: () =
   return (
     <div className="space-y-4">
       <button onClick={onExit} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-        <X className="h-3.5 w-3.5" />
+        <ArrowLeft className="h-3.5 w-3.5" />
         К сценариям
       </button>
       <div className="rounded-2xl border border-border bg-card p-5 text-center">
-        <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{scenario.title}</p>
+        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">{scenario.title}</p>
         <p className={`mt-2 font-mono text-5xl font-bold tabular-nums ${left === 0 ? "text-destructive" : ""}`}>
           {mm}:{ss}
         </p>
