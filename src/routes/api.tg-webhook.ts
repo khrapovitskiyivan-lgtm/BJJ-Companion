@@ -7,13 +7,62 @@ import { createFileRoute } from "@tanstack/react-router";
 
 const APP_URL = "https://bjj-companionkhr.vercel.app";
 
+const COMMANDS_HINT = [
+  "Команды:",
+  "/help — как пользоваться",
+  "/about — что это за приложение",
+  "/train — готовая тренировка",
+  "/diary — отметить тренировку",
+].join("\n");
+
 const WELCOME = [
   "Привет! Это BJJ Companion — ежедневник для бразильского джиу-джитсу.",
   "",
   "Отмечай тренировки в дневнике, смотри свой стиль и прогресс, разбирай ситуации и получай рекомендации, что учить дальше. База: 293 техники от белого до чёрного пояса.",
   "",
+  COMMANDS_HINT,
+  "",
   "Открой приложение кнопкой ниже — или через кнопку меню в этом чате.",
 ].join("\n");
+
+const HELP = [
+  "Как пользоваться:",
+  "",
+  "Дневник — отмечай каждую тренировку: календарь покажет план недели и серию недель в плане.",
+  "Тренировка — готовый комплекс по профилю или по дневнику, с таймером и звуком.",
+  "Техники — библиотека, карта связей, разбор ситуаций «Что если» и словарь.",
+  "Моя игра — стиль, характеристики, прогресс по поясам и группам.",
+  "",
+  COMMANDS_HINT,
+].join("\n");
+
+const ABOUT = [
+  "BJJ Companion — не справочник, а ежедневник для бразильского джиу-джитсу.",
+  "",
+  "Логируешь тренировки — приложение видит твой стиль, считает план и подсказывает, что учить и что повторить. 293 техники от белого до чёрного пояса, умный генератор тренировок, разбор ситуаций.",
+  "",
+  "Бесплатно, работает прямо в Telegram.",
+].join("\n");
+
+// Кнопка открытия приложения (web_app-кнопки работают в личке с ботом)
+const appButton = (label: string, path = "") => ({
+  inline_keyboard: [[{ text: label, web_app: { url: APP_URL + path } }]],
+});
+
+// Ответы бота: команда -> текст + кнопка в нужный раздел
+const REPLIES: Record<string, { text: string; reply_markup: unknown }> = {
+  "/start": { text: WELCOME, reply_markup: appButton("Открыть BJJ Companion") },
+  "/help": { text: HELP, reply_markup: appButton("Открыть BJJ Companion") },
+  "/about": { text: ABOUT, reply_markup: appButton("Открыть BJJ Companion") },
+  "/train": {
+    text: "Готовая тренировка уже собрана — открой и жми Старт.",
+    reply_markup: appButton("Открыть тренировку", "/workout"),
+  },
+  "/diary": {
+    text: "Отметь сегодняшнюю тренировку — календарь и план обновятся сами.",
+    reply_markup: appButton("Открыть дневник", "/diary"),
+  },
+};
 
 interface TgUpdate {
   message?: { chat?: { id?: number }; text?: string };
@@ -33,17 +82,14 @@ export const Route = createFileRoute("/api/tg-webhook")({
           const update = (await request.json()) as TgUpdate;
           const chatId = update.message?.chat?.id;
           const text = update.message?.text ?? "";
-          if (chatId && text.startsWith("/start")) {
+          // «/команда» и «/команда@имябота» из меню команд
+          const command = text.split(/[\s@]/, 1)[0];
+          const reply = REPLIES[command];
+          if (chatId && reply) {
             await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: WELCOME,
-                reply_markup: {
-                  inline_keyboard: [[{ text: "Открыть BJJ Companion", web_app: { url: APP_URL } }]],
-                },
-              }),
+              body: JSON.stringify({ chat_id: chatId, text: reply.text, reply_markup: reply.reply_markup }),
             });
           }
         } catch {
