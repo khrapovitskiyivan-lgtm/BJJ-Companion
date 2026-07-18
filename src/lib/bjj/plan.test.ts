@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dayKey, dayStreak, monthGrid, monthPlan, weekDays, weekStatus, monthSummary, trainedByDate, planStreak } from "./plan";
+import { dayKey, dayStreak, monthGrid, monthPlan, weekDays, weekStatus, monthSummary, trainedByDate, planStreak, daysLeftInWeek } from "./plan";
 import type { DiaryEntry } from "./types";
 
 function entry(date: string, techs = 1): DiaryEntry {
@@ -176,5 +176,15 @@ describe("dayStreak", () => {
   it("разрыв обрывает серию", () => {
     const t = trainedByDate([entry("2026-07-13"), entry("2026-07-15"), entry("2026-07-16")]);
     expect(dayStreak(t, d(2026, 6, 16))).toBe(2);
+  });
+});
+
+describe("daysLeftInWeek", () => {
+  it("Пн-Сб, вс выходной; сегодня считается только без записи", () => {
+    expect(daysLeftInWeek(d(2026, 6, 13), false)).toBe(6); // пн, не записано
+    expect(daysLeftInWeek(d(2026, 6, 13), true)).toBe(5); // пн, записано
+    expect(daysLeftInWeek(d(2026, 6, 18), false)).toBe(1); // сб, не записано
+    expect(daysLeftInWeek(d(2026, 6, 18), true)).toBe(0); // сб, записано
+    expect(daysLeftInWeek(d(2026, 6, 19), false)).toBe(0); // вс — всегда 0
   });
 });
