@@ -59,7 +59,7 @@ export function TodayCard() {
           <p className="mt-2 text-sm font-semibold">
             На этой неделе {m.week.done} из {m.week.quota}
           </p>
-          <div className="mt-2 flex gap-1">
+          <div className="mt-2 flex gap-1" aria-hidden="true">
             {segments.map((bg, i) => (
               <span key={i} className="h-1.5 flex-1 rounded-full" style={{ background: bg }} />
             ))}
@@ -71,11 +71,11 @@ export function TodayCard() {
           ) : m.week.daysLeft > 0 ? (
             <p className="mt-1.5 text-xs text-muted-foreground">
               До плана {m.week.quota - m.week.done} {plural(m.week.quota - m.week.done, "тренировка", "тренировки", "тренировок")},
-              {" "}осталось {m.week.daysLeft} {plural(m.week.daysLeft, "день", "дня", "дней")}
+              {" "}{m.week.daysLeft === 1 ? "остался" : "осталось"} {m.week.daysLeft} {plural(m.week.daysLeft, "день", "дня", "дней")}
             </p>
-          ) : (
+          ) : today.getDay() === 0 ? (
             <p className="mt-1.5 text-xs text-muted-foreground">Воскресенье — выходной</p>
-          )}
+          ) : null}
         </>
       ) : m.daysStreakNoPlan > 0 ? (
         <p className="mt-2 text-sm font-semibold">
