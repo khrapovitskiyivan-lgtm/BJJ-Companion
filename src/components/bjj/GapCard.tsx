@@ -66,7 +66,7 @@ export function GapCard({
             search={{ src: "diary" }}
             className={buttonClass("secondary", "sm", "mt-3 w-full text-muted-foreground")}
           >
-            Собрать тренировку по дневнику
+            Собрать отработку по дневнику
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </>

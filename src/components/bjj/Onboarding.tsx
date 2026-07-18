@@ -159,7 +159,7 @@ function WelcomeScreen() {
     },
     {
       icon: Dumbbell,
-      title: "Умные тренировки",
+      title: "Умная отработка",
       description: "Готовый комплекс под твой уровень, время и записи дневника.",
       accent: "var(--belt-purple)",
     },

@@ -65,8 +65,8 @@ function WorkoutPage() {
     <AppShell>
       <div className="space-y-4">
         <PageHeader
-          kicker="Тренировка"
-          title={tab === "generator" ? "Умная тренировка" : "Отработка сценариев"}
+          kicker="Отработка"
+          title={tab === "generator" ? "Умная отработка" : "Отработка сценариев"}
           className="px-1"
         />
 
@@ -122,8 +122,8 @@ function SubTab({
   );
 }
 
-// Кэш сгенерированной тренировки на время сессии: переживает уход на карточку
-// техники и возврат (иначе «назад» перегенерировало бы тренировку). Как в library.
+// Кэш сгенерированной отработки на время сессии: переживает уход на карточку
+// техники и возврат (иначе «назад» перегенерировало бы отработку). Как в library.
 let workoutCache: { workout: Workout; config: WorkoutConfig; source: "profile" | "diary" } | null = null;
 
 function WorkoutGenerator({
@@ -290,7 +290,7 @@ function WorkoutGenerator({
             className="border-2 border-ring text-foreground"
           >
             <Play className="h-4 w-4" />
-            Запустить тренировку
+            Запустить отработку
           </Button>
           <div className="rounded-2xl border border-border bg-card p-4">
             <p className="text-[11px] uppercase tracking-widest text-muted-foreground">

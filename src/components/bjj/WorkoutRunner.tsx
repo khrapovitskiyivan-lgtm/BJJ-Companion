@@ -7,9 +7,9 @@ import { unlockAudio } from "@/lib/bjj/sound";
 import type { Workout } from "@/lib/bjj/types";
 import { ArrowLeft, Play, Pause, RotateCcw, Flame, Sparkles, Snowflake, CheckCircle2 } from "lucide-react";
 
-// Раннер сгенерированной тренировки: таймер идёт по разделам
+// Раннер сгенерированной отработки: таймер идёт по разделам
 // (разминка -> основа -> заминка), за 5 сек до конца раздела короткие гудки,
-// громкий сигнал в конце раздела и тройной в конце тренировки.
+// громкий сигнал в конце раздела и тройной в конце отработки.
 
 const SECTION_ICON: Record<string, React.ReactNode> = {
   warmup: <Flame className="h-3.5 w-3.5" style={{ color: "var(--brand-gold-ink)" }} />,
@@ -45,7 +45,7 @@ export function WorkoutRunner({ workout, onExit }: { workout: Workout; onExit: (
     <div className="space-y-4">
       <button onClick={onExit} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-3.5 w-3.5" />
-        К плану тренировки
+        К плану отработки
       </button>
 
       <div className="rounded-2xl border border-border bg-card p-5 text-center">
@@ -55,7 +55,7 @@ export function WorkoutRunner({ workout, onExit }: { workout: Workout; onExit: (
         {phase.finished ? (
           <div className="mt-3 flex flex-col items-center gap-2">
             <CheckCircle2 className="h-10 w-10" style={{ color: "var(--status-done)" }} />
-            <p className="text-lg font-bold">Тренировка завершена</p>
+            <p className="text-lg font-bold">Отработка завершена</p>
           </div>
         ) : (
           <p className="mt-2 font-mono text-5xl font-bold tabular-nums">

@@ -4,12 +4,12 @@ import { ShakaIcon } from "./ShakaIcon";
 import { haptic } from "@/lib/telegram";
 
 // === BOTTOM NAV — 4 вкладки ===
-// 1 Моя игра · 2 Дневник · 3 Техники (граф/список/что-если) · 4 Тренировка (генератор/сценарии)
+// 1 Моя игра · 2 Дневник · 3 Техники (граф/список/что-если) · 4 Отработка (генератор/сценарии)
 const items = [
   { to: "/progress", label: "Моя игра", icon: ShakaIcon, match: ["/progress"] },
   { to: "/diary", label: "Дневник", icon: NotebookPen, match: ["/diary"] },
   { to: "/map", label: "Техники", icon: Layers, match: ["/map", "/library", "/technique", "/situations"] },
-  { to: "/workout", label: "Тренировка", icon: Dumbbell, match: ["/workout"] },
+  { to: "/workout", label: "Отработка", icon: Dumbbell, match: ["/workout"] },
 ] as const;
 
 export function BottomNav() {

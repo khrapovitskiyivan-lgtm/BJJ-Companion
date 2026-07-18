@@ -8,7 +8,7 @@ const DICT = {
     appName: "BJJ Companion",
     library: "Библиотека",
     map: "Карта",
-    workout: "Тренировка",
+    workout: "Отработка",
     progress: "Прогресс",
     search: "Поиск техники…",
     notStarted: "Не начато",
