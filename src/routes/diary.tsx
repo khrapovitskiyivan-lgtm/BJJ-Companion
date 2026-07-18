@@ -26,6 +26,10 @@ const INTENSITY: { key: Intensity; label: string }[] = [
 const WELLBEING = [0x1f623, 0x1f615, 0x1f610, 0x1f642, 0x1f604].map((c) => String.fromCodePoint(c));
 
 export const Route = createFileRoute("/diary")({
+  // ?add=true — сразу открытая форма новой записи (кнопка «Записать в дневник» на «Моей игре»)
+  validateSearch: (search: Record<string, unknown>): { add?: boolean } => ({
+    add: search.add ? true : undefined,
+  }),
   component: DiaryPage,
 });
 
@@ -96,6 +100,16 @@ function Diary() {
     setConfirmDelete(null);
     setAdding(true);
   };
+
+  const { add } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  // Вход с ?add: открыть форму и вычистить параметр (replace — «назад» не переоткрывает)
+  useEffect(() => {
+    if (add) {
+      startAdd();
+      navigate({ search: {}, replace: true });
+    }
+  }, [add]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Открыть форму на редактирование существующей записи
   const startEdit = (e: (typeof entries)[number]) => {
