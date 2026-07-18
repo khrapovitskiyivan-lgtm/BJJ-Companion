@@ -322,6 +322,19 @@ function ProgressPage() {
 
         <YourStyle scores={styleScores} doneCount={doneCount} />
 
+        {/* Разрыв сразу после «Твоего стиля»: пара «кто я -> кем хочу быть»
+            не разрывается справкой (анализ docs/analysis/2026-07-18-progress-order.md) */}
+        {/* Обёртка только для телеметрии кликов по «Разрыву» */}
+        <div onClickCapture={() => track("reco_click", "gap")}>
+          <GapCard
+            scores={styleScores}
+            preferredStyles={profile.preferredStyles}
+            progress={progress}
+            belt={profile.belt}
+            doneCount={doneCount}
+          />
+        </div>
+
         {/* Характеристики: 6 статов из механических тегов */}
         <section className="rounded-2xl border border-border bg-card p-4">
           <h2 className="mb-3 text-sm font-semibold">Характеристики</h2>
@@ -343,17 +356,6 @@ function ProgressPage() {
             Растут от изученных техник и отработок в дневнике.
           </p>
         </section>
-
-        {/* Обёртка только для телеметрии кликов по «Разрыву» */}
-        <div onClickCapture={() => track("reco_click", "gap")}>
-          <GapCard
-            scores={styleScores}
-            preferredStyles={profile.preferredStyles}
-            progress={progress}
-            belt={profile.belt}
-            doneCount={doneCount}
-          />
-        </div>
 
       </div>
     </AppShell>
