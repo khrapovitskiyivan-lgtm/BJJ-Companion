@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TechniqueRow, TechniqueChip } from "@/components/bjj/TechniqueCard";
 import { GapCard } from "@/components/bjj/GapCard";
+import { TodayCard } from "@/components/bjj/TodayCard";
 import { CharacterSheet } from "@/components/bjj/CharacterSheet";
 import { ProgressSheet } from "@/components/bjj/ProgressSheet";
 import { Button, PageHeader, buttonClass } from "@/components/bjj/ui";
@@ -123,6 +124,8 @@ function ProgressPage() {
       <div className="space-y-6 pb-20">
         {/* Шапка — единая форма с остальными разделами: кикер сверху, название ниже */}
         <PageHeader kicker="Статистика и путь до чёрного пояса" title="Моя игра" className="px-1" />
+
+        <TodayCard />
 
         {/* Hero: верхний ряд — Прогресс и Профиль; нижний — Изучено и В процессе */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
