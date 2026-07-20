@@ -7,7 +7,7 @@ import { Check } from "lucide-react";
 
 // Частота тренировок — те же варианты, что в онбординге; задаёт план дневника
 const FREQ_OPTIONS: { value: Frequency; label: string; desc: string }[] = [
-  { value: 1, label: "1-2 раза", desc: "Поддерживаю форму" },
+  { value: 1, label: "1-2 раза в неделю", desc: "Поддерживаю форму" },
   { value: 3, label: "3 раза", desc: "Стабильный прогресс" },
   { value: 4, label: "4+ раз", desc: "Интенсивные тренировки" },
 ];
