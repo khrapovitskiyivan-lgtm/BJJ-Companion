@@ -142,7 +142,7 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
       <div className="flex items-center justify-between">
         <button
           onClick={() => router.history.back()}
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Назад
