@@ -29,6 +29,15 @@ function parseCSV(text) {
 
 const ids = (s) => (s || '').split(',').map((x) => parseInt(x.trim(), 10)).filter((n) => !isNaN(n));
 const bool = (v) => v === '✔';
+// Легальность: '✔' = всем поясам (true), '✗' = никогда (false),
+// слаг пояса ('blue'/'purple'/'brown'/...) = легально С этого пояса (для IBJJF-ограничений по поясу)
+const BELTS = new Set(['white', 'blue', 'purple', 'brown', 'black']);
+const legalVal = (v) => {
+  const t = (v || '').trim();
+  if (t === '✔') return true;
+  if (BELTS.has(t)) return t;
+  return false;
+};
 
 const csv = readFileSync(join(ROOT, 'data', 'techniques.csv'), 'utf8').replace(/^﻿/, '');
 const rows = parseCSV(csv);
@@ -53,9 +62,9 @@ const techniques = recs.map((r) => {
     belt: r.belt,
     gi: bool(r.gi),
     noGi: bool(r.noGi),
-    legal_ibjjf_gi: bool(r.legal_ibjjf_gi),
-    legal_ibjjf_nogi: bool(r.legal_ibjjf_nogi),
-    legal_adcc: bool(r.legal_adcc),
+    legal_ibjjf_gi: legalVal(r.legal_ibjjf_gi),
+    legal_ibjjf_nogi: legalVal(r.legal_ibjjf_nogi),
+    legal_adcc: legalVal(r.legal_adcc),
     points_ibjjf: parseInt(r.points_ibjjf, 10) || 0,
     points_adcc: parseInt(r.points_adcc, 10) || 0,
     tags,

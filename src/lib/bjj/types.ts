@@ -57,9 +57,10 @@ export interface Technique {
   styles: Style[];
   gi: boolean;
   noGi: boolean;
-  legal_ibjjf_gi: boolean;
-  legal_ibjjf_nogi: boolean;
-  legal_adcc: boolean;
+  // Легальность: true = всем поясам, false = никогда, Belt = легально С этого пояса (IBJJF-ограничения)
+  legal_ibjjf_gi: boolean | Belt;
+  legal_ibjjf_nogi: boolean | Belt;
+  legal_adcc: boolean | Belt;
   points_ibjjf: number;
   points_adcc: number;
   tags: string[];

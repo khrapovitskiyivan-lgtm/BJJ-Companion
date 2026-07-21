@@ -252,10 +252,21 @@ export function FilterRow({
 }
 
 // Пассивный бейдж (метки на карточках техник: Gi, сложность и т.п.)
-export function Badge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{children}</span>
-  );
+export function Badge({
+  children,
+  tone = "default",
+}: {
+  children: React.ReactNode;
+  tone?: "default" | "warn" | "danger";
+}) {
+  // warn — ограничение по поясу (янтарный), danger — запрещено (красный); default — нейтральный
+  const cls =
+    tone === "warn"
+      ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+      : tone === "danger"
+        ? "bg-destructive/15 text-destructive"
+        : "bg-muted text-muted-foreground";
+  return <span className={`rounded-full px-2 py-0.5 ${cls}`}>{children}</span>;
 }
 
 // Пустое состояние раздела: пунктирная карточка с иконкой, заголовком и подсказкой.

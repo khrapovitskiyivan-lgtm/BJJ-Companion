@@ -31,6 +31,15 @@ export const BELT_LABEL: Record<Belt, string> = {
   black: "Чёрный",
 };
 
+// Родительный падеж для формулировок «легально с ... пояса»
+export const BELT_GENITIVE: Record<Belt, string> = {
+  white: "белого",
+  blue: "синего",
+  purple: "пурпурного",
+  brown: "коричневого",
+  black: "чёрного",
+};
+
 export const BELT_LABEL_EN: Record<Belt, string> = {
   white: "White",
   blue: "Blue",

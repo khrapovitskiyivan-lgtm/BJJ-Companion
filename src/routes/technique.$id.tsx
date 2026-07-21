@@ -3,9 +3,10 @@ import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-rout
 import { AppShell } from "@/components/bjj/AppShell";
 import { TECH_BY_ID, TECHNIQUES, contentFor } from "@/lib/bjj/data";
 import { BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
-import { useProgress } from "@/lib/bjj/store";
+import { useProgress, useProfile } from "@/lib/bjj/store";
 import { haptic } from "@/lib/telegram";
-import type { ProgressStatus, Technique } from "@/lib/bjj/types";
+import { legalStatus, legalLabel, type LegalValue } from "@/lib/bjj/legal";
+import type { Belt, ProgressStatus, Technique } from "@/lib/bjj/types";
 import {
   ArrowLeft,
   Check,
@@ -62,6 +63,14 @@ const STATUS_LABEL: Record<ProgressStatus, string> = {
   done: "Изучено",
 };
 
+// Бейдж легальности: нейтральный если легально для пояса, янтарный «с <пояса>» если
+// ограничено по поясу, и скрыт если не применимо/запрещено (как раньше при ✗).
+function LegalBadge({ value, base, belt }: { value: LegalValue; base: string; belt: Belt }) {
+  const st = legalStatus(value, belt);
+  if (st.kind === "never") return null;
+  return <Badge tone={st.kind === "from" ? "warn" : "default"}>{legalLabel(base, st)}</Badge>;
+}
+
 function TechniquePage() {
   const { id } = Route.useParams();
   const tech = TECH_BY_ID[Number(id)];
@@ -75,6 +84,7 @@ function TechniquePage() {
 
 function TechniqueDetail({ tech }: { tech: Technique }) {
   const { progress, cycleStatus } = useProgress();
+  const { profile } = useProfile();
   const router = useRouter();
   const [shared, setShared] = useState(false);
   const status = progress[tech.id] ?? "not_started";
@@ -184,9 +194,9 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
           <Badge>Сложность {tech.difficulty}/5</Badge>
           {tech.successRate && tech.successRate !== "N/A" && <Badge>Успех ~{tech.successRate}</Badge>}
           {tech.energyCost && <Badge>Энергия: {tech.energyCost}</Badge>}
-          {tech.legal_ibjjf_gi && <Badge>IBJJF Gi</Badge>}
-          {tech.legal_ibjjf_nogi && <Badge>IBJJF No-Gi</Badge>}
-          {tech.legal_adcc && <Badge>ADCC</Badge>}
+          <LegalBadge value={tech.legal_ibjjf_gi} base="IBJJF Gi" belt={profile.belt} />
+          <LegalBadge value={tech.legal_ibjjf_nogi} base="IBJJF No-Gi" belt={profile.belt} />
+          <LegalBadge value={tech.legal_adcc} base="ADCC" belt={profile.belt} />
         </div>
         {tech.styles?.length > 0 && (
           <div className="mt-3">
