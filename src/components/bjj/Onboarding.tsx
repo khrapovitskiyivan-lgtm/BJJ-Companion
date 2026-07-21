@@ -167,7 +167,7 @@ function WelcomeScreen() {
     {
       icon: HelpCircle,
       title: "Что делать, если…",
-      description: "Быстрые решения для спарринга: побеги, свипы, сабмишены.",
+      description: "Быстрые решения для спарринга: выходы, свипы, сабмишены.",
       accent: "var(--belt-brown)",
     },
   ];
