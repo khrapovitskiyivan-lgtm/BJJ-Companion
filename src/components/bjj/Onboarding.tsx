@@ -154,7 +154,7 @@ function WelcomeScreen() {
     },
     {
       icon: BookOpen,
-      title: "293 техники",
+      title: "307 техник",
       description: "С механикой, рисками и пререквизитами. От белого до чёрного пояса.",
       accent: "var(--belt-blue)",
     },
