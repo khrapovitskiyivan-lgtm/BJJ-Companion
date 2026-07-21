@@ -31,8 +31,9 @@ export function Onboarding({
 }) {
   const [step, setStep] = useState<Step>(0);
   const [belt, setBelt] = useState<Belt>("white");
-  const [gi, setGi] = useState(true);
-  const [noGi, setNoGi] = useState(true);
+  // без предвыбора: пользователь выбирает формат сам (шаг не пройти, пока не выбран хотя бы один)
+  const [gi, setGi] = useState(false);
+  const [noGi, setNoGi] = useState(false);
   const [goal, setGoal] = useState<Goal | null>(null);
   const [frequency, setFrequency] = useState<Frequency | null>(null);
   const [known, setKnown] = useState<number[]>([]);
