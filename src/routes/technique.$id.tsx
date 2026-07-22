@@ -23,7 +23,7 @@ import {
 import { TechniqueRow } from "@/components/bjj/TechniqueCard";
 import { Breadcrumbs } from "@/components/bjj/technique/Breadcrumbs";
 import { VideoBlock } from "@/components/bjj/technique/VideoBlock";
-import { ProVideoTeaser } from "@/components/bjj/technique/ProVideoTeaser";
+import { VideoInterestPrompt } from "@/components/bjj/technique/VideoInterestPrompt";
 import {
   MechanismSection,
   InsightSection,
@@ -215,11 +215,11 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
         )}
       </header>
 
-      {/* Под описанием: реальное видео (если есть) или тизер PRO с крючком спроса */}
+      {/* Под описанием: курированное видео (если есть) или тихий крючок «нужен видео-разбор» */}
       {videoUrl ? (
         <VideoBlock url={videoUrl} title={tech.nameRu} />
       ) : (
-        <ProVideoTeaser techniqueId={tech.id} />
+        <VideoInterestPrompt techniqueId={tech.id} />
       )}
 
       {/* Личные заметки — сразу после описания/видео: свои детали ценнее справочных */}
