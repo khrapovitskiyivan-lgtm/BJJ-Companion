@@ -40,7 +40,13 @@ export function ProVideoTeaser({ techniqueId }: { techniqueId: number }) {
         <p className="text-sm font-semibold">Детальный видео-разбор техники</p>
         {done ? (
           <div className="mt-3">
-            <div className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+            <div
+              className="flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium"
+              style={{
+                background: "color-mix(in oklch, var(--status-done) 12%, transparent)",
+                color: "var(--status-done)",
+              }}
+            >
               <Check className="h-4 w-4" />
               Интерес учтён
             </div>

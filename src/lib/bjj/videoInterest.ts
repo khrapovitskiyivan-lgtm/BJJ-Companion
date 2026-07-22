@@ -30,7 +30,9 @@ export function markVideoInterest(id: number): void {
   try {
     localStorage.setItem(KEY, JSON.stringify([...set]));
   } catch {
-    // молча: интерес не важнее пользователя
+    // Не смогли сохранить отметку (квота/приватный режим): НЕ шлём событие,
+    // иначе при следующей перезагрузке дедуп не сработает и спрос раздуется.
+    return;
   }
   track("pro_video_interest", String(id));
 }
