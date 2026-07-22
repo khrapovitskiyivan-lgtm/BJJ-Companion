@@ -17,9 +17,14 @@ import { reportPlayer } from "@/lib/bjj/globalStats";
 import { reportTgPlan } from "@/lib/bjj/tgReport";
 import { reportPartnerProfile } from "@/lib/bjj/reportPartnerProfile";
 import { buildPublishInput } from "@/lib/bjj/partnersProfile";
-import { listPartners, markPartnersJoined, isPartnersJoined } from "@/lib/bjj/partners";
+import {
+  listPartners,
+  markPartnersJoined,
+  isPartnersJoined,
+  setPendingInvite,
+} from "@/lib/bjj/partners";
 import { track } from "@/lib/bjj/telemetry";
-import { initTelegram, haptic, markThemeManual, isTelegram } from "@/lib/telegram";
+import { initTelegram, haptic, markThemeManual, isTelegram, getStartParam } from "@/lib/telegram";
 import { Moon, Sun, Settings } from "lucide-react";
 
 // Инициалы из имени для фоллбэк-аватара (когда фото из Telegram недоступно).
@@ -60,6 +65,14 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
     if (!hydrated) return;
     document.documentElement.classList.toggle("dark", profile.theme === "dark");
   }, [profile.theme, hydrated]);
+
+  // Ловим код приглашения партнёра сразу при запуске — ДО гейта/онбординга, пока
+  // start_param ещё доступен. Показ промпта — позже, в PartnersBlock (после онбординга).
+  useEffect(() => {
+    if (!hydrated) return;
+    const code = getStartParam();
+    if (code && /^[A-Z0-9]{8}$/.test(code)) setPendingInvite(code);
+  }, [hydrated]);
 
   // Анонимный отчёт в глобальную статистику (device_id + пояс); троттлинг внутри
   useEffect(() => {

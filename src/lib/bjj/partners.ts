@@ -55,6 +55,36 @@ export function isPartnersJoined(): boolean {
   }
 }
 
+// Отложенный код приглашения: ловим start_param сразу при запуске (в AppShell, до
+// онбординга) и храним, чтобы промпт «Принять?» показался после онбординга у нового
+// пользователя — start_param к тому моменту может быть уже недоступен.
+const PENDING_KEY = "bjj.pendingInvite.v1";
+
+export function setPendingInvite(code: string): void {
+  try {
+    if (!localStorage.getItem(PENDING_KEY)) localStorage.setItem(PENDING_KEY, code);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getPendingInvite(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(PENDING_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingInvite(): void {
+  try {
+    localStorage.removeItem(PENDING_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 async function post<T>(action: string, payload: Record<string, unknown>): Promise<T | null> {
   const tg = getTelegram();
   if (!isTelegram() || !tg?.initData) return null;

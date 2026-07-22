@@ -8,6 +8,8 @@ import {
   acceptPartner,
   removePartner,
   markPartnersJoined,
+  getPendingInvite,
+  clearPendingInvite,
   type PartnerProfile,
 } from "@/lib/bjj/partners";
 import { buildPublishInput } from "@/lib/bjj/partnersProfile";
@@ -290,7 +292,8 @@ export function PartnersBlock() {
   useEffect(() => {
     if (!enabled || !hydrated) return;
     void reload();
-    const code = getStartParam();
+    // код из отложенного приглашения (пойман в AppShell при запуске) либо из start_param
+    const code = getPendingInvite() || getStartParam();
     if (code && /^[A-Z0-9]{8}$/.test(code)) setPendingCode(code);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, hydrated]);
@@ -339,6 +342,7 @@ export function PartnersBlock() {
 
   const onAccept = async (code: string) => {
     setPendingCode(null);
+    clearPendingInvite(); // одна попытка: не переспрашиваем на каждом заходе
     setBusy(true);
     const status = await acceptPartner(code);
     if (status === "ok") {
@@ -404,7 +408,10 @@ export function PartnersBlock() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => setPendingCode(null)}
+            onClick={() => {
+              clearPendingInvite();
+              setPendingCode(null);
+            }}
             disabled={busy}
           >
             Позже
