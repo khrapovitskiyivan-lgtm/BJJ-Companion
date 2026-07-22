@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Check, ShieldCheck, WifiOff } from "lucide-react";
-import { BrandLogo } from "./Logo";
 import { Button, Sheet } from "@/components/bjj/ui";
 import { PolicyContent, TermsContent } from "./legal";
 
@@ -22,7 +21,11 @@ export function ConsentGate({ onAccept, onLocal }: { onAccept: () => void; onLoc
           <>
             <div className="flex-1 flex flex-col justify-center space-y-6 py-8">
               <div>
-                <BrandLogo className="mb-4" />
+                <img
+                  src="/logo.webp"
+                  alt="BJJ Companion"
+                  className="mx-auto mb-4 h-auto w-full max-w-[220px]"
+                />
                 <h1 className="text-center text-xl font-bold tracking-tight">Прежде чем начать</h1>
                 <p className="mt-2 text-center text-sm text-muted-foreground">
                   Чтобы синхронизировать прогресс, показывать статистику и слать напоминания,

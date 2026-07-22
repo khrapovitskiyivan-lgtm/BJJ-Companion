@@ -1,6 +1,5 @@
-import { AlertTriangle } from "lucide-react";
-
-// === ЮРИДИЧЕСКИЕ ТЕКСТЫ (ЧЕРНОВИК) ==========================================
+// === ЮРИДИЧЕСКИЕ ТЕКСТЫ (ЧЕРНОВИК — плашка «Черновик» намеренно не показывается
+// пользователю; статус документа отслеживаем в git/коде, не на странице) =======
 // Стандартная структура Политики конфиденциальности и Условий использования,
 // написана под реальные потоки данных приложения (см. код: telemetry.ts,
 // globalStats.ts, tgReport.ts, store.ts). НЕ является юридической консультацией.
@@ -35,19 +34,6 @@ function UL({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Плашка-предупреждение: документ не утверждён юристом
-function DraftNotice() {
-  return (
-    <div className="flex gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
-      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-      <span>
-        Черновик. Не является юридической консультацией. Перед публикацией текст проверяет и
-        утверждает юрист; реквизиты оператора заполняются отдельно.
-      </span>
-    </div>
-  );
-}
-
 function Updated() {
   return (
     <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -61,9 +47,6 @@ export function PolicyContent() {
   return (
     <div>
       <Updated />
-      <div className="mt-3">
-        <DraftNotice />
-      </div>
 
       <div className="mt-4">
         <H>1. Общие положения</H>
@@ -192,9 +175,6 @@ export function TermsContent() {
   return (
     <div>
       <Updated />
-      <div className="mt-3">
-        <DraftNotice />
-      </div>
 
       <div className="mt-4">
         <H>1. Принятие условий</H>
