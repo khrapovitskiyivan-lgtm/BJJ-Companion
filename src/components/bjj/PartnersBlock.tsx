@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Users, UserPlus, Flame, ChevronRight, Trash2, Check } from "lucide-react";
+import { Users, UserPlus, Flame, ChevronDown, Trash2, Check } from "lucide-react";
 import { getDeviceId, hasConsent, useDiary, useProfile, useProgress } from "@/lib/bjj/store";
 import { isTelegram, getStartParam, haptic, hapticSuccess } from "@/lib/telegram";
 import {
@@ -11,11 +11,11 @@ import {
 } from "@/lib/bjj/partners";
 import { buildPublishInput } from "@/lib/bjj/partnersProfile";
 import { buildInviteLink, shareText } from "@/lib/bjj/share";
-import { BELT_LABEL, STYLE_META } from "@/lib/bjj/constants";
+import { BELT_LABEL, BELT_ORDER, STYLE_META } from "@/lib/bjj/constants";
 import { STAT_META, STAT_ORDER } from "@/lib/bjj/stats";
+import { fetchGlobalStats, type GlobalStats } from "@/lib/bjj/globalStats";
 import type { Belt, Style } from "@/lib/bjj/types";
 import { Button, Sheet, EmptyState } from "@/components/bjj/ui";
-import { GlobalStatsModal } from "./GlobalStatsModal";
 
 // === БЛОК «ПАРТНЁРЫ» ========================================================
 // Живёт на «Моей игре» под «Сегодня». Партнёры — только в Telegram и при согласии
@@ -212,6 +212,37 @@ function PartnerDetail({
   );
 }
 
+// Сообщество: распределение по поясам (инлайн, раскрывается в блоке)
+function CommunityBars({ stats }: { stats: GlobalStats }) {
+  const max = Math.max(1, ...BELT_ORDER.map((b) => stats.belts[b] ?? 0));
+  return (
+    <div className="space-y-1.5">
+      {BELT_ORDER.map((b) => {
+        const cnt = stats.belts[b] ?? 0;
+        return (
+          <div key={b} className="flex items-center gap-2">
+            <span
+              className="h-3 w-6 shrink-0 rounded ring-1 ring-black/10"
+              style={{ background: `var(--belt-${b})` }}
+            />
+            <span className="w-20 shrink-0 text-xs text-muted-foreground">{BELT_LABEL[b]}</span>
+            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+              <span
+                className="block h-full rounded-full"
+                style={{
+                  width: `${Math.round((cnt / max) * 100)}%`,
+                  background: "var(--status-progress)",
+                }}
+              />
+            </span>
+            <span className="w-6 shrink-0 text-right text-xs text-muted-foreground">{cnt}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function PartnersBlock() {
   const { profile, hydrated } = useProfile();
   const { progress } = useProgress();
@@ -219,7 +250,8 @@ export function PartnersBlock() {
 
   const [partners, setPartners] = useState<PartnerProfile[] | null>(null);
   const [detail, setDetail] = useState<PartnerProfile | null>(null);
-  const [statsOpen, setStatsOpen] = useState(false);
+  const [communityOpen, setCommunityOpen] = useState(false);
+  const [community, setCommunity] = useState<GlobalStats | null | undefined>(undefined);
   const [pendingCode, setPendingCode] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -305,6 +337,11 @@ export function PartnersBlock() {
     setBusy(false);
   };
 
+  const toggleCommunity = () => {
+    setCommunityOpen((v) => !v);
+    if (community === undefined) fetchGlobalStats().then(setCommunity);
+  };
+
   return (
     <section className="rounded-2xl border border-border bg-card p-4">
       <div className="flex items-center justify-between">
@@ -366,16 +403,33 @@ export function PartnersBlock() {
         )}
       </div>
 
-      {/* Сообщество: кто в игре (доступно всем) */}
-      <button
-        type="button"
-        onClick={() => setStatsOpen(true)}
-        className="mt-3 flex w-full items-center gap-2 border-t border-border pt-3 text-left"
-      >
-        <Users className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Кто в игре</span>
-        <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
-      </button>
+      {/* Сообщество: кто в игре — раскрывается внутри блока */}
+      <div className="mt-3 border-t border-border pt-3">
+        <button
+          type="button"
+          onClick={toggleCommunity}
+          className="flex w-full items-center gap-2 text-left"
+        >
+          <Users className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">
+            Кто в игре{community ? `: ${community.players}` : ""}
+          </span>
+          <ChevronDown
+            className={`ml-auto h-4 w-4 text-muted-foreground transition-transform ${communityOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+        {communityOpen && (
+          <div className="mt-3">
+            {community === undefined ? (
+              <p className="text-xs text-muted-foreground">Загружаем…</p>
+            ) : community === null ? (
+              <p className="text-xs text-muted-foreground">Не удалось загрузить.</p>
+            ) : (
+              <CommunityBars stats={community} />
+            )}
+          </div>
+        )}
+      </div>
 
       {toast && (
         <p className="mt-3 rounded-lg bg-muted px-3 py-2 text-center text-xs text-muted-foreground">
@@ -390,7 +444,6 @@ export function PartnersBlock() {
           onRemove={() => onRemove(detail.tg_user_id)}
         />
       )}
-      {statsOpen && <GlobalStatsModal onClose={() => setStatsOpen(false)} />}
     </section>
   );
 }
