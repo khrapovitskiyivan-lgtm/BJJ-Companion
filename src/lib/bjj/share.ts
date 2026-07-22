@@ -10,6 +10,10 @@ import type { Frequency } from "./types";
 // Содержимое дневника (техники, заметки) в текст не попадает.
 
 export const BOT_LINK = "https://t.me/companionminiapp_bot";
+// Deep-link, открывающий Main Mini App напрямую у получателя (не чат бота).
+// startapp -> start_param внутри приложения; параметр 'invite' пока маркерный,
+// безопасный реферальный код придёт в Шаге Б (без device_id в ссылке).
+export const INVITE_LINK = `${BOT_LINK}?startapp=invite`;
 
 // Текст карточки стиля: топ-архетип + прогресс
 export function buildStyleShare(top: StyleScore, doneCount: number, total: number): string {
@@ -34,7 +38,7 @@ export function buildWeekShare(done: number, quota: Frequency | undefined, weekS
 // Возвращает "tg" | "share" | "copied" | null (для тоста «Скопировано»).
 export async function shareText(text: string): Promise<"tg" | "share" | "copied" | null> {
   if (typeof window === "undefined") return null;
-  const url = `https://t.me/share/url?url=${encodeURIComponent(BOT_LINK)}&text=${encodeURIComponent(text)}`;
+  const url = `https://t.me/share/url?url=${encodeURIComponent(INVITE_LINK)}&text=${encodeURIComponent(text)}`;
   const tg = getTelegram();
   if (isTelegram() && tg?.openTelegramLink) {
     try {
@@ -44,7 +48,7 @@ export async function shareText(text: string): Promise<"tg" | "share" | "copied"
       /* дальше по фоллбэкам */
     }
   }
-  const full = `${text} ${BOT_LINK}`;
+  const full = `${text} ${INVITE_LINK}`;
   if (navigator.share) {
     try {
       await navigator.share({ text: full });
