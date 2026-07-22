@@ -90,6 +90,9 @@ export interface StyleProfile {
   onboardingDone: boolean;
   goal?: Goal;
   frequency?: Frequency;
+  // Тренировочные дни недели (0=Пн..6=Вс). undefined = дефолт Пн-Сб (обратная совместимость).
+  // Из них считается план недели и «до плана осталось Y дней».
+  trainingDays?: number[];
   preferredStyles?: Style[]; // выбранные игроком стили игры (заменяют «качества»)
   // Устаревшее — «качества» (заменены на preferredStyles); поля оставлены для совместимости
   flexibility?: boolean;

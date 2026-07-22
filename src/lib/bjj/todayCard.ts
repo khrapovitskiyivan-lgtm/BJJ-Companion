@@ -16,6 +16,7 @@ export function todayCardModel(
   entries: DiaryEntry[],
   frequency: Frequency | undefined,
   today: Date,
+  trainingDays?: number[],
 ): TodayCardModel {
   const trained = trainedByDate(entries);
   const loggedToday = trained.has(dayKey(today));
@@ -25,7 +26,7 @@ export function todayCardModel(
   const ws = weekStatus(weekDays(today), trained, frequency, today);
   return {
     loggedToday,
-    week: { done: ws.done, quota: ws.quota, over: ws.over, daysLeft: daysLeftInWeek(today, loggedToday) },
+    week: { done: ws.done, quota: ws.quota, over: ws.over, daysLeft: daysLeftInWeek(today, loggedToday, trainingDays) },
     weeksStreak: planStreak(trained, frequency, today),
     daysStreakNoPlan: 0,
   };

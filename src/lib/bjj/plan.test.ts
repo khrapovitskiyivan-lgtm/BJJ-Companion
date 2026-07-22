@@ -187,4 +187,17 @@ describe("daysLeftInWeek", () => {
     expect(daysLeftInWeek(d(2026, 6, 18), true)).toBe(0); // сб, записано
     expect(daysLeftInWeek(d(2026, 6, 19), false)).toBe(0); // вс — всегда 0
   });
+
+  it("кастомные дни: Пн/Ср/Пт + Вс", () => {
+    const days = [0, 2, 4, 6]; // Пн, Ср, Пт, Вс
+    expect(daysLeftInWeek(d(2026, 6, 13), false, days)).toBe(4); // пн — сам + ср,пт,вс
+    expect(daysLeftInWeek(d(2026, 6, 13), true, days)).toBe(3); // пн записано — ср,пт,вс
+    expect(daysLeftInWeek(d(2026, 6, 14), false, days)).toBe(3); // вт (не трен.) — ср,пт,вс впереди
+    expect(daysLeftInWeek(d(2026, 6, 19), false, days)).toBe(1); // вс — тренировочный, не записано
+    expect(daysLeftInWeek(d(2026, 6, 18), false, days)).toBe(1); // сб (не трен.) — впереди вс
+  });
+
+  it("пустой список дней — дефолт Пн-Сб", () => {
+    expect(daysLeftInWeek(d(2026, 6, 13), false, [])).toBe(6);
+  });
 });

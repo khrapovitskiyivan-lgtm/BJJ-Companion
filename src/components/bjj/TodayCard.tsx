@@ -23,7 +23,7 @@ export function TodayCard() {
   if (!diaryHydrated || !profileHydrated) return null;
 
   const today = new Date();
-  const m = todayCardModel(entries, profile.frequency, today);
+  const m = todayCardModel(entries, profile.frequency, today, profile.trainingDays);
   const dateLabel = new Intl.DateTimeFormat("ru-RU", { weekday: "short", day: "numeric", month: "long" }).format(today);
 
   // Сегменты квоты: изученная часть синим статусом, сверхплановые золотом

@@ -1,5 +1,5 @@
 import { useProfile } from "@/lib/bjj/store";
-import { BELT_LABEL, BELT_ORDER, STYLE_ORDER, STYLE_META } from "@/lib/bjj/constants";
+import { BELT_LABEL, BELT_ORDER, STYLE_ORDER, STYLE_META, WEEKDAY_SHORT, DEFAULT_TRAINING_DAYS } from "@/lib/bjj/constants";
 import { Sheet, Section, Toggle } from "@/components/bjj/ui";
 import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
 import type { Belt, Frequency } from "@/lib/bjj/types";
@@ -74,6 +74,35 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
               <span className="text-[10px] text-muted-foreground">{desc}</span>
             </button>
           ))}
+        </div>
+      </Section>
+
+      <Section title="Дни тренировок" hint="Из выбранных дней считается план недели и «до плана осталось». Невыбранные — выходные.">
+        <div className="flex gap-1.5">
+          {WEEKDAY_SHORT.map((label, d) => {
+            const days = profile.trainingDays ?? DEFAULT_TRAINING_DAYS;
+            const active = days.includes(d);
+            return (
+              <button
+                key={d}
+                onClick={() => {
+                  const next = active ? days.filter((x) => x !== d) : [...days, d].sort((a, b) => a - b);
+                  if (next.length === 0) return; // не даём убрать последний тренировочный день
+                  update({ trainingDays: next });
+                }}
+                className="flex-1 rounded-xl border-2 py-2 text-center text-xs font-semibold transition-all"
+                style={{
+                  borderColor: active ? "var(--color-primary)" : "var(--color-border)",
+                  background: active
+                    ? "color-mix(in oklch, var(--color-primary) 12%, var(--color-card))"
+                    : "var(--color-card)",
+                  color: active ? "var(--color-primary)" : "var(--color-muted-foreground)",
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </Section>
 

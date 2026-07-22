@@ -89,13 +89,16 @@ export function dayStreak(trained: Map<string, number>, today: Date): number {
   return n;
 }
 
-// Сколько тренировочных дней осталось в неделе. Модель недели как у напоминаний
-// бота (tgRemind): тренировочные дни Пн-Сб, воскресенье всегда выходной.
-// Сегодня считается, только если записи ещё нет (ещё можно потренироваться).
-export function daysLeftInWeek(today: Date, loggedToday: boolean): number {
+// Сколько тренировочных дней осталось в неделе по выбранным дням (0=Пн..6=Вс).
+// trainingDays не задан/пуст — дефолт Пн-Сб (обратная совместимость).
+// Сегодня считается, только если это тренировочный день и записи ещё нет.
+export function daysLeftInWeek(today: Date, loggedToday: boolean, trainingDays?: number[]): number {
+  const days = trainingDays && trainingDays.length ? trainingDays : [0, 1, 2, 3, 4, 5];
+  const set = new Set(days);
   const dow = (today.getDay() + 6) % 7; // 0=Пн .. 6=Вс
-  const after = Math.max(0, 5 - dow); // тренировочные дни строго после сегодня
-  return after + (dow <= 5 && !loggedToday ? 1 : 0);
+  let after = 0;
+  for (let d = dow + 1; d <= 6; d++) if (set.has(d)) after++;
+  return after + (set.has(dow) && !loggedToday ? 1 : 0);
 }
 
 // Стрик недель в плане: сколько календарных недель подряд выполнена квота.

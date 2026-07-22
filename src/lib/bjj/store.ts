@@ -16,6 +16,7 @@ const DEFAULT_PROFILE: StyleProfile = {
   theme: "light",
   locale: "ru",
   onboardingDone: false,
+  trainingDays: [0, 1, 2, 3, 4, 5], // Пн-Сб по умолчанию
 };
 
 function readJSON<T>(key: string, fallback: T): T {

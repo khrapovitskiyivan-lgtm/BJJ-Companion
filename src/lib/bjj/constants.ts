@@ -23,6 +23,10 @@ export const STYLE_META: Record<Style, { ru: string; en: string; desc: string; i
 
 export const BELT_ORDER: Belt[] = ["white", "blue", "purple", "brown", "black"];
 
+// Дни недели (0=Пн..6=Вс) для настройки тренировочных дней
+export const WEEKDAY_SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+export const DEFAULT_TRAINING_DAYS = [0, 1, 2, 3, 4, 5]; // Пн-Сб, воскресенье выходной
+
 export const BELT_LABEL: Record<Belt, string> = {
   white: "Белый",
   blue: "Синий",
