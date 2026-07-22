@@ -264,6 +264,18 @@ export function PartnersBlock() {
   const lastFetchRef = useRef(0);
   const hasPartners = (partners?.length ?? 0) > 0;
 
+  // Порядок: отстающие по недельному плану — сверху (кого подтолкнуть видно сразу),
+  // внутри — по величине недобора, затем по имени.
+  const sortedPartners = partners
+    ? [...partners].sort((a, b) => {
+        const met = (p: PartnerProfile) => (p.quota != null && p.week_done >= p.quota ? 1 : 0);
+        if (met(a) !== met(b)) return met(a) - met(b);
+        const deficit = (p: PartnerProfile) => (p.quota ?? 0) - p.week_done;
+        if (deficit(b) !== deficit(a)) return deficit(b) - deficit(a);
+        return (a.name || "").localeCompare(b.name || "");
+      })
+    : null;
+
   const inTg = isTelegram();
   const enabled = inTg && hasConsent();
 
@@ -437,7 +449,7 @@ export function PartnersBlock() {
           />
         ) : (
           <div className="space-y-2">
-            {(showAll ? partners : partners.slice(0, 5)).map((p) => (
+            {(showAll ? sortedPartners! : sortedPartners!.slice(0, 5)).map((p) => (
               <PartnerRow
                 key={p.tg_user_id}
                 p={p}

@@ -150,11 +150,12 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
       <Breadcrumbs tech={tech} />
 
       <div className="flex items-center justify-between">
+        {/* «Назад» заметнее share: заливка primary + крупнее (поступали жалобы на невидимость) */}
         <button
           onClick={() => router.history.back()}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/15"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
+          <ArrowLeft className="h-4 w-4" />
           Назад
         </button>
         <button
@@ -178,7 +179,10 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
           </div>
           <button
             type="button"
-            onClick={() => { haptic("medium"); cycleStatus(tech.id); }}
+            onClick={() => {
+              haptic("medium");
+              cycleStatus(tech.id);
+            }}
             aria-label={`Статус: ${STATUS_LABEL[status]}`}
             className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 transition-transform active:scale-95"
             style={{ borderColor: STATUS_COLOR[status], color: STATUS_COLOR[status] }}
@@ -192,7 +196,9 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
           {tech.gi && <Badge>Gi</Badge>}
           {tech.noGi && <Badge>No-Gi</Badge>}
           <Badge>Сложность {tech.difficulty}/5</Badge>
-          {tech.successRate && tech.successRate !== "N/A" && <Badge>Успех ~{tech.successRate}</Badge>}
+          {tech.successRate && tech.successRate !== "N/A" && (
+            <Badge>Успех ~{tech.successRate}</Badge>
+          )}
           {tech.energyCost && <Badge>Энергия: {tech.energyCost}</Badge>}
           <LegalBadge value={tech.legal_ibjjf_gi} base="IBJJF Gi" belt={profile.belt} />
           <LegalBadge value={tech.legal_ibjjf_nogi} base="IBJJF No-Gi" belt={profile.belt} />
@@ -216,49 +222,53 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
 
       {/* «Когда применять» — сразу под описанием */}
       {content?.when && (
-        <NeutralSection icon={<Clock3 className="h-4 w-4" />} title="Когда применять" html={content.when} />
+        <NeutralSection
+          icon={<Clock3 className="h-4 w-4" />}
+          title="Когда применять"
+          html={content.when}
+        />
       )}
 
       {content && (content.injuryRisk || content.tapWarning !== "Нет") && (
-  <div
-    className={`flex gap-3 rounded-2xl border p-4 ${
-      riskHigh
-        ? "border-destructive/50 bg-destructive/10 text-destructive"
-        : riskMed
-        ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
-        : "border-border bg-muted text-muted-foreground"
-    }`}
-  >
-    {riskHigh ? (
-      <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
-    ) : (
-      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-    )}
-    <div className="text-xs leading-relaxed flex-1">
-      <div className="flex items-center gap-2 mb-1.5">
-        <span className="font-semibold text-sm">
-          {riskCritical
-            ? "Опасная техника"
-            : riskHigh
-            ? "Высокий риск травмы"
-            : riskMed
-            ? "Будьте осторожны"
-            : "Информация о технике"}
-        </span>
-      </div>
-      {content.injuryRisk && (
-        <p className="mb-1">
-          <b>Риск травмы:</b> {content.injuryRisk}
-        </p>
+        <div
+          className={`flex gap-3 rounded-2xl border p-4 ${
+            riskHigh
+              ? "border-destructive/50 bg-destructive/10 text-destructive"
+              : riskMed
+                ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                : "border-border bg-muted text-muted-foreground"
+          }`}
+        >
+          {riskHigh ? (
+            <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
+          ) : (
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+          )}
+          <div className="text-xs leading-relaxed flex-1">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="font-semibold text-sm">
+                {riskCritical
+                  ? "Опасная техника"
+                  : riskHigh
+                    ? "Высокий риск травмы"
+                    : riskMed
+                      ? "Будьте осторожны"
+                      : "Информация о технике"}
+              </span>
+            </div>
+            {content.injuryRisk && (
+              <p className="mb-1">
+                <b>Риск травмы:</b> {content.injuryRisk}
+              </p>
+            )}
+            {content.tapWarning !== "Нет" && (
+              <p>
+                <b>Когда стучать:</b> {content.tapWarning}
+              </p>
+            )}
+          </div>
+        </div>
       )}
-      {content.tapWarning !== "Нет" && (
-        <p>
-          <b>Когда стучать:</b> {content.tapWarning}
-        </p>
-      )}
-    </div>
-  </div>
-)}
 
       {practiceHistory.length > 0 && (
         <section className="rounded-2xl border border-border bg-card p-4">
@@ -310,7 +320,12 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
         </section>
       )}
 
-      <RelatedList title="Что изучить сначала" items={resolve(tech.prerequisites)} empty="Нет требований — можно изучать сразу." defaultOpen />
+      <RelatedList
+        title="Что изучить сначала"
+        items={resolve(tech.prerequisites)}
+        empty="Нет требований — можно изучать сразу."
+        defaultOpen
+      />
       <RelatedList title="Заходы из" items={resolve(tech.setup_from)} />
       <RelatedList title="Типичные сетапы" items={resolve(tech.common_setups)} />
       <RelatedList title="Продолжения" items={resolve(tech.chain_to)} />
@@ -318,4 +333,3 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
     </div>
   );
 }
-
