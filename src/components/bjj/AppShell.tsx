@@ -218,8 +218,8 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
           </div>
           {/* центр: лого + название — бренд-знак без действия (сообщество живёт в блоке «Партнёры») */}
           <div className="flex items-center gap-2 justify-self-center">
-            <Logo size={32} />
-            <span className="text-base font-bold tracking-tight">BJJ Companion</span>
+            <Logo size={36} />
+            <span className="text-lg font-bold tracking-tight">BJJ Companion</span>
           </div>
           {/* справа: настройки и информация (язык, аккаунт, о приложении) */}
           <button

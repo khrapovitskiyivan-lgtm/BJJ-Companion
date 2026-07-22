@@ -18,7 +18,13 @@ import { topCatchers, defensesFor } from "@/lib/bjj/caught";
 import { track } from "@/lib/bjj/telemetry";
 import { buildStyleShare, shareText } from "@/lib/bjj/share";
 import { BELT_ORDER, BELT_LABEL, STYLE_META } from "@/lib/bjj/constants";
-import { computeStats, countDone, ARCHETYPE_MIN_DONE, STAT_META, ARCHETYPE_STATS } from "@/lib/bjj/stats";
+import {
+  computeStats,
+  countDone,
+  ARCHETYPE_MIN_DONE,
+  STAT_META,
+  ARCHETYPE_STATS,
+} from "@/lib/bjj/stats";
 import type { Technique } from "@/lib/bjj/types";
 import {
   TrendingUp,
@@ -31,6 +37,7 @@ import {
   ShieldAlert,
   Share2,
   Check,
+  ChevronDown,
 } from "lucide-react";
 
 export const Route = createFileRoute("/progress")({
@@ -46,7 +53,12 @@ function ProgressPage() {
   // Текущий фокус (в процессе) + следующая цель (рекомендации)
   const focusTech = useMemo(() => currentFocus(TECHNIQUES, progress), [progress]);
   const recommendations = useMemo(
-    () => nextToLearn(TECHNIQUES, progress, profile.belt, 4, { goal: profile.goal, gi: profile.gi, noGi: profile.noGi }),
+    () =>
+      nextToLearn(TECHNIQUES, progress, profile.belt, 4, {
+        goal: profile.goal,
+        gi: profile.gi,
+        noGi: profile.noGi,
+      }),
     [progress, profile.belt, profile.goal, profile.gi, profile.noGi],
   );
 
@@ -65,11 +77,13 @@ function ProgressPage() {
 
   // «Что тебя ловит»: сабмишены, которыми попадаются 2+ раз, и защиты от них из графа
   const catchers = useMemo(() => {
-    return topCatchers(entries, 2).map(({ id, count }) => ({
-      tech: TECH_BY_ID[id],
-      count,
-      defenses: defensesFor(id, TECHNIQUES, 3),
-    })).filter((c) => c.tech);
+    return topCatchers(entries, 2)
+      .map(({ id, count }) => ({
+        tech: TECH_BY_ID[id],
+        count,
+        defenses: defensesFor(id, TECHNIQUES, 3),
+      }))
+      .filter((c) => c.tech);
   }, [entries]);
 
   // «Пора повторить»: изученное, чего давно (3+ недели) или вообще не было в дневнике.
@@ -100,17 +114,22 @@ function ProgressPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   // Шторка «Прогресс» (пояса + группы) — по тапу на hero-карточку «Прогресс»
   const [progressOpen, setProgressOpen] = useState(false);
+  // Характеристики свёрнуты по умолчанию (плотность экрана): деталь под «Твой стиль → Разрыв»
+  const [statsOpen, setStatsOpen] = useState(false);
   const listTechniques = useMemo(() => {
     if (!openList) return [];
     return TECHNIQUES.filter((t) => (progress[t.id] ?? "not_started") === openList).sort(
-      (a, b) => BELT_ORDER.indexOf(a.belt) - BELT_ORDER.indexOf(b.belt) || a.difficulty - b.difficulty,
+      (a, b) =>
+        BELT_ORDER.indexOf(a.belt) - BELT_ORDER.indexOf(b.belt) || a.difficulty - b.difficulty,
     );
   }, [openList, progress]);
 
   // === Общая статистика ===
   const stats = useMemo(() => {
     const total = TECHNIQUES.length;
-    let done = 0, inProgress = 0, notStarted = 0;
+    let done = 0,
+      inProgress = 0,
+      notStarted = 0;
     for (const t of TECHNIQUES) {
       const s = progress[t.id] ?? "not_started";
       if (s === "done") done++;
@@ -167,9 +186,7 @@ function ProgressPage() {
               />
             )}
             <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold">
-                {profile.name || "Боец"}
-              </span>
+              <span className="block truncate text-sm font-semibold">{profile.name || "Боец"}</span>
               <span className="block truncate text-[11px] text-muted-foreground">
                 {BELT_LABEL[profile.belt]} пояс
               </span>
@@ -341,28 +358,44 @@ function ProgressPage() {
           />
         </div>
 
-        {/* Характеристики: 6 статов из механических тегов */}
+        {/* Характеристики: 6 статов из механических тегов. Свёрнуты по умолчанию —
+            деталь второго уровня под парой «Твой стиль → Разрыв» (плотность экрана) */}
         <section className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="mb-3 text-sm font-semibold">Характеристики</h2>
-          <div className="space-y-2">
-            {statScores.map((s) => (
-              <div key={s.stat} className="flex items-center gap-2">
-                <span className="w-24 shrink-0 text-[11px]">{STAT_META[s.stat].ru}</span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-500"
-                    style={{ width: `${s.pct}%` }}
-                  />
-                </div>
-                <span className="w-10 text-right text-[11px] text-muted-foreground">{s.pct}%</span>
+          <button
+            type="button"
+            onClick={() => setStatsOpen((v) => !v)}
+            aria-expanded={statsOpen}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <h2 className="text-sm font-semibold">Характеристики</h2>
+            <ChevronDown
+              className={`h-4 w-4 text-muted-foreground transition-transform ${statsOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+          {statsOpen && (
+            <>
+              <div className="mt-3 space-y-2">
+                {statScores.map((s) => (
+                  <div key={s.stat} className="flex items-center gap-2">
+                    <span className="w-24 shrink-0 text-[11px]">{STAT_META[s.stat].ru}</span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all duration-500"
+                        style={{ width: `${s.pct}%` }}
+                      />
+                    </div>
+                    <span className="w-10 text-right text-[11px] text-muted-foreground">
+                      {s.pct}%
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <p className="mt-3 text-[11px] text-muted-foreground">
-            Растут от изученных техник и отработок в дневнике.
-          </p>
+              <p className="mt-3 text-[11px] text-muted-foreground">
+                Растут от изученных техник и отработок в дневнике.
+              </p>
+            </>
+          )}
         </section>
-
       </div>
     </AppShell>
   );
@@ -400,9 +433,7 @@ function StatCard({
       <div className="flex items-baseline gap-1">
         <span className="text-2xl font-bold tracking-tight">{value}</span>
         {suffix && <span className="text-xs text-muted-foreground">{suffix}</span>}
-        {total !== undefined && (
-          <span className="text-xs text-muted-foreground">/ {total}</span>
-        )}
+        {total !== undefined && <span className="text-xs text-muted-foreground">/ {total}</span>}
       </div>
       <p className="mt-0.5 text-[11px] text-muted-foreground">{label}</p>
     </>
@@ -424,7 +455,6 @@ function StatCard({
     </button>
   );
 }
-
 
 // Винительный падеж для «отметь N техник(у/и)»
 function techWordAcc(n: number): string {
@@ -461,7 +491,10 @@ function YourStyle({ scores, doneCount }: { scores: StyleScore[]; doneCount: num
         <p className="mt-1.5 text-[11px] tabular-nums text-muted-foreground">
           {doneCount} из {ARCHETYPE_MIN_DONE}
         </p>
-        <Link to="/library" className={buttonClass("secondary", "sm", "mt-3 w-full text-muted-foreground")}>
+        <Link
+          to="/library"
+          className={buttonClass("secondary", "sm", "mt-3 w-full text-muted-foreground")}
+        >
           Отметить изученное
         </Link>
       </section>
@@ -510,7 +543,8 @@ function YourStyle({ scores, doneCount }: { scores: StyleScore[]; doneCount: num
         <div className="min-w-0">
           <p className="text-base font-bold tracking-tight">{STYLE_META[top.style].ru}</p>
           <p className="truncate text-xs text-muted-foreground">
-            {STYLE_META[top.style].desc} · {top.pct}% игры · ключевой стат: {STAT_META[ARCHETYPE_STATS[top.style].primary].ru}
+            {STYLE_META[top.style].desc} · {top.pct}% игры · ключевой стат:{" "}
+            {STAT_META[ARCHETYPE_STATS[top.style].primary].ru}
           </p>
         </div>
       </div>
