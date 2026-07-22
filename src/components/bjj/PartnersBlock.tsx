@@ -254,6 +254,7 @@ export function PartnersBlock() {
 
   const [partners, setPartners] = useState<PartnerProfile[] | null>(null);
   const [detail, setDetail] = useState<PartnerProfile | null>(null);
+  const [showAll, setShowAll] = useState(false); // список > 5 сворачивается
   const [communityOpen, setCommunityOpen] = useState(false);
   const [community, setCommunity] = useState<GlobalStats | null | undefined>(undefined);
   const [pendingCode, setPendingCode] = useState<string | null>(null);
@@ -436,7 +437,7 @@ export function PartnersBlock() {
           />
         ) : (
           <div className="space-y-2">
-            {partners.map((p) => (
+            {(showAll ? partners : partners.slice(0, 5)).map((p) => (
               <PartnerRow
                 key={p.tg_user_id}
                 p={p}
@@ -446,6 +447,15 @@ export function PartnersBlock() {
                 }}
               />
             ))}
+            {partners.length > 5 && (
+              <button
+                type="button"
+                onClick={() => setShowAll((v) => !v)}
+                className="w-full pt-1 text-center text-xs font-medium text-primary"
+              >
+                {showAll ? "Свернуть" : `Показать всех (${partners.length})`}
+              </button>
+            )}
           </div>
         )}
       </div>
