@@ -86,7 +86,10 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
     const stamp = () => ({ consentVersion: CONSENT_VERSION, consentAt: new Date().toISOString() });
     return (
       <ConsentGate
-        onAccept={() => update({ consentChoice: "accepted", ...stamp() })}
+        onAccept={() => {
+          update({ consentChoice: "accepted", ...stamp() });
+          track("consent", "accept"); // hasConsent() уже true (update пишет синхронно)
+        }}
         onLocal={() => update({ consentChoice: "local", ...stamp() })}
       />
     );
@@ -120,12 +123,20 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
           <div className="justify-self-start">
             <button
               type="button"
-              onClick={() => { haptic("light"); markThemeManual(); update({ theme: profile.theme === "dark" ? "light" : "dark" }); }}
+              onClick={() => {
+                haptic("light");
+                markThemeManual();
+                update({ theme: profile.theme === "dark" ? "light" : "dark" });
+              }}
               style={{ marginTop: "var(--tg-content-safe-area-inset-top, 0px)" }}
               className="rounded-full p-2 text-muted-foreground transition hover:bg-muted"
               aria-label="Переключить тему"
             >
-              {profile.theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {profile.theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
             </button>
           </div>
           {/* центр: лого + название — бренд-знак без действия (сообщество живёт в блоке «Партнёры») */}
@@ -136,7 +147,10 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
           {/* справа: настройки и информация (язык, аккаунт, о приложении) */}
           <button
             type="button"
-            onClick={() => { haptic("light"); setMenuOpen(true); }}
+            onClick={() => {
+              haptic("light");
+              setMenuOpen(true);
+            }}
             aria-label="Настройки и информация"
             style={{ marginTop: "var(--tg-content-safe-area-inset-top, 0px)" }}
             className="justify-self-end rounded-full p-2 text-muted-foreground transition hover:bg-muted"

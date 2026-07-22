@@ -16,14 +16,22 @@ export type TelemetryEvent =
   | "scenario_run"
   | "section_open"
   | "reco_click"
-  | "note_saved";
+  | "note_saved"
+  | "consent"
+  | "invite_created"
+  | "invite_accepted"
+  | "partner_opened";
 
 const DEDUP_KEY = "bjj.telemetry.v1";
 const DAY = 24 * 60 * 60 * 1000;
 
 // dailyDedup: не чаще раза в сутки на связку событие+detail (отметка ставится
 // до отправки — потерянное из-за сети событие дня не ретраится, зато нет спама).
-export function track(event: TelemetryEvent, detail?: string, opts: { dailyDedup?: boolean } = {}): void {
+export function track(
+  event: TelemetryEvent,
+  detail?: string,
+  opts: { dailyDedup?: boolean } = {},
+): void {
   if (typeof window === "undefined") return;
   if (!hasConsent()) return; // без согласия ничего на сервер не уходит
   try {
@@ -35,7 +43,11 @@ export function track(event: TelemetryEvent, detail?: string, opts: { dailyDedup
       localStorage.setItem(DEDUP_KEY, JSON.stringify(map));
     }
     void Promise.resolve(
-      supabase.rpc("bjj_track", { p_device: getDeviceId(), p_event: event, p_detail: detail ?? null }),
+      supabase.rpc("bjj_track", {
+        p_device: getDeviceId(),
+        p_event: event,
+        p_detail: detail ?? null,
+      }),
     ).catch(() => null);
   } catch {
     // молча: телеметрия не важнее пользователя
