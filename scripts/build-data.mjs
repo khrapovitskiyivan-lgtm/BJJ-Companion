@@ -40,6 +40,9 @@ const legalVal = (v) => {
 };
 
 const csv = readFileSync(join(ROOT, 'data', 'techniques.csv'), 'utf8').replace(/^﻿/, '');
+const videoUrls = JSON.parse(
+  readFileSync(join(ROOT, 'data', 'video-urls.json'), 'utf8'),
+);
 const rows = parseCSV(csv);
 const header = rows[0];
 const recs = rows.slice(1).filter((r) => r.length > 1 && r[0].trim())
@@ -75,6 +78,7 @@ const techniques = recs.map((r) => {
     difficulty: parseInt(r.difficulty, 10) || 1,
     successRate: r.success_rate,
     energyCost: r.energy_cost,
+    videoUrl: videoUrls[r.id] || undefined,
     content: {
       ru: {
         concept: r.concept,

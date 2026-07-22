@@ -96,7 +96,7 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
   const riskCritical = /КРИТИЧНО/i.test(injury);
   const riskMed = !riskHigh && /Средн/i.test(injury);
 
-  const videoUrl = (tech as any).videoUrl as string | undefined;
+  const videoUrl = tech.videoUrl;
 
   const practiceHistory = useMemo(() => {
     const history: { date: string }[] = [];
