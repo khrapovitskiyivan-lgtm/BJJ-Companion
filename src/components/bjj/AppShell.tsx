@@ -5,11 +5,19 @@ import { Onboarding } from "./Onboarding";
 import { ConsentGate } from "./ConsentGate";
 import { Logo } from "./Logo";
 import { AvatarMenu } from "./AvatarMenu";
-import { CONSENT_VERSION, getDeviceId, useDiary, useProfile, useProgress } from "@/lib/bjj/store";
+import {
+  CONSENT_VERSION,
+  getDeviceId,
+  hasConsent,
+  useDiary,
+  useProfile,
+  useProgress,
+} from "@/lib/bjj/store";
 import { reportPlayer } from "@/lib/bjj/globalStats";
 import { reportTgPlan } from "@/lib/bjj/tgReport";
 import { reportPartnerProfile } from "@/lib/bjj/reportPartnerProfile";
 import { buildPublishInput } from "@/lib/bjj/partnersProfile";
+import { listPartners, markPartnersJoined, isPartnersJoined } from "@/lib/bjj/partners";
 import { track } from "@/lib/bjj/telemetry";
 import { initTelegram, haptic, markThemeManual, isTelegram } from "@/lib/telegram";
 import { Moon, Sun, Settings } from "lucide-react";
@@ -34,6 +42,9 @@ const TELEMETRY_SECTIONS: Record<string, string> = {
   "/glossary": "glossary",
   "/workout": "workout",
 };
+
+// Самообнаружение участия в партнёрах — раз за загрузку страницы (не на каждую навигацию)
+let partnerDiscoveryTried = false;
 
 // === APP SHELL ===
 // Шапка: тема слева · лого+название по центру · аватар справа.
@@ -88,6 +99,30 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
     progress,
     entries,
   ]);
+
+  // Самообнаружение участия: если партнёры на сервере есть, а флаг не стоит (напр.
+  // принял приглашение до появления флага, или не заходил на «Мою игру») — помечаем
+  // участником и сразу публикуем актуальный статус. Раз за загрузку страницы.
+  useEffect(() => {
+    if (!hydrated || !profile.onboardingDone) return;
+    if (partnerDiscoveryTried || !isTelegram() || !hasConsent() || isPartnersJoined()) return;
+    partnerDiscoveryTried = true;
+    listPartners().then((list) => {
+      if (list.length === 0) return;
+      markPartnersJoined();
+      reportPartnerProfile(
+        buildPublishInput({
+          device: getDeviceId(),
+          profile,
+          progress,
+          practiceCount: practiceCount(),
+          entries,
+          today: new Date(),
+        }),
+      );
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, profile.onboardingDone]);
 
   // Telegram Mini App: подтянуть имя/фото/язык из Telegram (один раз после гидратации)
   useEffect(() => {
