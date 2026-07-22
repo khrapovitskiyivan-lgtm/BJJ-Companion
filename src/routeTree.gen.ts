@@ -10,8 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkoutRouteImport } from './routes/workout'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SituationsRouteImport } from './routes/situations'
 import { Route as ProgressRouteImport } from './routes/progress'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as GlossaryRouteImport } from './routes/glossary'
@@ -22,10 +24,16 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TechniqueIdRouteImport } from './routes/technique.$id'
 import { Route as ApiTgWebhookRouteImport } from './routes/api.tg-webhook'
 import { Route as ApiTgCronRouteImport } from './routes/api.tg-cron'
+import { Route as ApiPartnersRouteImport } from './routes/api.partners'
 
 const WorkoutRoute = WorkoutRouteImport.update({
   id: '/workout',
   path: '/workout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SituationsRoute = SituationsRouteImport.update({
@@ -36,6 +44,11 @@ const SituationsRoute = SituationsRouteImport.update({
 const ProgressRoute = ProgressRouteImport.update({
   id: '/progress',
   path: '/progress',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapRoute = MapRouteImport.update({
@@ -88,6 +101,11 @@ const ApiTgCronRoute = ApiTgCronRouteImport.update({
   path: '/api/tg-cron',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPartnersRoute = ApiPartnersRouteImport.update({
+  id: '/api/partners',
+  path: '/api/partners',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -97,9 +115,12 @@ export interface FileRoutesByFullPath {
   '/glossary': typeof GlossaryRoute
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
+  '/privacy': typeof PrivacyRoute
   '/progress': typeof ProgressRoute
   '/situations': typeof SituationsRoute
+  '/terms': typeof TermsRoute
   '/workout': typeof WorkoutRoute
+  '/api/partners': typeof ApiPartnersRoute
   '/api/tg-cron': typeof ApiTgCronRoute
   '/api/tg-webhook': typeof ApiTgWebhookRoute
   '/technique/$id': typeof TechniqueIdRoute
@@ -112,9 +133,12 @@ export interface FileRoutesByTo {
   '/glossary': typeof GlossaryRoute
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
+  '/privacy': typeof PrivacyRoute
   '/progress': typeof ProgressRoute
   '/situations': typeof SituationsRoute
+  '/terms': typeof TermsRoute
   '/workout': typeof WorkoutRoute
+  '/api/partners': typeof ApiPartnersRoute
   '/api/tg-cron': typeof ApiTgCronRoute
   '/api/tg-webhook': typeof ApiTgWebhookRoute
   '/technique/$id': typeof TechniqueIdRoute
@@ -128,9 +152,12 @@ export interface FileRoutesById {
   '/glossary': typeof GlossaryRoute
   '/library': typeof LibraryRoute
   '/map': typeof MapRoute
+  '/privacy': typeof PrivacyRoute
   '/progress': typeof ProgressRoute
   '/situations': typeof SituationsRoute
+  '/terms': typeof TermsRoute
   '/workout': typeof WorkoutRoute
+  '/api/partners': typeof ApiPartnersRoute
   '/api/tg-cron': typeof ApiTgCronRoute
   '/api/tg-webhook': typeof ApiTgWebhookRoute
   '/technique/$id': typeof TechniqueIdRoute
@@ -145,9 +172,12 @@ export interface FileRouteTypes {
     | '/glossary'
     | '/library'
     | '/map'
+    | '/privacy'
     | '/progress'
     | '/situations'
+    | '/terms'
     | '/workout'
+    | '/api/partners'
     | '/api/tg-cron'
     | '/api/tg-webhook'
     | '/technique/$id'
@@ -160,9 +190,12 @@ export interface FileRouteTypes {
     | '/glossary'
     | '/library'
     | '/map'
+    | '/privacy'
     | '/progress'
     | '/situations'
+    | '/terms'
     | '/workout'
+    | '/api/partners'
     | '/api/tg-cron'
     | '/api/tg-webhook'
     | '/technique/$id'
@@ -175,9 +208,12 @@ export interface FileRouteTypes {
     | '/glossary'
     | '/library'
     | '/map'
+    | '/privacy'
     | '/progress'
     | '/situations'
+    | '/terms'
     | '/workout'
+    | '/api/partners'
     | '/api/tg-cron'
     | '/api/tg-webhook'
     | '/technique/$id'
@@ -191,9 +227,12 @@ export interface RootRouteChildren {
   GlossaryRoute: typeof GlossaryRoute
   LibraryRoute: typeof LibraryRoute
   MapRoute: typeof MapRoute
+  PrivacyRoute: typeof PrivacyRoute
   ProgressRoute: typeof ProgressRoute
   SituationsRoute: typeof SituationsRoute
+  TermsRoute: typeof TermsRoute
   WorkoutRoute: typeof WorkoutRoute
+  ApiPartnersRoute: typeof ApiPartnersRoute
   ApiTgCronRoute: typeof ApiTgCronRoute
   ApiTgWebhookRoute: typeof ApiTgWebhookRoute
   TechniqueIdRoute: typeof TechniqueIdRoute
@@ -208,6 +247,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/situations': {
       id: '/situations'
       path: '/situations'
@@ -220,6 +266,13 @@ declare module '@tanstack/react-router' {
       path: '/progress'
       fullPath: '/progress'
       preLoaderRoute: typeof ProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/map': {
@@ -292,6 +345,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTgCronRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/partners': {
+      id: '/api/partners'
+      path: '/api/partners'
+      fullPath: '/api/partners'
+      preLoaderRoute: typeof ApiPartnersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -303,9 +363,12 @@ const rootRouteChildren: RootRouteChildren = {
   GlossaryRoute: GlossaryRoute,
   LibraryRoute: LibraryRoute,
   MapRoute: MapRoute,
+  PrivacyRoute: PrivacyRoute,
   ProgressRoute: ProgressRoute,
   SituationsRoute: SituationsRoute,
+  TermsRoute: TermsRoute,
   WorkoutRoute: WorkoutRoute,
+  ApiPartnersRoute: ApiPartnersRoute,
   ApiTgCronRoute: ApiTgCronRoute,
   ApiTgWebhookRoute: ApiTgWebhookRoute,
   TechniqueIdRoute: TechniqueIdRoute,

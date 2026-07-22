@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/lib/supabase";
 import { AuthModal } from "@/components/AuthModal";
-import { useProfile, useProgress } from "@/lib/bjj/store";
+import { CONSENT_VERSION, useProfile, useProgress } from "@/lib/bjj/store";
 import type { Locale } from "@/lib/bjj/types";
 import { Button, Section, Sheet, Toggle } from "@/components/bjj/ui";
-import { Cloud, CloudOff, LogIn, LogOut, Info, ChevronRight, Download, Upload, Trash2, AlertTriangle } from "lucide-react";
+import { Cloud, CloudOff, LogIn, LogOut, Info, ChevronRight, Download, Upload, Trash2, AlertTriangle, ShieldCheck, FileText } from "lucide-react";
 
 // Настройки и информация: шторка по тапу на значок в шапке.
 // Аккаунт (вход и синхронизация), язык, о приложении. Игровые настройки
@@ -161,6 +161,68 @@ export function AvatarMenu({ onClose }: { onClose: () => void }) {
                 </>
               )}
             </Button>
+          </div>
+        </Section>
+
+        {/* Конфиденциальность: режим отправки данных + документы */}
+        <Section title="Конфиденциальность">
+          <div className="rounded-2xl border border-border bg-card p-3">
+            {profile.consentChoice === "accepted" ? (
+              <>
+                <p className="flex items-center gap-2 text-sm font-medium">
+                  <ShieldCheck className="h-4 w-4 text-status-done" />
+                  Отправка данных включена
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Синхронизация, статистика и напоминания работают.
+                </p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => update({ consentChoice: "local", consentVersion: CONSENT_VERSION })}
+                >
+                  Перейти в локальный режим
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="flex items-center gap-2 text-sm font-medium">
+                  <CloudOff className="h-4 w-4 text-muted-foreground" />
+                  Локальный режим
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Данные не отправляются на сервер. Синхронизация, статистика и
+                  напоминания недоступны.
+                </p>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => update({ consentChoice: "accepted", consentVersion: CONSENT_VERSION })}
+                >
+                  Включить синхронизацию и статистику
+                </Button>
+              </>
+            )}
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Link
+              to="/privacy"
+              onClick={onClose}
+              className="flex items-center justify-center gap-1.5 rounded-2xl border border-border bg-card p-3 text-xs font-medium transition hover:bg-muted"
+            >
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+              Политика
+            </Link>
+            <Link
+              to="/terms"
+              onClick={onClose}
+              className="flex items-center justify-center gap-1.5 rounded-2xl border border-border bg-card p-3 text-xs font-medium transition hover:bg-muted"
+            >
+              <FileText className="h-3.5 w-3.5 text-primary" />
+              Условия
+            </Link>
           </div>
         </Section>
 

@@ -88,6 +88,13 @@ export interface StyleProfile {
   theme: "light" | "dark";
   locale: Locale;
   onboardingDone: boolean;
+  // Согласие на обработку данных (гейт при первом запуске, до онбординга).
+  // consentChoice: 'accepted' — разрешил отправку на сервер; 'local' — локальный
+  // режим (на сервер не уходит ничего). consentVersion — версия согласия (bump
+  // повторно показывает гейт всем). undefined = гейт ещё не пройден.
+  consentChoice?: "accepted" | "local";
+  consentVersion?: number;
+  consentAt?: string; // ISO даты выбора
   goal?: Goal;
   frequency?: Frequency;
   // Тренировочные дни недели (0=Пн..6=Вс). undefined = дефолт Пн-Сб (обратная совместимость).

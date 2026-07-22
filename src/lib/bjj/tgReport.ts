@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { getDeviceId } from "./store";
+import { getDeviceId, hasConsent } from "./store";
 import { getTelegramUser, isTelegram } from "@/lib/telegram";
 import { weekReport } from "./tgRemind";
 import type { DiaryEntry, Frequency } from "./types";
@@ -17,6 +17,7 @@ export function reportTgPlan(
   trainingDays?: number[],
 ): void {
   if (typeof window === "undefined" || !isTelegram()) return;
+  if (!hasConsent()) return; // chat_id и план на сервер только с согласия
   const u = getTelegramUser();
   if (!u?.id) return;
   try {

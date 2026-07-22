@@ -15,6 +15,11 @@ export const BOT_LINK = "https://t.me/companionminiapp_bot";
 // безопасный реферальный код придёт в Шаге Б (без device_id в ссылке).
 export const INVITE_LINK = `${BOT_LINK}?startapp=invite`;
 
+// Личная ссылка-приглашение партнёра: код вместо device_id.
+export function buildInviteLink(code: string): string {
+  return `${BOT_LINK}?startapp=${encodeURIComponent(code)}`;
+}
+
 // Текст карточки стиля: топ-архетип + прогресс
 export function buildStyleShare(top: StyleScore, doneCount: number, total: number): string {
   const stat = STAT_META[ARCHETYPE_STATS[top.style].primary].ru;
@@ -36,9 +41,14 @@ export function buildWeekShare(done: number, quota: Frequency | undefined, weekS
 
 // Отправка: Telegram — выбор чата, браузер — Web Share, фоллбэк — буфер.
 // Возвращает "tg" | "share" | "copied" | null (для тоста «Скопировано»).
-export async function shareText(text: string): Promise<"tg" | "share" | "copied" | null> {
+// link — что вшить в сообщение (по умолчанию общий INVITE_LINK; для приглашения
+// партнёра передаётся личная ссылка с кодом).
+export async function shareText(
+  text: string,
+  link: string = INVITE_LINK,
+): Promise<"tg" | "share" | "copied" | null> {
   if (typeof window === "undefined") return null;
-  const url = `https://t.me/share/url?url=${encodeURIComponent(INVITE_LINK)}&text=${encodeURIComponent(text)}`;
+  const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
   const tg = getTelegram();
   if (isTelegram() && tg?.openTelegramLink) {
     try {
@@ -48,7 +58,7 @@ export async function shareText(text: string): Promise<"tg" | "share" | "copied"
       /* дальше по фоллбэкам */
     }
   }
-  const full = `${text} ${INVITE_LINK}`;
+  const full = `${text} ${link}`;
   if (navigator.share) {
     try {
       await navigator.share({ text: full });

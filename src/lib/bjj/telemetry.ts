@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { getDeviceId } from "./store";
+import { getDeviceId, hasConsent } from "./store";
 
 // Телеметрия событий: анонимные счётчики использования (device_id + имя события
 // + короткая метка), запись через security definer RPC bjj_track
@@ -25,6 +25,7 @@ const DAY = 24 * 60 * 60 * 1000;
 // до отправки — потерянное из-за сети событие дня не ретраится, зато нет спама).
 export function track(event: TelemetryEvent, detail?: string, opts: { dailyDedup?: boolean } = {}): void {
   if (typeof window === "undefined") return;
+  if (!hasConsent()) return; // без согласия ничего на сервер не уходит
   try {
     if (opts.dailyDedup) {
       const key = `${event}:${detail ?? ""}`;

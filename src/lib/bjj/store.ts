@@ -2,6 +2,10 @@
 import { useEffect, useState, useCallback } from "react";
 import type { DiaryEntry, ProgressStatus, StyleProfile } from "./types";
 import { supabase } from "@/lib/supabase";
+import { CONSENT_VERSION, hasConsent } from "./consent";
+
+// Ре-экспорт для потребителей, уже импортирующих из store (AppShell)
+export { CONSENT_VERSION, hasConsent };
 
 const PROFILE_KEY = "bjj.profile.v1";
 const PROGRESS_KEY = "bjj.progress.v1";
@@ -349,6 +353,7 @@ async function trySyncNotesFromCloud(): Promise<NotesMap | null> {
 
 async function trySyncNotesToCloud(notes: NotesMap): Promise<void> {
   try {
+    if (!hasConsent()) return; // локальный режим: заметки не выгружаем
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -371,6 +376,7 @@ async function trySyncNotesToCloud(notes: NotesMap): Promise<void> {
 
 async function trySyncToCloud(progress: ProgressMap): Promise<void> {
   try {
+    if (!hasConsent()) return; // локальный режим: прогресс не выгружаем
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 

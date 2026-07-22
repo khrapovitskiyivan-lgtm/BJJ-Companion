@@ -2,10 +2,10 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { BottomNav } from "./BottomNav";
 import { Onboarding } from "./Onboarding";
+import { ConsentGate } from "./ConsentGate";
 import { Logo } from "./Logo";
 import { AvatarMenu } from "./AvatarMenu";
-import { GlobalStatsModal } from "./GlobalStatsModal";
-import { useDiary, useProfile, useProgress } from "@/lib/bjj/store";
+import { CONSENT_VERSION, useDiary, useProfile, useProgress } from "@/lib/bjj/store";
 import { reportPlayer } from "@/lib/bjj/globalStats";
 import { reportTgPlan } from "@/lib/bjj/tgReport";
 import { track } from "@/lib/bjj/telemetry";
@@ -42,7 +42,6 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
   const { entries } = useDiary();
   const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [statsOpen, setStatsOpen] = useState(false);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -78,6 +77,19 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
 
   if (!hydrated) {
     return <div className="min-h-screen bg-background" />;
+  }
+
+  // Гейт согласия: до онбординга и до любой отправки на сервер. Показывается,
+  // пока согласие не пройдено для текущей версии (в т.ч. существующим
+  // пользователям после bump CONSENT_VERSION).
+  if ((profile.consentVersion ?? 0) < CONSENT_VERSION) {
+    const stamp = () => ({ consentVersion: CONSENT_VERSION, consentAt: new Date().toISOString() });
+    return (
+      <ConsentGate
+        onAccept={() => update({ consentChoice: "accepted", ...stamp() })}
+        onLocal={() => update({ consentChoice: "local", ...stamp() })}
+      />
+    );
   }
 
   if (!profile.onboardingDone) {
@@ -116,16 +128,11 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
               {profile.theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
-          {/* центр: лого + название — тап открывает глобальную статистику */}
-          <button
-            type="button"
-            onClick={() => { haptic("light"); setStatsOpen(true); }}
-            aria-label="Глобальная статистика"
-            className="flex items-center gap-2 justify-self-center"
-          >
-            <Logo size={26} />
-            <span className="text-sm font-bold tracking-tight">BJJ Companion</span>
-          </button>
+          {/* центр: лого + название — бренд-знак без действия (сообщество живёт в блоке «Партнёры») */}
+          <div className="flex items-center gap-2 justify-self-center">
+            <Logo size={32} />
+            <span className="text-base font-bold tracking-tight">BJJ Companion</span>
+          </div>
           {/* справа: настройки и информация (язык, аккаунт, о приложении) */}
           <button
             type="button"
@@ -141,7 +148,6 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
       <main className={`mx-auto px-4 py-4 ${wide ? "max-w-6xl" : "max-w-xl"}`}>{children}</main>
       <BottomNav />
       {menuOpen && <AvatarMenu onClose={() => setMenuOpen(false)} />}
-      {statsOpen && <GlobalStatsModal onClose={() => setStatsOpen(false)} />}
     </div>
   );
 }

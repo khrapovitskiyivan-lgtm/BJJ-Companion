@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { getDeviceId } from "./store";
+import { getDeviceId, hasConsent } from "./store";
 import type { Belt } from "./types";
 
 // Глобальная статистика игроков: анонимный учёт по device_id через RPC-функции
@@ -24,6 +24,7 @@ function withTimeout<T>(p: PromiseLike<T>, ms: number): Promise<T | null> {
 // Сообщить пояс устройства (fire-and-forget: статистика не должна ломать приложение)
 export function reportPlayer(belt: Belt): void {
   if (typeof window === "undefined") return;
+  if (!hasConsent()) return; // отчёт в глобальную статистику только с согласия
   try {
     const prev = JSON.parse(localStorage.getItem(REPORT_KEY) ?? "null") as { belt: Belt; at: number } | null;
     if (prev && prev.belt === belt && Date.now() - prev.at < REPORT_TTL) return;

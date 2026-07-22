@@ -23,7 +23,7 @@ interface TgWebApp {
   ready(): void;
   expand(): void;
   initData: string;
-  initDataUnsafe?: { user?: TgUser };
+  initDataUnsafe?: { user?: TgUser; start_param?: string };
   colorScheme?: "light" | "dark";
   isExpanded?: boolean;
   HapticFeedback?: HapticFeedbackApi;
@@ -110,6 +110,22 @@ export function getTelegramUser(): TgUser | null {
     }
   }
   return user;
+}
+
+// start_param из deep-link (t.me/bot?startapp=CODE): сначала из initDataUnsafe,
+// иначе парсим строку initData. Используется приёмом приглашения партнёра.
+export function getStartParam(): string | null {
+  const tg = getTelegram();
+  const direct = tg?.initDataUnsafe?.start_param;
+  if (direct) return direct;
+  if (tg?.initData) {
+    try {
+      return new URLSearchParams(tg.initData).get("start_param");
+    } catch {
+      /* ignore */
+    }
+  }
+  return null;
 }
 
 // === Тема сессии ===
