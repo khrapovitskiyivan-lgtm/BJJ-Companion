@@ -58,8 +58,8 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
   // Отчёт для напоминаний бота (только внутри Telegram; троттлинг и гейт внутри)
   useEffect(() => {
     if (!hydrated || !profile.onboardingDone) return;
-    reportTgPlan(profile.frequency, entries);
-  }, [hydrated, profile.onboardingDone, profile.frequency, entries]);
+    reportTgPlan(profile.frequency, entries, profile.trainingDays);
+  }, [hydrated, profile.onboardingDone, profile.frequency, profile.trainingDays, entries]);
 
   // Telegram Mini App: подтянуть имя/фото/язык из Telegram (один раз после гидратации)
   useEffect(() => {

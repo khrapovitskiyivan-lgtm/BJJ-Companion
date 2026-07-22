@@ -14,6 +14,7 @@ function row(patch: Partial<TgChatRow> = {}): TgChatRow {
     week_start: "2026-07-13",
     week_done: 0,
     last_entry: null,
+    training_days: null,
     muted: false,
     last_ping: null,
     updated_at: "2026-07-16T10:00:00+00:00",
@@ -86,6 +87,30 @@ describe("decide: суббота и воскресенье", () => {
 
   it("воскресенье без активности на неделе — молчим", () => {
     expect(decide(row({ week_start: "2026-07-06" }), "2026-07-19", 7, MONDAY).kind).toBe("none");
+  });
+});
+
+describe("decide: кастомные тренировочные дни", () => {
+  // Пн/Ср/Пт (0,2,4), частота 3
+  const mwf = { training_days: [0, 2, 4] };
+
+  it("выходной день (вт) — тишина", () => {
+    expect(decide(row(mwf), "2026-07-14", 2, MONDAY).kind).toBe("none"); // вт не тренировочный
+  });
+
+  it("горит уже в пн: 3 нужно, впереди только ср+пт (2)", () => {
+    expect(decide(row(mwf), "2026-07-13", 1, MONDAY).kind).toBe("remind"); // пн, need 3 > after 2
+  });
+
+  it("пятница — последний трен. день, вечером тишина", () => {
+    expect(decide(row(mwf), "2026-07-17", 5, MONDAY).kind).toBe("none"); // пт: after 0
+  });
+
+  it("воскресенье-тренировка: всё равно итог, не напоминание", () => {
+    // Пн-Пт + Вс тренировочные, Сб выходной
+    const sunTrain = { training_days: [0, 1, 2, 3, 4, 6] };
+    expect(decide(row(sunTrain), "2026-07-18", 6, MONDAY).kind).toBe("none"); // сб — выходной
+    expect(decide(row({ ...sunTrain, week_done: 2 }), "2026-07-19", 7, MONDAY).kind).toBe("recap"); // вс — итог
   });
 });
 

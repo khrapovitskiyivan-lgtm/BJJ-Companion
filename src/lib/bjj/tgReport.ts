@@ -11,7 +11,11 @@ import type { DiaryEntry, Frequency } from "./types";
 const KEY = "bjj.tgReport.v1";
 const TTL = 12 * 60 * 60 * 1000;
 
-export function reportTgPlan(frequency: Frequency | undefined, entries: DiaryEntry[]): void {
+export function reportTgPlan(
+  frequency: Frequency | undefined,
+  entries: DiaryEntry[],
+  trainingDays?: number[],
+): void {
   if (typeof window === "undefined" || !isTelegram()) return;
   const u = getTelegramUser();
   if (!u?.id) return;
@@ -24,8 +28,15 @@ export function reportTgPlan(frequency: Frequency | undefined, entries: DiaryEnt
       p_week_start: r.weekStart,
       p_week_done: r.weekDone,
       p_last_entry: r.lastEntry,
+      p_training_days: trainingDays && trainingDays.length ? trainingDays : [0, 1, 2, 3, 4, 5],
     };
-    const hash = JSON.stringify([payload.p_frequency, payload.p_week_start, payload.p_week_done, payload.p_last_entry]);
+    const hash = JSON.stringify([
+      payload.p_frequency,
+      payload.p_week_start,
+      payload.p_week_done,
+      payload.p_last_entry,
+      payload.p_training_days,
+    ]);
     const prev = JSON.parse(localStorage.getItem(KEY) ?? "null") as { hash: string; at: number } | null;
     if (prev && prev.hash === hash && Date.now() - prev.at < TTL) return;
     void Promise.resolve(supabase.rpc("bjj_tg_report", payload))

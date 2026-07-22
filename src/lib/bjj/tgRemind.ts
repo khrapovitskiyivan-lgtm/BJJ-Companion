@@ -39,6 +39,7 @@ export interface TgChatRow {
   week_start: string | null;
   week_done: number;
   last_entry: string | null;
+  training_days: number[] | null; // 0=Пн..6=Вс; null/пусто = дефолт Пн-Сб
   muted: boolean;
   last_ping: string | null;
   updated_at: string;
@@ -53,6 +54,7 @@ function dayWord(n: number): string {
 }
 
 // Решение по одному чату. dow: 1=Пн..7=Вс (по МСК), mondayIso — понедельник текущей недели.
+// Тренировочные дни — из row.training_days (0=Пн..6=Вс); пусто/null = дефолт Пн-Сб.
 export function decide(row: TgChatRow, todayIso: string, dow: number, mondayIso: string): CronDecision {
   if (row.muted || !row.frequency) return { kind: "none" };
   if (row.last_ping === todayIso) return { kind: "none" }; // не чаще раза в день
@@ -66,8 +68,12 @@ export function decide(row: TgChatRow, todayIso: string, dow: number, mondayIso:
   const done = fresh ? row.week_done : 0;
   const quota = row.frequency;
 
-  // Воскресенье: итог недели (неделя закрыта в субботу утром)
-  if (dow === 7) {
+  const days = row.training_days && row.training_days.length ? row.training_days : [0, 1, 2, 3, 4, 5];
+  const set = new Set(days);
+  const d0 = dow - 1; // 0=Пн..6=Вс
+
+  // Воскресенье: итог недели (конец календарной недели)
+  if (d0 === 6) {
     if (!fresh) return { kind: "none" }; // неактивная неделя — нечего подводить
     const text =
       done >= quota
@@ -76,16 +82,20 @@ export function decide(row: TgChatRow, todayIso: string, dow: number, mondayIso:
     return { kind: "recap", text };
   }
 
-  // Суббота: тренировка была утром, вечером молчим
-  if (dow === 6) return { kind: "none" };
+  // Не тренировочный день — молчим
+  if (!set.has(d0)) return { kind: "none" };
 
-  // Пн-Пт: горит, когда оставшихся тренировочных дней (после сегодня, до сб)
-  // впритык или меньше, чем недостающих тренировок
-  const daysLeft = 6 - dow;
+  // Оставшиеся тренировочные дни строго после сегодня (до вс включительно)
+  let after = 0;
+  for (let d = d0 + 1; d <= 6; d++) if (set.has(d)) after++;
+  // Сегодня последний тренировочный день недели — к вечеру окно прошло, молчим
+  if (after === 0) return { kind: "none" };
+
+  // Горит, когда будущих тренировочных дней уже не хватает на недостающие тренировки
   const need = quota - done;
   if (need <= 0) return { kind: "none" };
   if (row.last_entry === todayIso) return { kind: "none" }; // сегодня уже отметился
-  if (need < daysLeft) return { kind: "none" };
-  const text = `План недели под угрозой: ${done} из ${quota}, осталось ${daysLeft} ${dayWord(daysLeft)} до конца недели (сб). Тренировался — отметь в два тапа. Отключить напоминания: /mute`;
+  if (need < after) return { kind: "none" };
+  const text = `План недели под угрозой: ${done} из ${quota}, осталось ${after} ${dayWord(after)} до конца недели. Тренировался — отметь в два тапа. Отключить напоминания: /mute`;
   return { kind: "remind", text };
 }
