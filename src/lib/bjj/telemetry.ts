@@ -20,7 +20,8 @@ export type TelemetryEvent =
   | "consent"
   | "invite_created"
   | "invite_accepted"
-  | "partner_opened";
+  | "partner_opened"
+  | "pro_video_interest";
 
 const DEDUP_KEY = "bjj.telemetry.v1";
 const DAY = 24 * 60 * 60 * 1000;
