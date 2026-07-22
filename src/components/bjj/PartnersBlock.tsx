@@ -7,6 +7,7 @@ import {
   publishProfile,
   acceptPartner,
   removePartner,
+  markPartnersJoined,
   type PartnerProfile,
 } from "@/lib/bjj/partners";
 import { buildPublishInput } from "@/lib/bjj/partnersProfile";
@@ -256,10 +257,9 @@ export function PartnersBlock() {
   const [pendingCode, setPendingCode] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  // joined = у меня есть профиль на сервере (пригласил/принял/уже есть партнёры):
-  // только тогда держим профиль свежим. lastFetchRef троттлит обновление по фокусу.
-  const [joined, setJoined] = useState(false);
+  // lastFetchRef троттлит обновление по фокусу/интервалу.
   const lastFetchRef = useRef(0);
+  const hasPartners = (partners?.length ?? 0) > 0;
 
   const inTg = isTelegram();
   const enabled = inTg && hasConsent();
@@ -283,7 +283,7 @@ export function PartnersBlock() {
     lastFetchRef.current = Date.now();
     const list = await listPartners();
     setPartners(list);
-    if (list.length > 0) setJoined(true);
+    if (list.length > 0) markPartnersJoined();
   };
 
   // Монтирование: загрузить список + приглашение из deep-link
@@ -312,14 +312,16 @@ export function PartnersBlock() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);
 
-  // Держим свой профиль свежим: если участвую, публикую при изменении данных
-  // (дневник/прогресс/профиль) с дебаунсом — партнёры видят актуальный статус
+  // Автообновление списка, пока блок открыт и приложение активно (раз в 45с,
+  // только если есть партнёры) — чтобы статус партнёра подтягивался без действий
   useEffect(() => {
-    if (!enabled || !hydrated || !joined) return;
-    const id = setTimeout(() => void publishProfile(currentInput()), 1500);
-    return () => clearTimeout(id);
+    if (!enabled || !hasPartners) return;
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") void reload();
+    }, 45000);
+    return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, hydrated, joined, entries, progress, profile]);
+  }, [enabled, hasPartners]);
 
   const onInvite = async () => {
     haptic();
@@ -327,7 +329,7 @@ export function PartnersBlock() {
     const code = await publishProfile(currentInput());
     setBusy(false);
     if (!code) return flash("Не получилось. Попробуй позже");
-    setJoined(true);
+    markPartnersJoined();
     track("invite_created");
     await shareText(
       "Давай держать недельный план вместе в BJJ Companion. Прими приглашение в партнёры:",
@@ -340,6 +342,7 @@ export function PartnersBlock() {
     setBusy(true);
     const status = await acceptPartner(code);
     if (status === "ok") {
+      markPartnersJoined();
       void publishProfile(currentInput()); // чтобы пригласивший увидел тебя
       await reload();
       hapticSuccess();

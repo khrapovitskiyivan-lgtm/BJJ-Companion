@@ -5,9 +5,11 @@ import { Onboarding } from "./Onboarding";
 import { ConsentGate } from "./ConsentGate";
 import { Logo } from "./Logo";
 import { AvatarMenu } from "./AvatarMenu";
-import { CONSENT_VERSION, useDiary, useProfile, useProgress } from "@/lib/bjj/store";
+import { CONSENT_VERSION, getDeviceId, useDiary, useProfile, useProgress } from "@/lib/bjj/store";
 import { reportPlayer } from "@/lib/bjj/globalStats";
 import { reportTgPlan } from "@/lib/bjj/tgReport";
+import { reportPartnerProfile } from "@/lib/bjj/reportPartnerProfile";
+import { buildPublishInput } from "@/lib/bjj/partnersProfile";
 import { track } from "@/lib/bjj/telemetry";
 import { initTelegram, haptic, markThemeManual, isTelegram } from "@/lib/telegram";
 import { Moon, Sun, Settings } from "lucide-react";
@@ -39,7 +41,7 @@ const TELEMETRY_SECTIONS: Record<string, string> = {
 export function AppShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
   const { profile, update, hydrated } = useProfile();
   const { progress, setProgress } = useProgress();
-  const { entries } = useDiary();
+  const { entries, practiceCount } = useDiary();
   const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -59,6 +61,33 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
     if (!hydrated || !profile.onboardingDone) return;
     reportTgPlan(profile.frequency, entries, profile.trainingDays);
   }, [hydrated, profile.onboardingDone, profile.frequency, profile.trainingDays, entries]);
+
+  // Свежесть публичного профиля партнёра (гейт/дедуп внутри). Здесь, а не в
+  // PartnersBlock: AppShell смонтирован всегда и видит свежий дневник на навигации.
+  useEffect(() => {
+    if (!hydrated || !profile.onboardingDone) return;
+    reportPartnerProfile(
+      buildPublishInput({
+        device: getDeviceId(),
+        profile,
+        progress,
+        practiceCount: practiceCount(),
+        entries,
+        today: new Date(),
+      }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    hydrated,
+    profile.onboardingDone,
+    profile.belt,
+    profile.gi,
+    profile.noGi,
+    profile.frequency,
+    profile.trainingDays,
+    progress,
+    entries,
+  ]);
 
   // Telegram Mini App: подтянуть имя/фото/язык из Telegram (один раз после гидратации)
   useEffect(() => {

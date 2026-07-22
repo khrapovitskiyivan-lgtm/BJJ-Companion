@@ -33,6 +33,28 @@ export interface PublishInput {
 
 export type AcceptStatus = "ok" | "self" | "not_found" | "exists" | "limit" | "bad";
 
+// Локальный флаг «участвую в партнёрах»: ставится при приглашении/приёме/наличии
+// партнёров. По нему AppShell решает, держать ли свой профиль свежим (не публикуем
+// имя/фото тех, кто фичу не трогал).
+const JOINED_KEY = "bjj.partnersJoined.v1";
+
+export function markPartnersJoined(): void {
+  try {
+    localStorage.setItem(JOINED_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function isPartnersJoined(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(JOINED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 async function post<T>(action: string, payload: Record<string, unknown>): Promise<T | null> {
   const tg = getTelegram();
   if (!isTelegram() || !tg?.initData) return null;
