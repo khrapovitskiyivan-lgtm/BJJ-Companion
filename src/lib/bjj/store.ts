@@ -12,6 +12,7 @@ const PROGRESS_KEY = "bjj.progress.v1";
 const DIARY_KEY = "bjj.diary.v1";
 const NOTES_KEY = "bjj.notes.v1";
 const REVIEWED_KEY = "bjj.reviewed.v1";
+const FAVORITES_KEY = "bjj.favorites.v1";
 const DEVICE_KEY = "bjj.device.v1";
 
 const DEFAULT_PROFILE: StyleProfile = {
@@ -326,6 +327,55 @@ export function useReviewed() {
   return { reviewed, markReviewed, hydrated };
 }
 
+// === FAVORITES HOOK ===
+// Избранные техники: Record<techId, true>. Схема как у useNotes: общая шина +
+// localStorage + облако (колонка favorites_data, чтобы не толкаться с progress/notes).
+export type FavoritesMap = Record<number, true>;
+
+let favoritesSnapshot: FavoritesMap | null = null;
+const favoritesListeners = new Set<(m: FavoritesMap) => void>();
+
+function publishFavorites(next: FavoritesMap) {
+  favoritesSnapshot = next;
+  for (const listener of favoritesListeners) listener(next);
+}
+
+export function useFavorites() {
+  const [favorites, setFavoritesState] = useState<FavoritesMap>({});
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    const initial = favoritesSnapshot ?? readJSON<FavoritesMap>(FAVORITES_KEY, {});
+    favoritesSnapshot = initial;
+    setFavoritesState(initial);
+    setHydrated(true);
+    favoritesListeners.add(setFavoritesState);
+
+    trySyncFavoritesFromCloud().then((remote) => {
+      if (remote) {
+        const merged = { ...remote, ...(favoritesSnapshot ?? {}) };
+        writeJSON(FAVORITES_KEY, merged);
+        publishFavorites(merged);
+      }
+    });
+
+    return () => {
+      favoritesListeners.delete(setFavoritesState);
+    };
+  }, []);
+
+  const toggleFavorite = useCallback((techniqueId: number) => {
+    const next = { ...(favoritesSnapshot ?? {}) };
+    if (next[techniqueId]) delete next[techniqueId];
+    else next[techniqueId] = true;
+    writeJSON(FAVORITES_KEY, next);
+    void trySyncFavoritesToCloud(next);
+    publishFavorites(next);
+  }, []);
+
+  return { favorites, toggleFavorite, hydrated };
+}
+
 // === CLOUD SYNC (best-effort, 3s timeout) ===
 async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
   return await Promise.race([
@@ -411,6 +461,54 @@ async function trySyncNotesToCloud(notes: NotesMap): Promise<void> {
     }
   } catch {
     /* молча: заметки не должны ломать приложение */
+  }
+}
+
+async function trySyncFavoritesFromCloud(): Promise<FavoritesMap | null> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const query = supabase
+      .from("bjj_progress")
+      .select("favorites_data")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const result = await withTimeout(query, 3000);
+    if (!result || result.error || !result.data) return null;
+
+    const map: FavoritesMap = {};
+    const data = (result.data.favorites_data ?? {}) as Record<string, unknown>;
+    for (const key of Object.keys(data)) {
+      const numKey = Number(key);
+      if (!isNaN(numKey) && data[key]) map[numKey] = true;
+    }
+    return map;
+  } catch {
+    return null;
+  }
+}
+
+async function trySyncFavoritesToCloud(favorites: FavoritesMap): Promise<void> {
+  try {
+    if (!hasConsent()) return; // локальный режим: избранное не выгружаем
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const favData: Record<string, boolean> = {};
+    for (const key of Object.keys(favorites)) favData[String(key)] = true;
+
+    const query = supabase.from("bjj_progress").upsert(
+      { user_id: user.id, favorites_data: favData },
+      { onConflict: "user_id" },
+    );
+    const result = await withTimeout(query, 3000);
+    if (result && "error" in result && result.error) {
+      console.warn("Ошибка сохранения избранного в облако:", result.error.message);
+    }
+  } catch {
+    /* молча: избранное не должно ломать приложение */
   }
 }
 
