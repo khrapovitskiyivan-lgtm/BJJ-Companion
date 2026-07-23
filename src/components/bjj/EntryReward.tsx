@@ -1,8 +1,12 @@
 import { useEffect, useState } from "react";
-import { Button, Sheet } from "@/components/bjj/ui";
+import { Link } from "@tanstack/react-router";
+import { Button, Sheet, buttonClass } from "@/components/bjj/ui";
+import { TechniqueRow } from "@/components/bjj/TechniqueCard";
 import { STAT_META } from "@/lib/bjj/stats";
+import { TECH_BY_ID } from "@/lib/bjj/data";
+import { track } from "@/lib/bjj/telemetry";
 import type { EntryReward } from "@/lib/bjj/reward";
-import { CalendarDays, Flame, ShieldCheck, TrendingUp } from "lucide-react";
+import { CalendarDays, Dumbbell, Flame, ShieldCheck, TrendingUp } from "lucide-react";
 
 // Экран награды после сохранения записи дневника: 2-3 дельты каскадом.
 // Золото строго у достижений (квота недели, сверх плана, серия дней) —
@@ -50,7 +54,15 @@ function razWord(n: number): string {
 const CARD = "rounded-xl border border-border bg-card p-3 animate-in fade-in slide-in-from-bottom-2 duration-300";
 const cardDelay = (i: number) => ({ animationDelay: `${i * 130}ms`, animationFillMode: "both" as const });
 
-export function EntryRewardSheet({ reward, onClose }: { reward: EntryReward; onClose: () => void }) {
+export function EntryRewardSheet({
+  reward,
+  techniqueIds,
+  onClose,
+}: {
+  reward: EntryReward;
+  techniqueIds: number[];
+  onClose: () => void;
+}) {
   const { week, stat, defense } = reward;
 
   // Бар стата: монтируемся на pctBefore, после появления карточек переезжаем на pctAfter
@@ -149,6 +161,32 @@ export function EntryRewardSheet({ reward, onClose }: { reward: EntryReward; onC
           </div>
         )}
       </div>
+
+      {techniqueIds.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+            Разбери показанное
+          </p>
+          {techniqueIds.map((id) => {
+            const t = TECH_BY_ID[id];
+            if (!t) return null;
+            return (
+              <div key={id} onClick={() => track("review_opened", String(id))}>
+                <TechniqueRow technique={t} inset />
+              </div>
+            );
+          })}
+          <Link
+            to="/workout"
+            search={{ src: "diary" }}
+            onClick={() => track("review_drill")}
+            className={buttonClass("soft", "md", "w-full")}
+          >
+            <Dumbbell className="h-4 w-4" />
+            В отработку
+          </Link>
+        </div>
+      )}
 
       <Button variant="primary" size="lg" onClick={onClose} className="w-full">
         Отлично

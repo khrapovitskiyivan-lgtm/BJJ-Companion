@@ -47,7 +47,7 @@ function Diary() {
   const { profile } = useProfile();
 
   const [adding, setAdding] = useState(false);
-  const [reward, setReward] = useState<EntryReward | null>(null);
+  const [reward, setReward] = useState<{ reward: EntryReward; techniqueIds: number[] } | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -193,9 +193,11 @@ function Diary() {
     if (editingId) {
       updateEntry(editingId, payload);
     } else {
+      // показанное для разбора: без изученных (done не нуждается в разборе)
+      const shownIds = picked.filter((id) => (progress[id] ?? "not_started") !== "done");
       // награда считается на данных «до»: entries и progress ещё не обновлены
-      setReward(
-        computeEntryReward({
+      setReward({
+        reward: computeEntryReward({
           entriesBefore: entries,
           entry: payload,
           progressBefore: progress,
@@ -203,7 +205,8 @@ function Diary() {
           frequency: profile.frequency,
           today: new Date(),
         }),
-      );
+        techniqueIds: shownIds,
+      });
       addEntry(payload);
       track("entry_saved");
       if (caught.length > 0) track("caught_logged");
@@ -236,7 +239,13 @@ function Diary() {
         <ActivityHeatmap entries={entries} frequency={profile.frequency} onSetFrequency={() => setSheetOpen(true)} />
       )}
       {sheetOpen && <CharacterSheet onClose={() => setSheetOpen(false)} />}
-      {reward && <EntryRewardSheet reward={reward} onClose={() => setReward(null)} />}
+      {reward && (
+        <EntryRewardSheet
+          reward={reward.reward}
+          techniqueIds={reward.techniqueIds}
+          onClose={() => setReward(null)}
+        />
+      )}
 
       {/* Форма новой тренировки */}
       {adding && (
