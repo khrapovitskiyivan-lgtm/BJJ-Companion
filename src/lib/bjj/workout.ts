@@ -27,17 +27,18 @@ function safetyOk(t: Technique, maxBeltIndex: number, mode: WorkoutConfig["safet
 
 // === Фильтр библиотеки ===
 export function filterTechniques(opts: {
-  belt?: Belt;
+  belts?: Belt[];
   gi?: boolean;
   noGi?: boolean;
   group?: Group | "all";
   search?: string;
 }): Technique[] {
-  const { belt, gi, noGi, group, search } = opts;
-  const maxBeltIndex = belt ? beltIndex(belt) : BELT_ORDER.length - 1;
+  const { belts, gi, noGi, group, search } = opts;
+  // Точный мультивыбор поясов: показываем техники ровно выбранных поясов; пусто = все
+  const beltSet = belts && belts.length ? new Set(belts) : null;
   const needle = search?.trim().toLowerCase();
   return TECHNIQUES.filter((t) => {
-    if (belt && beltIndex(t.belt) > maxBeltIndex) return false;
+    if (beltSet && !beltSet.has(t.belt)) return false;
     if (gi === true && !t.gi) return false;
     if (noGi === true && !t.noGi) return false;
     if (group && group !== "all" && t.group !== group) return false;

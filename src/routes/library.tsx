@@ -25,7 +25,7 @@ const PAGE_SIZE = 40;
 // (страница размонтируется, локальный useState теряется — держим последнее состояние здесь).
 type LibFilters = {
   search: string;
-  belt: Belt;
+  belts: Belt[];
   giMode: "both" | "gi" | "nogi";
   group: Group | "all";
   page: number;
@@ -56,7 +56,8 @@ function Library() {
     profile.gi && profile.noGi ? "both" : profile.gi ? "gi" : "nogi";
 
   const [search, setSearch] = useState(() => libFiltersCache?.search ?? "");
-  const [belt, setBelt] = useState<Belt>(() => libFiltersCache?.belt ?? profile.belt);
+  // Мультивыбор поясов (точное объединение). Дефолт — пояс профиля; пусто = все
+  const [belts, setBelts] = useState<Belt[]>(() => libFiltersCache?.belts ?? [profile.belt]);
   const [giMode, setGiMode] = useState<"both" | "gi" | "nogi">(
     () => libFiltersCache?.giMode ?? defaultGiMode,
   );
@@ -65,20 +66,20 @@ function Library() {
 
   // Держим кэш в актуальном состоянии, чтобы восстановить фильтры после возврата
   useEffect(() => {
-    libFiltersCache = { search, belt, giMode, group, page };
-  }, [search, belt, giMode, group, page]);
+    libFiltersCache = { search, belts, giMode, group, page };
+  }, [search, belts, giMode, group, page]);
 
   // ✅ Фильтрация техник
   const filtered = useMemo(
     () =>
       filterTechniques({
-        belt,
+        belts,
         gi: giMode === "gi" || giMode === "both" ? true : undefined,
         noGi: giMode === "nogi" || giMode === "both" ? true : undefined,
         group,
         search,
       }),
-    [belt, giMode, group, search],
+    [belts, giMode, group, search],
   );
 
   // ✅ Пагинация
@@ -95,21 +96,23 @@ function Library() {
   // ✅ Сброс всех фильтров к значениям по умолчанию (из профиля)
   const resetAllFilters = () => {
     setSearch("");
-    setBelt(profile.belt);
+    setBelts([profile.belt]);
     setGiMode(defaultGiMode);
     setGroup("all");
     setPage(1);
   };
 
   // ✅ Подсчёт активных фильтров для индикатора
+  // Пояс активен, если выбор отличается от дефолта (ровно пояс профиля)
+  const beltFilterActive = !(belts.length === 1 && belts[0] === profile.belt);
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (search) count++;
-    if (belt !== profile.belt) count++;
+    if (beltFilterActive) count++;
     if (giMode !== defaultGiMode) count++;
     if (group !== "all") count++;
     return count;
-  }, [search, belt, giMode, group, profile.belt, defaultGiMode]);
+  }, [search, beltFilterActive, giMode, group, defaultGiMode]);
 
   const hasActiveFilters = activeFiltersCount > 0;
 
@@ -170,9 +173,9 @@ function Library() {
         {BELT_ORDER.map((b) => (
           <Chip
             key={b}
-            active={belt === b}
+            active={belts.includes(b)}
             onClick={() => {
-              setBelt(b);
+              setBelts((prev) => (prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]));
               resetPage();
             }}
           >
