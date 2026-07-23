@@ -17,6 +17,8 @@ function row(patch: Partial<TgChatRow> = {}): TgChatRow {
     training_days: null,
     muted: false,
     last_ping: null,
+    soft_ping_week: null,
+    soft_ping_count: 0,
     updated_at: "2026-07-16T10:00:00+00:00",
     ...patch,
   };
@@ -45,8 +47,8 @@ describe("weekMonday / weekReport", () => {
 
 describe("decide: напоминания Пн-Пт", () => {
   it("частота 3, неделя пустая: пн-вт рано, со среды горит", () => {
-    expect(decide(row(), "2026-07-13", 1, MONDAY).kind).toBe("none"); // пн: осталось 5
-    expect(decide(row(), "2026-07-14", 2, MONDAY).kind).toBe("none"); // вт: осталось 4
+    expect(decide(row(), "2026-07-13", 1, MONDAY).kind).toBe("soft"); // пн: план не горит -> мягкий нудж
+    expect(decide(row(), "2026-07-14", 2, MONDAY).kind).toBe("soft"); // вт: тоже мягкий
     const wed = decide(row(), "2026-07-15", 3, MONDAY); // ср: осталось 3 = need 3
     expect(wed.kind).toBe("remind");
     expect(wed.kind === "remind" && wed.text).toContain("0 из 3");
@@ -59,8 +61,8 @@ describe("decide: напоминания Пн-Пт", () => {
   });
 
   it("частичный прогресс сдвигает точку горения", () => {
-    // 1 из 3: need 2 — горит с чт (осталось 2)
-    expect(decide(row({ week_done: 1 }), "2026-07-15", 3, MONDAY).kind).toBe("none");
+    // 1 из 3: need 2 — горит с чт (осталось 2); в ср не горит -> мягкий нудж
+    expect(decide(row({ week_done: 1 }), "2026-07-15", 3, MONDAY).kind).toBe("soft");
     expect(decide(row({ week_done: 1 }), "2026-07-16", 4, MONDAY).kind).toBe("remind");
   });
 
@@ -111,6 +113,38 @@ describe("decide: кастомные тренировочные дни", () => {
     const sunTrain = { training_days: [0, 1, 2, 3, 4, 6] };
     expect(decide(row(sunTrain), "2026-07-18", 6, MONDAY).kind).toBe("none"); // сб — выходной
     expect(decide(row({ ...sunTrain, week_done: 2 }), "2026-07-19", 7, MONDAY).kind).toBe("recap"); // вс — итог
+  });
+});
+
+describe("decide: вечерний soft-пинг", () => {
+  it("трен. день, план не горит, недобор -> soft", () => {
+    const d = decide(row(), "2026-07-13", 1, MONDAY); // пн, need 3 < after 5
+    expect(d.kind).toBe("soft");
+    expect(d.kind === "soft" && d.text).toContain("Была тренировка");
+  });
+
+  it("кап 2/нед: третий soft на неделе -> тишина", () => {
+    const r = row({ soft_ping_week: MONDAY, soft_ping_count: 2 });
+    expect(decide(r, "2026-07-13", 1, MONDAY).kind).toBe("none");
+  });
+
+  it("счётчик прошлой недели не считается (сброс)", () => {
+    const r = row({ soft_ping_week: "2026-07-06", soft_ping_count: 5 });
+    expect(decide(r, "2026-07-13", 1, MONDAY).kind).toBe("soft");
+  });
+
+  it("план горит -> remind важнее soft", () => {
+    // ср пустой недели: need 3 >= after 3 -> remind
+    expect(decide(row(), "2026-07-15", 3, MONDAY).kind).toBe("remind");
+  });
+
+  it("логировал сегодня -> ни soft, ни remind", () => {
+    expect(decide(row({ last_entry: "2026-07-13" }), "2026-07-13", 1, MONDAY).kind).toBe("none");
+  });
+
+  it("выходной день (кастомные дни) soft не шлёт", () => {
+    // Пн/Ср/Пт; вторник не тренировочный
+    expect(decide(row({ training_days: [0, 2, 4] }), "2026-07-14", 2, MONDAY).kind).toBe("none");
   });
 });
 
