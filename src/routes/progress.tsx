@@ -3,14 +3,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TechniqueRow, TechniqueChip } from "@/components/bjj/TechniqueCard";
 import { GapCard } from "@/components/bjj/GapCard";
-import { TodayCard } from "@/components/bjj/TodayCard";
+import { ProgressTop } from "@/components/bjj/ProgressTop";
 import { ReviewShownBlock } from "@/components/bjj/ReviewShownBlock";
 import { PartnersBlock } from "@/components/bjj/PartnersBlock";
+import { todayCardModel } from "@/lib/bjj/todayCard";
 import { CharacterSheet } from "@/components/bjj/CharacterSheet";
 import { ProgressSheet } from "@/components/bjj/ProgressSheet";
 import { Button, PageHeader, buttonClass } from "@/components/bjj/ui";
-import { initials } from "@/components/bjj/AppShell";
-import { useProgress, useProfile, useDiary } from "@/lib/bjj/store";
+import { useProgress, useProfile, useDiary, useFavorites } from "@/lib/bjj/store";
 import { currentFocus, nextToLearn } from "@/lib/bjj/recommend";
 import { computeStyleAffinity, type StyleScore } from "@/lib/bjj/styleProfile";
 import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
@@ -28,10 +28,7 @@ import {
 } from "@/lib/bjj/stats";
 import type { Technique } from "@/lib/bjj/types";
 import {
-  TrendingUp,
   Target,
-  CircleDot,
-  BookOpen,
   Flag,
   History,
   ArrowRight,
@@ -48,8 +45,9 @@ export const Route = createFileRoute("/progress")({
 // === ГЛАВНЫЙ КОМПОНЕНТ ===
 function ProgressPage() {
   const { progress } = useProgress();
-  const { profile } = useProfile();
-  const { entries, practiceCount } = useDiary();
+  const { profile, hydrated: profileHydrated } = useProfile();
+  const { entries, practiceCount, hydrated: diaryHydrated } = useDiary();
+  const { favorites } = useFavorites();
 
   // Текущий фокус (в процессе) + следующая цель (рекомендации)
   const focusTech = useMemo(() => currentFocus(TECHNIQUES, progress), [progress]);
@@ -109,8 +107,8 @@ function ProgressPage() {
       .slice(0, 5);
   }, [entries, progress]);
 
-  // Раскрытие списка техник по статусу: клик по карточке «Изучено» / «В процессе»
-  const [openList, setOpenList] = useState<"done" | "in_progress" | null>(null);
+  // Раскрытие списка техник: клик по стату «Изучено» / «В процессе» / «Избранное»
+  const [openList, setOpenList] = useState<"done" | "in_progress" | "favorites" | null>(null);
   // Лист персонажа (пояс, кимоно, стиль игры) — по тапу на аватара
   const [sheetOpen, setSheetOpen] = useState(false);
   // Шторка «Прогресс» (пояса + группы) — по тапу на hero-карточку «Прогресс»
@@ -119,11 +117,15 @@ function ProgressPage() {
   const [statsOpen, setStatsOpen] = useState(false);
   const listTechniques = useMemo(() => {
     if (!openList) return [];
-    return TECHNIQUES.filter((t) => (progress[t.id] ?? "not_started") === openList).sort(
+    const base =
+      openList === "favorites"
+        ? TECHNIQUES.filter((t) => favorites[t.id])
+        : TECHNIQUES.filter((t) => (progress[t.id] ?? "not_started") === openList);
+    return base.sort(
       (a, b) =>
         BELT_ORDER.indexOf(a.belt) - BELT_ORDER.indexOf(b.belt) || a.difficulty - b.difficulty,
     );
-  }, [openList, progress]);
+  }, [openList, progress, favorites]);
 
   // === Общая статистика ===
   const stats = useMemo(() => {
@@ -140,89 +142,43 @@ function ProgressPage() {
     return { total, done, inProgress, notStarted, pct: Math.round((done / total) * 100) };
   }, [progress]);
 
+  const favCount = Object.keys(favorites).length;
+  // Модель «Сегодня» — только после гидратации (new Date() на клиенте, иначе SSR mismatch)
+  const today =
+    profileHydrated && diaryHydrated
+      ? todayCardModel(entries, profile.frequency, new Date(), profile.trainingDays)
+      : null;
+
   return (
     <AppShell>
       <div className="space-y-6 pb-20">
         {/* Шапка — единая форма с остальными разделами: кикер сверху, название ниже */}
         <PageHeader kicker="Статистика и путь до чёрного пояса" title="Моя игра" className="px-1" />
 
-        <TodayCard />
-
-        <ReviewShownBlock />
-
-        <PartnersBlock />
-
-        {/* Hero: верхний ряд — Прогресс и Профиль; нижний — Изучено и В процессе */}
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard
-            icon={<TrendingUp className="h-5 w-5" />}
-            label="Прогресс"
-            value={`${stats.pct}%`}
-            accent="var(--color-primary)"
-            onClick={() => setProgressOpen(true)}
-          />
-          {/* Профиль: кружок слева, имя из Telegram, ниже титул. Тап открывает лист игрока */}
-          <button
-            type="button"
-            onClick={() => setSheetOpen(true)}
-            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 text-left transition hover:bg-muted"
-            aria-label="Мой профиль игрока"
-          >
-            {profile.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt=""
-                className="block h-12 w-12 shrink-0 rounded-full object-cover"
-                style={{ boxShadow: `0 0 0 3px var(--belt-${profile.belt})` }}
-              />
-            ) : profile.name ? (
-              <span
-                className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-base font-bold text-white ring-2 ring-border"
-                style={{ background: `var(--belt-${profile.belt})` }}
-              >
-                {initials(profile.name)}
-              </span>
-            ) : (
-              <span
-                className="block h-12 w-12 shrink-0 rounded-full ring-2 ring-border"
-                style={{ background: `var(--belt-${profile.belt})` }}
-              />
-            )}
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold">{profile.name || "Боец"}</span>
-              <span className="block truncate text-[11px] text-muted-foreground">
-                {BELT_LABEL[profile.belt]} пояс
-              </span>
-            </span>
-          </button>
-          <StatCard
-            icon={<BookOpen className="h-5 w-5" />}
-            label="Изучено"
-            value={stats.done}
-            total={stats.total}
-            accent="var(--status-done)"
-            onClick={() => setOpenList((v) => (v === "done" ? null : "done"))}
-            active={openList === "done"}
-          />
-          <StatCard
-            icon={<CircleDot className="h-5 w-5" />}
-            label="В процессе"
-            value={stats.inProgress}
-            accent="var(--status-progress)"
-            onClick={() => setOpenList((v) => (v === "in_progress" ? null : "in_progress"))}
-            active={openList === "in_progress"}
-          />
-        </section>
+        <ProgressTop
+          profile={profile}
+          stats={stats}
+          favCount={favCount}
+          today={today}
+          openList={openList}
+          onToggleList={(k) => setOpenList((v) => (v === k ? null : k))}
+          onOpenProgress={() => setProgressOpen(true)}
+          onOpenProfile={() => setSheetOpen(true)}
+        />
 
         {sheetOpen && <CharacterSheet onClose={() => setSheetOpen(false)} />}
         {progressOpen && <ProgressSheet onClose={() => setProgressOpen(false)} />}
 
-        {/* Раскрытый список техник выбранного статуса */}
+        {/* Раскрытый список техник выбранного стата (под верхом) */}
         {openList && (
           <section className="rounded-2xl border border-border bg-card p-4">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold">
-                {openList === "done" ? "Изученные техники" : "Техники в процессе"}{" "}
+                {openList === "done"
+                  ? "Изученные техники"
+                  : openList === "in_progress"
+                    ? "Техники в процессе"
+                    : "Избранные техники"}{" "}
                 <span className="text-muted-foreground">({listTechniques.length})</span>
               </h2>
               <Button variant="ghost" size="sm" onClick={() => setOpenList(null)}>
@@ -233,7 +189,9 @@ function ProgressPage() {
               <p className="text-xs text-muted-foreground">
                 {openList === "done"
                   ? "Пока нет изученных техник. Отмечайте их в библиотеке."
-                  : "Пока нет техник в процессе. Отметьте технику «в процессе» — она появится здесь."}
+                  : openList === "in_progress"
+                    ? "Пока нет техник в процессе. Отметьте технику «в процессе» — она появится здесь."
+                    : "Пока пусто. Отмечай техники звездой на карточке — они появятся здесь."}
               </p>
             ) : (
               <ul className="space-y-1.5">
@@ -246,6 +204,10 @@ function ProgressPage() {
             )}
           </section>
         )}
+
+        <ReviewShownBlock />
+
+        <PartnersBlock />
 
         {/* Текущий фокус + следующая цель (перенесено из графа) */}
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -397,59 +359,6 @@ function ProgressPage() {
 }
 
 // === ПОДКОМПОНЕНТЫ ===
-
-function StatCard({
-  icon,
-  label,
-  value,
-  total,
-  suffix,
-  accent,
-  onClick,
-  active,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number | string;
-  total?: number;
-  suffix?: string;
-  accent: string;
-  onClick?: () => void;
-  active?: boolean;
-}) {
-  const inner = (
-    <>
-      <div
-        className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg"
-        style={{ background: `${accent}20`, color: accent }}
-      >
-        {icon}
-      </div>
-      <div className="flex items-baseline gap-1">
-        <span className="text-2xl font-bold tracking-tight">{value}</span>
-        {suffix && <span className="text-xs text-muted-foreground">{suffix}</span>}
-        {total !== undefined && <span className="text-xs text-muted-foreground">/ {total}</span>}
-      </div>
-      <p className="mt-0.5 text-[11px] text-muted-foreground">{label}</p>
-    </>
-  );
-
-  if (!onClick) {
-    return <div className="rounded-2xl border border-border bg-card p-4">{inner}</div>;
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-expanded={active}
-      className="rounded-2xl border bg-card p-4 text-left transition hover:bg-muted"
-      style={{ borderColor: active ? accent : "var(--color-border)" }}
-    >
-      {inner}
-    </button>
-  );
-}
 
 // Винительный падеж для «отметь N техник(у/и)»
 function techWordAcc(n: number): string {
