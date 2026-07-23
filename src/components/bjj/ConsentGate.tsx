@@ -1,23 +1,50 @@
 import { useState } from "react";
-import { Check, ShieldCheck, WifiOff } from "lucide-react";
+import { Check, ShieldCheck } from "lucide-react";
 import { Button, Sheet } from "@/components/bjj/ui";
 import { PolicyContent, TermsContent } from "./legal";
 
 // === ГЕЙТ СОГЛАСИЯ =========================================================
-// Первый экран при первом запуске, до онбординга. Пока согласие не пройдено,
-// отправщики (telemetry/globalStats/tgReport/sync) молчат - см. hasConsent() в
-// store.ts. Два исхода:
+// Первый запуск, до онбординга. Цепочка: тизер ценности (данные не обрабатывает,
+// греет холодный вход) -> экран согласия. Локальный режим - компактная шторка,
+// не отдельный полноэкранный шаг. Пока согласие не пройдено, отправщики
+// (telemetry/globalStats/tgReport/sync) молчат - см. hasConsent() в store.ts.
 //   onAccept - разрешить отправку данных на сервер (consentChoice 'accepted');
 //   onLocal  - локальный режим без отправки (consentChoice 'local').
 export function ConsentGate({ onAccept, onLocal }: { onAccept: () => void; onLocal: () => void }) {
   const [checked, setChecked] = useState(false);
-  const [view, setView] = useState<"main" | "local">("main");
+  const [view, setView] = useState<"intro" | "main">("intro");
+  const [localOpen, setLocalOpen] = useState(false);
   const [doc, setDoc] = useState<null | "privacy" | "terms">(null);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex min-h-screen max-w-xl flex-col justify-between px-6 py-10">
-        {view === "main" ? (
+        {view === "intro" ? (
+          <>
+            <div className="flex-1 flex flex-col justify-center space-y-6 py-8">
+              <img
+                src="/logo.webp"
+                alt="BJJ Companion"
+                className="mx-auto h-auto w-full max-w-[240px]"
+              />
+              <div>
+                <h1 className="text-center text-xl font-bold tracking-tight">
+                  Дневник BJJ, который ведёт вперёд
+                </h1>
+                <p className="mt-3 text-center text-sm text-muted-foreground">
+                  Отмечай тренировки — увидишь свой стиль и прогресс, получишь план и подсказки, что
+                  учить дальше.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <Button variant="primary" size="lg" fullWidth onClick={() => setView("main")}>
+                Далее
+              </Button>
+            </div>
+          </>
+        ) : (
           <>
             <div className="flex-1 flex flex-col justify-center space-y-6 py-8">
               <div>
@@ -110,66 +137,26 @@ export function ConsentGate({ onAccept, onLocal }: { onAccept: () => void; onLoc
               <Button variant="primary" size="lg" fullWidth disabled={!checked} onClick={onAccept}>
                 Продолжить
               </Button>
-              <Button variant="ghost" size="md" fullWidth onClick={() => setView("local")}>
+              <Button variant="ghost" size="md" fullWidth onClick={() => setLocalOpen(true)}>
                 Использовать локально, без отправки данных
-              </Button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="flex-1 flex flex-col justify-center space-y-6 py-8">
-              <div>
-                <div
-                  className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl"
-                  style={{
-                    background: "color-mix(in oklch, var(--color-primary) 12%, transparent)",
-                  }}
-                >
-                  <WifiOff className="h-8 w-8 text-primary" />
-                </div>
-                <h1 className="text-center text-xl font-bold tracking-tight">Локальный режим</h1>
-                <p className="mt-2 text-center text-sm text-muted-foreground">
-                  Данные остаются только на этом устройстве и на сервер не передаются.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
-                <div>
-                  <p className="text-sm font-semibold text-status-done">Работает</p>
-                  <ul className="mt-1.5 space-y-1 text-sm text-muted-foreground">
-                    <li>дневник тренировок, план и календарь;</li>
-                    <li>библиотека техник, карта, отработка и сценарии;</li>
-                    <li>прогресс, стиль и характеристики.</li>
-                  </ul>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-muted-foreground">
-                    Недоступно без согласия
-                  </p>
-                  <ul className="mt-1.5 space-y-1 text-sm text-muted-foreground">
-                    <li>синхронизация между устройствами;</li>
-                    <li>глобальная статистика игроков;</li>
-                    <li>напоминания бота в Telegram;</li>
-                    <li>партнёры по залу (появится позже).</li>
-                  </ul>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Согласие можно включить позже в настройках.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-2">
-              <Button variant="primary" size="lg" fullWidth onClick={onLocal}>
-                Продолжить локально
-              </Button>
-              <Button variant="secondary" size="md" fullWidth onClick={() => setView("main")}>
-                Назад
               </Button>
             </div>
           </>
         )}
       </div>
+
+      {localOpen && (
+        <Sheet title="Локальный режим" onClose={() => setLocalOpen(false)}>
+          <p className="text-sm text-muted-foreground">
+            Данные останутся только на этом устройстве и на сервер не передаются. Недоступны
+            синхронизация между устройствами, глобальная статистика игроков, напоминания бота и
+            партнёры по залу — можно включить позже в настройках.
+          </p>
+          <Button variant="primary" size="lg" fullWidth onClick={onLocal}>
+            Продолжить локально
+          </Button>
+        </Sheet>
+      )}
 
       {doc === "privacy" && (
         <Sheet title="Политика конфиденциальности" onClose={() => setDoc(null)}>
