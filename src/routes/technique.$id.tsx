@@ -3,7 +3,8 @@ import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-rout
 import { AppShell } from "@/components/bjj/AppShell";
 import { TECH_BY_ID, TECHNIQUES, contentFor } from "@/lib/bjj/data";
 import { BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
-import { useProgress, useProfile, useReviewed } from "@/lib/bjj/store";
+import { useProgress, useProfile, useReviewed, useFavorites } from "@/lib/bjj/store";
+import { track } from "@/lib/bjj/telemetry";
 import { haptic } from "@/lib/telegram";
 import { legalStatus, legalLabel, type LegalValue } from "@/lib/bjj/legal";
 import type { Belt, ProgressStatus, Technique } from "@/lib/bjj/types";
@@ -17,6 +18,7 @@ import {
   Sparkles,
   History,
   Link2,
+  Star,
 } from "lucide-react";
 
 // Новые компоненты
@@ -105,6 +107,10 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
     if (reviewedHydrated) markReviewed(tech.id);
   }, [reviewedHydrated, tech.id, markReviewed]);
 
+  // Избранное: звезда в шапке карточки
+  const { favorites, toggleFavorite } = useFavorites();
+  const isFav = !!favorites[tech.id];
+
   const practiceHistory = useMemo(() => {
     const history: { date: string }[] = [];
     try {
@@ -165,13 +171,27 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
           <ArrowLeft className="h-4 w-4" />
           Назад
         </button>
-        <button
-          onClick={share}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground"
-        >
-          <Share2 className="h-3.5 w-3.5" />
-          {shared ? "Ссылка скопирована!" : "Поделиться"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              haptic();
+              toggleFavorite(tech.id);
+              track("favorite_toggle", String(tech.id));
+            }}
+            aria-label={isFav ? "Убрать из избранного" : "В избранное"}
+            className="inline-flex items-center justify-center rounded-full border border-border p-2 transition hover:bg-muted"
+            style={isFav ? { color: "var(--brand-gold-ink)" } : { color: "var(--color-muted-foreground)" }}
+          >
+            <Star className="h-4 w-4" fill={isFav ? "var(--brand-gold-ink)" : "none"} />
+          </button>
+          <button
+            onClick={share}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            {shared ? "Ссылка скопирована!" : "Поделиться"}
+          </button>
+        </div>
       </div>
 
       {/* Шапка */}

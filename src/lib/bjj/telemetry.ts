@@ -24,7 +24,8 @@ export type TelemetryEvent =
   | "pro_video_interest"
   | "review_opened"
   | "review_drill"
-  | "partner_nudge";
+  | "partner_nudge"
+  | "favorite_toggle";
 
 const DEDUP_KEY = "bjj.telemetry.v1";
 const DAY = 24 * 60 * 60 * 1000;
