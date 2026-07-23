@@ -304,14 +304,6 @@ function ProgressPage() {
                 </div>
               ))}
             </div>
-            <Link
-              to="/workout"
-              search={{ src: "diary" }}
-              className={buttonClass("secondary", "sm", "mt-3 w-full text-muted-foreground")}
-            >
-              Собрать отработку по дневнику
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
           </section>
         )}
 
