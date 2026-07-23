@@ -50,7 +50,7 @@ function StatRow({
     <button
       type="button"
       onClick={onClick}
-      className={`-mx-1 flex w-full items-center gap-2 rounded-lg border-t border-border px-1 py-2 text-left transition first:border-t-0 hover:bg-muted ${active ? "bg-muted" : ""}`}
+      className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition hover:bg-muted ${active ? "border-primary bg-muted" : "border-border"}`}
     >
       {icon}
       <span className="flex-1 text-xs text-muted-foreground">{label}</span>
@@ -124,7 +124,7 @@ export function ProgressTop({
           </span>
         </button>
 
-        <div className="mt-2">
+        <div className="mt-2 space-y-1.5">
           <StatRow
             icon={<TrendingUp className="h-4 w-4 shrink-0" style={{ color: "var(--color-primary)" }} />}
             label="Прогресс"
@@ -210,8 +210,8 @@ export function ProgressTop({
         )}
 
         {today && !today.loggedToday && (
-          <Link to="/diary" search={{ add: true }} className={buttonClass("primary", "sm", "mt-auto w-full")}>
-            <NotebookPen className="h-3.5 w-3.5" />
+          <Link to="/diary" search={{ add: true }} className={buttonClass("primary", "md", "mt-auto w-full")}>
+            <NotebookPen className="h-4 w-4" />
             Записать
           </Link>
         )}
