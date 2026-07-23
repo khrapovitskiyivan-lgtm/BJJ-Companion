@@ -64,10 +64,16 @@ export const Route = createFileRoute("/api/tg-cron")({
 
           if (res?.ok) {
             sent++;
+            const patch: Record<string, unknown> = { last_ping: todayIso };
+            if (d.kind === "soft") {
+              const used = row.soft_ping_week === mondayIso ? row.soft_ping_count : 0;
+              patch.soft_ping_week = mondayIso;
+              patch.soft_ping_count = used + 1;
+            }
             await fetch(`${supaUrl}/rest/v1/bjj_tg_chats?tg_user_id=eq.${row.tg_user_id}`, {
               method: "PATCH",
               headers: { ...supaHeaders, Prefer: "return=minimal" },
-              body: JSON.stringify({ last_ping: todayIso }),
+              body: JSON.stringify(patch),
             }).catch(() => {});
           } else if (res?.status === 403) {
             // пользователь заблокировал бота — больше не пытаемся

@@ -10,10 +10,11 @@ import {
   markPartnersJoined,
   getPendingInvite,
   clearPendingInvite,
+  sharePartnerInvite,
   type PartnerProfile,
 } from "@/lib/bjj/partners";
+import { planStreak, dayStreak, trainedByDate } from "@/lib/bjj/plan";
 import { buildPublishInput } from "@/lib/bjj/partnersProfile";
-import { buildInviteLink, shareText } from "@/lib/bjj/share";
 import { BELT_LABEL, BELT_ORDER, STYLE_META } from "@/lib/bjj/constants";
 import { STAT_META, STAT_ORDER } from "@/lib/bjj/stats";
 import { fetchGlobalStats, type GlobalStats } from "@/lib/bjj/globalStats";
@@ -342,15 +343,10 @@ export function PartnersBlock() {
   const onInvite = async () => {
     haptic();
     setBusy(true);
-    const code = await publishProfile(currentInput());
+    const code = await sharePartnerInvite(currentInput());
     setBusy(false);
     if (!code) return flash("Не получилось. Попробуй позже");
-    markPartnersJoined();
     track("invite_created");
-    await shareText(
-      "Давай держать недельный план вместе в BJJ Companion. Прими приглашение в партнёры:",
-      buildInviteLink(code),
-    );
   };
 
   const onAccept = async (code: string) => {
@@ -391,6 +387,19 @@ export function PartnersBlock() {
     setCommunityOpen((v) => !v);
     if (community === undefined) fetchGlobalStats().then(setCommunity);
   };
+
+  // Холодный старт: активный призыв в пустом состоянии, если есть недельный темп
+  const today = new Date();
+  const trained = trainedByDate(entries);
+  const weeksStreak = profile.frequency ? planStreak(trained, profile.frequency, today) : 0;
+  const daysStreakNoPlan = profile.frequency ? 0 : dayStreak(trained, today);
+  const hasMomentum = weeksStreak >= 1 || daysStreakNoPlan >= 3;
+  const momentumLine =
+    weeksStreak >= 2
+      ? `Серия ${weeksStreak} нед. в плане — держи темп с партнёром`
+      : daysStreakNoPlan >= 3
+        ? `${daysStreakNoPlan} дн. подряд — держи темп с партнёром`
+        : "Ты в темпе — позови партнёра по залу";
 
   return (
     <section className="rounded-2xl border border-border bg-card p-4">
@@ -442,11 +451,33 @@ export function PartnersBlock() {
         ) : partners === null ? (
           <p className="text-sm text-muted-foreground">Загружаем…</p>
         ) : partners.length === 0 ? (
-          <EmptyState
-            icon={<Users className="h-5 w-5" />}
-            title="Пока никого"
-            hint="Пригласи партнёра — держать недельный план вместе проще."
-          />
+          hasMomentum ? (
+            <div className="rounded-xl border border-primary/40 bg-primary/5 p-3">
+              <p className="text-sm font-medium">{momentumLine}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Держать недельный план вместе проще.
+              </p>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  track("partner_nudge");
+                  void onInvite();
+                }}
+                disabled={busy}
+                className="mt-2"
+              >
+                <UserPlus className="h-4 w-4" />
+                Позвать партнёра
+              </Button>
+            </div>
+          ) : (
+            <EmptyState
+              icon={<Users className="h-5 w-5" />}
+              title="Пока никого"
+              hint="Пригласи партнёра — держать недельный план вместе проще."
+            />
+          )
         ) : (
           <div className="space-y-2">
             {(showAll ? sortedPartners! : sortedPartners!.slice(0, 5)).map((p) => (

@@ -4,6 +4,7 @@ import { AppShell } from "@/components/bjj/AppShell";
 import { TechniqueRow, TechniqueChip } from "@/components/bjj/TechniqueCard";
 import { GapCard } from "@/components/bjj/GapCard";
 import { TodayCard } from "@/components/bjj/TodayCard";
+import { ReviewShownBlock } from "@/components/bjj/ReviewShownBlock";
 import { PartnersBlock } from "@/components/bjj/PartnersBlock";
 import { CharacterSheet } from "@/components/bjj/CharacterSheet";
 import { ProgressSheet } from "@/components/bjj/ProgressSheet";
@@ -146,6 +147,8 @@ function ProgressPage() {
         <PageHeader kicker="Статистика и путь до чёрного пояса" title="Моя игра" className="px-1" />
 
         <TodayCard />
+
+        <ReviewShownBlock />
 
         <PartnersBlock />
 
