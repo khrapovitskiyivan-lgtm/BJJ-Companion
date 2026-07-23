@@ -1,4 +1,5 @@
 import { getTelegram, isTelegram } from "@/lib/telegram";
+import { shareText, buildInviteLink } from "./share";
 
 // Клиент партнёров: всё через доверенный роут /api/partners (он проверяет подпись
 // Telegram и ходит в базу сервисным ключом). Работает только внутри Telegram.
@@ -123,4 +124,17 @@ export async function listPartners(): Promise<PartnerProfile[]> {
 export async function removePartner(other: number): Promise<boolean> {
   const res = await post<{ ok: boolean }>("remove", { other });
   return !!res?.ok;
+}
+
+// Общий invite-флоу: публикует профиль, помечает участие, открывает шторку выбора
+// чата с личной ссылкой-кодом. Используют кнопка «Пригласить» и холодный старт.
+export async function sharePartnerInvite(input: PublishInput): Promise<string | null> {
+  const code = await publishProfile(input);
+  if (!code) return null;
+  markPartnersJoined();
+  await shareText(
+    "Давай держать недельный план вместе в BJJ Companion. Прими приглашение в партнёры:",
+    buildInviteLink(code),
+  );
+  return code;
 }
