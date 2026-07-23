@@ -11,6 +11,7 @@ const PROFILE_KEY = "bjj.profile.v1";
 const PROGRESS_KEY = "bjj.progress.v1";
 const DIARY_KEY = "bjj.diary.v1";
 const NOTES_KEY = "bjj.notes.v1";
+const REVIEWED_KEY = "bjj.reviewed.v1";
 const DEVICE_KEY = "bjj.device.v1";
 
 const DEFAULT_PROFILE: StyleProfile = {
@@ -284,6 +285,45 @@ export function useNotes() {
   }, []);
 
   return { notes, setNote, hydrated };
+}
+
+// === REVIEWED HOOK ===
+// Что пользователь уже «разобрал» (открыл карточку) после лога в дневнике.
+// Локально, per-device: это UI-нюанс очистки блока «Разбери показанное», а не
+// пользовательские данные — облако не нужно. Общая шина как у useNotes:
+// пометка ставится на карточке техники, а блок живёт на «Моей игре».
+export type ReviewedMap = Record<number, number>; // techId -> момент разбора (ms)
+
+let reviewedSnapshot: ReviewedMap | null = null;
+const reviewedListeners = new Set<(m: ReviewedMap) => void>();
+
+function publishReviewed(next: ReviewedMap) {
+  reviewedSnapshot = next;
+  for (const listener of reviewedListeners) listener(next);
+}
+
+export function useReviewed() {
+  const [reviewed, setReviewedState] = useState<ReviewedMap>({});
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    const initial = reviewedSnapshot ?? readJSON<ReviewedMap>(REVIEWED_KEY, {});
+    reviewedSnapshot = initial;
+    setReviewedState(initial);
+    setHydrated(true);
+    reviewedListeners.add(setReviewedState);
+    return () => {
+      reviewedListeners.delete(setReviewedState);
+    };
+  }, []);
+
+  const markReviewed = useCallback((id: number) => {
+    const next = { ...(reviewedSnapshot ?? {}), [id]: Date.now() };
+    writeJSON(REVIEWED_KEY, next);
+    publishReviewed(next);
+  }, []);
+
+  return { reviewed, markReviewed, hydrated };
 }
 
 // === CLOUD SYNC (best-effort, 3s timeout) ===

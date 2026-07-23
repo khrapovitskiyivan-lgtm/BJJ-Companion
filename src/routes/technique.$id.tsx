@@ -1,9 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TECH_BY_ID, TECHNIQUES, contentFor } from "@/lib/bjj/data";
 import { BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
-import { useProgress, useProfile } from "@/lib/bjj/store";
+import { useProgress, useProfile, useReviewed } from "@/lib/bjj/store";
 import { haptic } from "@/lib/telegram";
 import { legalStatus, legalLabel, type LegalValue } from "@/lib/bjj/legal";
 import type { Belt, ProgressStatus, Technique } from "@/lib/bjj/types";
@@ -98,6 +98,12 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
   const riskMed = !riskHigh && /Средн/i.test(injury);
 
   const videoUrl = tech.videoUrl;
+
+  // Открыл карточку = разобрал показанное (уводит технику из блока «Разбери показанное»)
+  const { markReviewed, hydrated: reviewedHydrated } = useReviewed();
+  useEffect(() => {
+    if (reviewedHydrated) markReviewed(tech.id);
+  }, [reviewedHydrated, tech.id, markReviewed]);
 
   const practiceHistory = useMemo(() => {
     const history: { date: string }[] = [];
