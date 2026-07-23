@@ -1,13 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { TrendingUp, BookOpen, CircleDot, Star, Flame, CheckCircle2, NotebookPen } from "lucide-react";
+import { TrendingUp, BookOpen, CircleDot, Star, Flame, CheckCircle2, NotebookPen, ChevronRight } from "lucide-react";
 import { buttonClass } from "@/components/bjj/ui";
 import { initials } from "@/components/bjj/AppShell";
 import { BELT_LABEL } from "@/lib/bjj/constants";
 import type { StyleProfile } from "@/lib/bjj/types";
 import type { TodayCardModel } from "@/lib/bjj/todayCard";
 
-// Компактный верх «Моей игры»: слева карточка профиль + статы списком, справа
-// «Сегодня». Чистый компонент — данные и колбэки приходят из progress.tsx
+// Компактный верх «Моей игры»: профиль строкой-шапкой во всю ширину (перспективно
+// вместит клуб), ниже две колонки — слева статы в рамках, справа «Сегодня».
+// Чистый компонент — данные и колбэки приходят из progress.tsx
 // (сама страница держит стейт шторок и раскрытого списка).
 
 export type StatListKind = "done" | "in_progress" | "favorites";
@@ -50,7 +51,7 @@ function StatRow({
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition hover:bg-muted ${active ? "border-primary bg-muted" : "border-border"}`}
+      className={`flex w-full flex-1 items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition hover:bg-muted ${active ? "border-primary bg-muted" : "border-border"}`}
     >
       {icon}
       <span className="flex-1 text-xs text-muted-foreground">{label}</span>
@@ -87,44 +88,47 @@ export function ProgressTop({
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {/* Левая колонка: профиль + статы списком */}
-      <section className="rounded-2xl border border-border bg-card p-3">
-        <button
-          type="button"
-          onClick={onOpenProfile}
-          className="flex w-full items-center gap-2.5 text-left"
-          aria-label="Мой профиль игрока"
-        >
-          {profile.avatarUrl ? (
-            <img
-              src={profile.avatarUrl}
-              alt=""
-              className="block h-10 w-10 shrink-0 rounded-full object-cover"
-              style={{ boxShadow: `0 0 0 2px var(--belt-${profile.belt})` }}
-            />
-          ) : profile.name ? (
-            <span
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold text-white ring-2 ring-border"
-              style={{ background: `var(--belt-${profile.belt})` }}
-            >
-              {initials(profile.name)}
-            </span>
-          ) : (
-            <span
-              className="block h-10 w-10 shrink-0 rounded-full ring-2 ring-border"
-              style={{ background: `var(--belt-${profile.belt})` }}
-            />
-          )}
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-semibold">{profile.name || "Боец"}</span>
-            <span className="block truncate text-[11px] text-muted-foreground">
-              {BELT_LABEL[profile.belt]} пояс
-            </span>
+    <div className="space-y-3">
+      {/* Профиль — строка во всю ширину (перспективно вместит клуб) */}
+      <button
+        type="button"
+        onClick={onOpenProfile}
+        className="flex w-full items-center gap-2.5 rounded-2xl border border-border bg-card p-3 text-left transition hover:bg-muted"
+        aria-label="Мой профиль игрока"
+      >
+        {profile.avatarUrl ? (
+          <img
+            src={profile.avatarUrl}
+            alt=""
+            className="block h-10 w-10 shrink-0 rounded-full object-cover"
+            style={{ boxShadow: `0 0 0 2px var(--belt-${profile.belt})` }}
+          />
+        ) : profile.name ? (
+          <span
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold text-white ring-2 ring-border"
+            style={{ background: `var(--belt-${profile.belt})` }}
+          >
+            {initials(profile.name)}
           </span>
-        </button>
+        ) : (
+          <span
+            className="block h-10 w-10 shrink-0 rounded-full ring-2 ring-border"
+            style={{ background: `var(--belt-${profile.belt})` }}
+          />
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold">{profile.name || "Боец"}</span>
+          <span className="block truncate text-[11px] text-muted-foreground">
+            {BELT_LABEL[profile.belt]} пояс
+          </span>
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </button>
 
-        <div className="mt-2 space-y-1.5">
+      {/* Две колонки: статы | Сегодня */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Левая: статы в рамках, растянуты по высоте */}
+        <div className="flex flex-col gap-1.5">
           <StatRow
             icon={<TrendingUp className="h-4 w-4 shrink-0" style={{ color: "var(--color-primary)" }} />}
             label="Прогресс"
@@ -155,9 +159,8 @@ export function ProgressTop({
             onClick={() => onToggleList("favorites")}
           />
         </div>
-      </section>
 
-      {/* Правая колонка: Сегодня */}
+        {/* Правая колонка: Сегодня */}
       <section
         className="flex flex-col rounded-2xl border bg-card p-3"
         style={{ borderColor: today && !today.loggedToday ? "var(--color-primary)" : "var(--color-border)" }}
@@ -215,7 +218,8 @@ export function ProgressTop({
             Записать
           </Link>
         )}
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
