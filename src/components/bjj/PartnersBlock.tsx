@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Users, UserPlus, Flame, ChevronDown, Trash2, Check } from "lucide-react";
-import { getDeviceId, hasConsent, useDiary, useProfile, useProgress } from "@/lib/bjj/store";
+import { getDeviceId, hasConsent, useDiary, useProfile, useProgress, useReviewed } from "@/lib/bjj/store";
 import { isTelegram, getStartParam, haptic, hapticSuccess } from "@/lib/telegram";
 import {
   listPartners,
@@ -252,6 +252,7 @@ export function PartnersBlock() {
   const { profile, hydrated } = useProfile();
   const { progress } = useProgress();
   const { entries, practiceCount } = useDiary();
+  const { reviewed } = useReviewed();
 
   const [partners, setPartners] = useState<PartnerProfile[] | null>(null);
   const [detail, setDetail] = useState<PartnerProfile | null>(null);
@@ -287,6 +288,7 @@ export function PartnersBlock() {
       progress,
       practiceCount: practiceCount(),
       entries,
+      reviewed,
       today: new Date(),
     });
 

@@ -3,6 +3,8 @@ import type { DiaryEntry, StyleProfile } from "./types";
 import type { PublishInput } from "./partners";
 import { computeStyleAffinity } from "./styleProfile";
 import { computeStats } from "./stats";
+import { computeTotalXp, levelForXp } from "./xp";
+import { TECHNIQUES } from "./data";
 import { weekReport } from "./tgRemind";
 import { trainedByDate, planStreak } from "./plan";
 
@@ -16,9 +18,10 @@ export function buildPublishInput(args: {
   progress: ProgressMap;
   practiceCount: Record<number, number>;
   entries: DiaryEntry[];
+  reviewed: Record<number, number>;
   today: Date;
 }): PublishInput {
-  const { device, profile, progress, practiceCount, entries, today } = args;
+  const { device, profile, progress, practiceCount, entries, reviewed, today } = args;
 
   const styles = [...computeStyleAffinity(progress, practiceCount)].sort(
     (a, b) => b.score - a.score,
@@ -32,6 +35,10 @@ export function buildPublishInput(args: {
   const quota = profile.frequency ?? null;
   const streak = quota ? planStreak(trainedByDate(entries), quota, today) : 0;
 
+  const level = levelForXp(
+    computeTotalXp({ entries, progress, belt: profile.belt, techniques: TECHNIQUES, reviewed }),
+  ).level;
+
   return {
     device,
     belt: profile.belt,
@@ -43,5 +50,6 @@ export function buildPublishInput(args: {
     weekDone: wr.weekDone,
     quota,
     streak,
+    level,
   };
 }

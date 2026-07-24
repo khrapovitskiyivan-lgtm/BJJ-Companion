@@ -76,6 +76,7 @@ export const Route = createFileRoute("/api/partners")({
               p_week_done: (p.weekDone as number) ?? 0,
               p_quota: (p.quota as number) ?? null,
               p_streak: (p.streak as number) ?? 0,
+              p_level: (p.level as number) ?? 1,
             });
             return Response.json({ code });
           }

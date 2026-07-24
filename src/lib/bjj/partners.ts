@@ -17,6 +17,7 @@ export interface PartnerProfile {
   week_done: number;
   quota: number | null;
   week_streak: number;
+  level?: number; // уровень игрока (может отсутствовать до применения SQL-миграции)
 }
 
 export interface PublishInput {
@@ -30,6 +31,7 @@ export interface PublishInput {
   weekDone: number;
   quota: number | null;
   streak: number;
+  level: number;
 }
 
 export type AcceptStatus = "ok" | "self" | "not_found" | "exists" | "limit" | "bad";
