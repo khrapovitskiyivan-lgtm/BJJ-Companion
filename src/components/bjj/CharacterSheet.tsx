@@ -50,6 +50,9 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
         <p className="mt-1 text-[11px] text-muted-foreground">
           {lvl.xpIntoLevel} / {lvl.xpForLevel} XP до LVL {lvl.level + 1}
         </p>
+        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+          Растёт от тренировок в дневнике, разбора и отработки. Зеркало твоей регулярности.
+        </p>
       </div>
 
       <Section title="Пояс">
