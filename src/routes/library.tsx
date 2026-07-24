@@ -55,9 +55,14 @@ function Library() {
   const defaultGiMode: "both" | "gi" | "nogi" =
     profile.gi && profile.noGi ? "both" : profile.gi ? "gi" : "nogi";
 
+  // Чёрный пояс из фильтра исключён: техник этого пояса в базе нет (мастерство = шлифовка,
+  // не новый пласт движений). У чёрнопоясных дефолт = вся база, иначе фильтр открывался бы пустым.
+  const filterBelts = BELT_ORDER.filter((b) => b !== "black");
+  const defBelts: Belt[] = profile.belt === "black" ? filterBelts : [profile.belt];
+
   const [search, setSearch] = useState(() => libFiltersCache?.search ?? "");
   // Мультивыбор поясов (точное объединение). Дефолт — пояс профиля; пусто = все
-  const [belts, setBelts] = useState<Belt[]>(() => libFiltersCache?.belts ?? [profile.belt]);
+  const [belts, setBelts] = useState<Belt[]>(() => libFiltersCache?.belts ?? defBelts);
   const [giMode, setGiMode] = useState<"both" | "gi" | "nogi">(
     () => libFiltersCache?.giMode ?? defaultGiMode,
   );
@@ -96,7 +101,7 @@ function Library() {
   // ✅ Сброс всех фильтров к значениям по умолчанию (из профиля)
   const resetAllFilters = () => {
     setSearch("");
-    setBelts([profile.belt]);
+    setBelts(defBelts);
     setGiMode(defaultGiMode);
     setGroup("all");
     setPage(1);
@@ -104,7 +109,7 @@ function Library() {
 
   // ✅ Подсчёт активных фильтров для индикатора
   // Пояс активен, если выбор отличается от дефолта (ровно пояс профиля)
-  const beltFilterActive = !(belts.length === 1 && belts[0] === profile.belt);
+  const beltFilterActive = !(belts.length === defBelts.length && defBelts.every((b) => belts.includes(b)));
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (search) count++;
@@ -170,7 +175,7 @@ function Library() {
 
       {/* Belt filter */}
       <FilterRow label="Пояс">
-        {BELT_ORDER.map((b) => (
+        {filterBelts.map((b) => (
           <Chip
             key={b}
             active={belts.includes(b)}
