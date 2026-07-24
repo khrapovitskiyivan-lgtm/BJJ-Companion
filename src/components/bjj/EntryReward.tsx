@@ -6,7 +6,8 @@ import { STAT_META } from "@/lib/bjj/stats";
 import { TECH_BY_ID } from "@/lib/bjj/data";
 import { track } from "@/lib/bjj/telemetry";
 import type { EntryReward } from "@/lib/bjj/reward";
-import { CalendarDays, Dumbbell, Flame, ShieldCheck, TrendingUp } from "lucide-react";
+import type { EntryXpReward } from "@/lib/bjj/xp";
+import { CalendarDays, Dumbbell, Flame, ShieldCheck, Sparkles, TrendingUp } from "lucide-react";
 
 // Экран награды после сохранения записи дневника: 2-3 дельты каскадом.
 // Золото строго у достижений (квота недели, сверх плана, серия дней) —
@@ -57,20 +58,27 @@ const cardDelay = (i: number) => ({ animationDelay: `${i * 130}ms`, animationFil
 export function EntryRewardSheet({
   reward,
   techniqueIds,
+  xp,
   onClose,
 }: {
   reward: EntryReward;
   techniqueIds: number[];
+  xp?: EntryXpReward;
   onClose: () => void;
 }) {
   const { week, stat, defense } = reward;
 
-  // Бар стата: монтируемся на pctBefore, после появления карточек переезжаем на pctAfter
+  // Бар стата и XP: монтируемся на «до», после появления карточек переезжаем на «после»
   const [grow, setGrow] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setGrow(true), 500);
     return () => clearTimeout(t);
   }, []);
+
+  // Телеметрия перехода уровня (один раз на показ награды)
+  useEffect(() => {
+    if (xp?.leveledUp) track("level_up", String(xp.level));
+  }, [xp]);
 
   const goldWeek = week.kind === "plan" ? week.hitNow || week.over : week.streak >= 2;
   let weekTitle: string;
@@ -105,6 +113,42 @@ export function EntryRewardSheet({
   return (
     <Sheet kicker="Дневник" title="Записано!" onClose={onClose}>
       <div className="space-y-2.5">
+        {xp && (
+          <div className={CARD} style={cardDelay(idx++)}>
+            <div className="flex items-start gap-2.5">
+              <Sparkles
+                className="mt-0.5 h-5 w-5 shrink-0"
+                style={{ color: xp.leveledUp ? "var(--brand-gold-ink)" : "var(--color-primary)" }}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p
+                    className="text-sm font-semibold"
+                    style={xp.leveledUp ? { color: "var(--brand-gold-ink)" } : undefined}
+                  >
+                    {xp.leveledUp ? `Уровень ${xp.level}!` : "Опыт"}
+                  </p>
+                  <span className="text-xs font-bold tabular-nums text-primary">+{xp.delta} XP</span>
+                </div>
+                {xp.beltBonus > 0 && (
+                  <p className="mt-0.5 text-[11px]" style={{ color: "var(--brand-gold-ink)" }}>
+                    Бонус за развитие: +{xp.beltBonus}
+                  </p>
+                )}
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
+                    style={{ width: `${grow ? Math.round((xp.xpIntoLevel / xp.xpForLevel) * 100) : 0}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {xp.xpIntoLevel} / {xp.xpForLevel} до {xp.level + 1} уровня
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className={CARD} style={cardDelay(idx++)}>
           <div className="flex items-start gap-2.5">
             {goldWeek ? (
