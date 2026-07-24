@@ -7,6 +7,7 @@ export type GlossaryCategory =
   | "control"
   | "attacks"
   | "movement"
+  | "principles"
   | "training";
 
 export const GLOSSARY_CATEGORY_LABEL: Record<GlossaryCategory, string> = {
@@ -14,6 +15,7 @@ export const GLOSSARY_CATEGORY_LABEL: Record<GlossaryCategory, string> = {
   control: "Контроль и захваты",
   attacks: "Атаки",
   movement: "Действия и движение",
+  principles: "Принципы",
   training: "Зал, правила, сленг",
 };
 
@@ -22,6 +24,7 @@ export const GLOSSARY_CATEGORY_ORDER: GlossaryCategory[] = [
   "control",
   "attacks",
   "movement",
+  "principles",
   "training",
 ];
 
@@ -30,6 +33,9 @@ export interface GlossaryTerm {
   en?: string; // английский оригинал
   category: GlossaryCategory;
   definition: string;
+  // Основы для матчинга словоформ (беглые гласные и т.п.), переопределяют авто-основу.
+  // Пример: «Угол» -> ["угол","угл"] (угол/угла/углом). Используется glossaryMatch.ts.
+  stems?: string[];
 }
 
 export const GLOSSARY: GlossaryTerm[] = [
@@ -93,6 +99,18 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: "Бэйс", en: "Base", category: "movement", definition: "Устойчивость и опора. Потерял бэйс, значит тебя свипнут." },
   { term: "Постура", en: "Posture", category: "movement", definition: "Прямая осанка с выпрямленной спиной. В чужом гарде это главная защита от удушений и армбаров." },
   { term: "Позиция перед приёмом", en: "Position before submission", category: "movement", definition: "Базовый принцип: сначала закрепи контроль, потом атакуй. Спешка с приёмом возвращает соперника в игру." },
+
+  // === Движения (продолжение) ===
+  { term: "Маятник", en: "Pendulum", category: "movement", definition: "Маховое движение ногой по широкой дуге, как маятник, чтобы раскачать и перевернуть соперника. Основа флауэр свипа и ряда свипов из гарда." },
+  { term: "Инверт", en: "Inversion", category: "movement", definition: "Переворот через плечо вниз головой: таз уходит выше головы. Вход в беримболо, ножные замки и перевороты снизу." },
+  { term: "Гранби", en: "Granby", category: "movement", definition: "Кувырок через плечо для выхода из-под контроля или смены позиции. Названо по борцовской школе Granby." },
+  { term: "Сит-аут", en: "Sit-out", category: "movement", definition: "Выход-разворот из-под соперника: подсаживаешь бедро и выкручиваешься наверх или на ноги. Из черепахи и фронт-хедлока." },
+
+  // === Принципы ===
+  { term: "Давление", en: "Pressure", category: "principles", definition: "Постоянный вес и продавливание сверху, отбирающие у соперника пространство и дыхание. Топливо большинства проходов и контролей: не рывок силой, а неудобная тяжесть." },
+  { term: "Угол", en: "Angle", category: "principles", stems: ["угол", "угл"], definition: "Смещение линии атаки в сторону от соперника. Правильный угол превращает силовой приём в лёгкий: армбар, свип и проход живут за счёт угла, а не мощи." },
+  { term: "Дистанция", en: "Distance", category: "principles", definition: "Расстояние до соперника, которым ты управляешь стопами, фреймами и захватами. Проигранная дистанция обычно означает проигранную позицию." },
+  { term: "Уровень", en: "Level", category: "principles", stems: ["уровень", "уровн"], definition: "Высота твоего центра тяжести. Резкая смена уровня вниз открывает проход в ноги и тейкдауны: во многом борьба про то, кто ниже." },
 
   // === Зал, правила, сленг ===
   { term: "Ги, кимоно", en: "Gi", category: "training", definition: "Форма для тренировок: куртка, штаны и пояс. Захваты за ткань меняют игру и замедляют темп." },
