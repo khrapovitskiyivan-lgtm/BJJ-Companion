@@ -17,67 +17,74 @@ export const Route = createFileRoute("/situations")({
   },
 });
 
-// Позиции-ситуации «Что делать, если…». Лейблы по ролевой схеме (играю/прохожу/держу/под),
-// как названия позиций — без «сверху/снизу». В список берём только позиции с непустыми вариантами.
-const SITUATIONS: { id: number; label: string; group: string }[] = [
-  // Игра гарда (ты снизу, атакуешь)
-  { id: 1, label: "Я играю закрытый гард", group: "Игра гарда" },
-  { id: 3, label: "Я играю халф-гард", group: "Игра гарда" },
-  { id: 5, label: "Я играю баттерфляй", group: "Игра гарда" },
-  { id: 7, label: "Я играю спайдер-гард", group: "Игра гарда" },
-  { id: 8, label: "Я играю Де-ла-Риву", group: "Игра гарда" },
-  { id: 9, label: "Я играю обратный Де-ла-Рива", group: "Игра гарда" },
-  { id: 10, label: "Я играю X-гард", group: "Игра гарда" },
-  { id: 11, label: "Я в гарде 50/50", group: "Игра гарда" },
-  { id: 12, label: "Я играю дип халф-гард", group: "Игра гарда" },
-  { id: 301, label: "Я играю воротник-рукав", group: "Игра гарда" },
-  { id: 302, label: "Я играю ворм-гард", group: "Игра гарда" },
-  { id: 380, label: "Я играю раббер-гард", group: "Игра гарда" },
-  { id: 381, label: "Я держу коленный щит", group: "Игра гарда" },
-  { id: 441, label: "Я играю обратный халф-гард", group: "Игра гарда" },
-  { id: 630, label: "Я играю K-гард", group: "Игра гарда" },
-  { id: 647, label: "Я в локдауне", group: "Игра гарда" },
-  { id: 648, label: "Я играю шин-ту-шин", group: "Игра гарда" },
-  // Проход гарда (ты сверху, проходишь)
-  { id: 2, label: "Я прохожу закрытый гард", group: "Проход гарда" },
-  { id: 4, label: "Я прохожу халф-гард", group: "Проход гарда" },
-  { id: 6, label: "Я прохожу баттерфляй", group: "Проход гарда" },
-  { id: 444, label: "Я прохожу спайдер-гард", group: "Проход гарда" },
-  { id: 445, label: "Я прохожу Де-ла-Риву", group: "Проход гарда" },
-  { id: 446, label: "Я прохожу ворм-гард", group: "Проход гарда" },
-  { id: 666, label: "Я прохожу обратный Де-ла-Рива", group: "Проход гарда" },
-  { id: 667, label: "Я прохожу X-гард", group: "Проход гарда" },
-  { id: 668, label: "Я прохожу дип халф-гард", group: "Проход гарда" },
-  // Ножные позиции
-  { id: 300, label: "Я в Сингл Лег Икс", group: "Ножные позиции" },
-  { id: 305, label: "Я в аши-гарами", group: "Ножные позиции" },
-  { id: 367, label: "Я в заднем аши-гарами", group: "Ножные позиции" },
-  { id: 440, label: "Я в седле (ханихол)", group: "Ножные позиции" },
-  { id: 635, label: "Я в бэксайд 50/50", group: "Ножные позиции" },
-  // Доминирующие позиции
-  { id: 14, label: "Я держу сайд-контроль", group: "Доминирующие позиции" },
-  { id: 13, label: "Я под сайд-контролем", group: "Доминирующие позиции" },
-  { id: 16, label: "Я держу маунт", group: "Доминирующие позиции" },
-  { id: 15, label: "Я под маунтом", group: "Доминирующие позиции" },
-  { id: 649, label: "Я держу S-маунт", group: "Доминирующие позиции" },
-  { id: 437, label: "Я держу обратный маунт", group: "Доминирующие позиции" },
-  { id: 24, label: "Я держу колено на животе", group: "Доминирующие позиции" },
-  { id: 25, label: "Я под коленом на животе", group: "Доминирующие позиции" },
-  { id: 22, label: "Я держу север-юг", group: "Доминирующие позиции" },
-  { id: 23, label: "Я под север-югом", group: "Доминирующие позиции" },
-  { id: 366, label: "Я держу кеса-гатаме", group: "Доминирующие позиции" },
-  { id: 438, label: "Я держу борцовское удержание", group: "Доминирующие позиции" },
-  { id: 346, label: "Я держу распятие", group: "Доминирующие позиции" },
+// Позиции-ситуации «Что если…». Каждая позиция — строка; две роли (моя сторона /
+// сторона соперника) стоят колонками друг напротив друга. Одиночные позиции показывают
+// одну кнопку на своей стороне (напротив пусто, без прочерка = фактический пробел
+// закрыт карточками). Глаголы по ролевой схеме названий позиций.
+type Slot = { id: number; verb: string };
+type Pos = { name: string; play?: Slot; vs?: Slot };
+
+const BLOCKS: Pos[][] = [
+  // Гарды: моя игра (снизу) / проход (сверху)
+  [
+    { name: "Закрытый гард", play: { id: 1, verb: "Играю" }, vs: { id: 2, verb: "Прохожу" } },
+    { name: "Халф-гард", play: { id: 3, verb: "Играю" }, vs: { id: 4, verb: "Прохожу" } },
+    { name: "Баттерфляй", play: { id: 5, verb: "Играю" }, vs: { id: 6, verb: "Прохожу" } },
+    { name: "Спайдер-гард", play: { id: 7, verb: "Играю" }, vs: { id: 444, verb: "Прохожу" } },
+    { name: "Де-ла-Рива", play: { id: 8, verb: "Играю" }, vs: { id: 445, verb: "Прохожу" } },
+    { name: "Обратный ДЛР", play: { id: 9, verb: "Играю" }, vs: { id: 666, verb: "Прохожу" } },
+    { name: "X-гард", play: { id: 10, verb: "Играю" }, vs: { id: 667, verb: "Прохожу" } },
+    { name: "Дип халф-гард", play: { id: 12, verb: "Играю" }, vs: { id: 668, verb: "Прохожу" } },
+    { name: "Ворм-гард", play: { id: 302, verb: "Играю" }, vs: { id: 446, verb: "Прохожу" } },
+    { name: "Воротник-рукав", play: { id: 301, verb: "Играю" }, vs: { id: 669, verb: "Прохожу" } },
+    { name: "Раббер-гард", play: { id: 380, verb: "Играю" }, vs: { id: 670, verb: "Прохожу" } },
+    { name: "Шин-ту-шин", play: { id: 648, verb: "Играю" }, vs: { id: 671, verb: "Прохожу" } },
+    { name: "Обратный халф-гард", play: { id: 441, verb: "Играю" }, vs: { id: 672, verb: "Прохожу" } },
+    { name: "K-гард", play: { id: 630, verb: "Играю" }, vs: { id: 673, verb: "Прохожу" } },
+    { name: "Гард 50/50", play: { id: 11, verb: "Играю" } },
+    { name: "Коленный щит", play: { id: 381, verb: "Играю" } },
+    { name: "Локдаун", play: { id: 647, verb: "Играю" } },
+  ],
+  // Доминирующие: держу (сверху) / под (снизу)
+  [
+    { name: "Сайд-контроль", play: { id: 14, verb: "Держу" }, vs: { id: 13, verb: "Под" } },
+    { name: "Маунт", play: { id: 16, verb: "Держу" }, vs: { id: 15, verb: "Под" } },
+    { name: "Колено на животе", play: { id: 24, verb: "Держу" }, vs: { id: 25, verb: "Под" } },
+    { name: "Север-юг", play: { id: 22, verb: "Держу" }, vs: { id: 23, verb: "Под" } },
+    { name: "S-маунт", play: { id: 649, verb: "Держу" }, vs: { id: 674, verb: "Под" } },
+    { name: "Обратный маунт", play: { id: 437, verb: "Держу" }, vs: { id: 675, verb: "Под" } },
+    { name: "Кеса-гатаме", play: { id: 366, verb: "Держу" }, vs: { id: 676, verb: "Под" } },
+    { name: "Борцовское удержание", play: { id: 438, verb: "Держу" }, vs: { id: 677, verb: "Под" } },
+    { name: "Распятие", play: { id: 346, verb: "Держу" }, vs: { id: 678, verb: "Под" } },
+  ],
   // Спина и черепаха
-  { id: 17, label: "Я контролирую спину", group: "Спина и черепаха" },
-  { id: 632, label: "Я держу боди-триангл", group: "Спина и черепаха" },
-  { id: 18, label: "Соперник взял мою спину", group: "Спина и черепаха" },
-  { id: 19, label: "Соперник в черепахе", group: "Спина и черепаха" },
-  { id: 20, label: "Я в черепахе", group: "Спина и черепаха" },
-  { id: 610, label: "Я во фронт-хедлоке", group: "Спина и черепаха" },
+  [
+    { name: "Спина", play: { id: 17, verb: "Держу" }, vs: { id: 18, verb: "Защита" } },
+    { name: "Черепаха", play: { id: 19, verb: "Атакую" }, vs: { id: 20, verb: "Защита" } },
+    { name: "Боди-триангл", play: { id: 632, verb: "Держу" } },
+    { name: "Фронт-хедлок", vs: { id: 610, verb: "Защита" } },
+  ],
+  // Ножные позиции (сплетения — одна сторона)
+  [
+    { name: "Сингл Лег Икс", play: { id: 300, verb: "Атакую" } },
+    { name: "Аши-гарами", play: { id: 305, verb: "Атакую" } },
+    { name: "Задний аши-гарами", play: { id: 367, verb: "Атакую" } },
+    { name: "Седло (ханихол)", play: { id: 440, verb: "Атакую" } },
+    { name: "Бэксайд 50/50", play: { id: 635, verb: "Атакую" } },
+  ],
   // Стойка
-  { id: 21, label: "Мы в стойке", group: "Стойка" },
+  [{ name: "Стойка", play: { id: 21, verb: "Начать" } }],
 ];
+
+// id -> подпись для шапки детали ситуации
+const SLOT_LABEL: Record<number, string> = {};
+for (const block of BLOCKS)
+  for (const p of block) {
+    if (p.play) SLOT_LABEL[p.play.id] = `${p.name}: ${p.play.verb.toLowerCase()}`;
+    if (p.vs) SLOT_LABEL[p.vs.id] = `${p.name}: ${p.vs.verb.toLowerCase()}`;
+  }
+
+const GRID = "grid grid-cols-[1fr_74px_74px] gap-x-2";
 
 function SituationsPage() {
   return (
@@ -97,6 +104,7 @@ function Decide() {
   const situationId = situationParam ?? null;
   const [query, setQuery] = useState("");
   const situation = situationId != null ? TECH_BY_ID[situationId] : null;
+  const go = (id: number) => navigate({ search: { s: id } });
 
   const options = useMemo(() => {
     if (situationId == null) return null;
@@ -131,7 +139,7 @@ function Decide() {
         <div className="rounded-2xl border border-border bg-card p-4">
           <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Ваша ситуация</p>
           <h2 className="mt-0.5 text-base font-semibold">
-            {SITUATIONS.find((s) => s.id === situationId)?.label ?? situation.nameRu}
+            {(situationId != null && SLOT_LABEL[situationId]) || situation.nameRu}
           </h2>
         </div>
         {empty ? (
@@ -149,12 +157,11 @@ function Decide() {
   }
 
   const q = query.trim().toLowerCase();
-  const groups = [...new Set(SITUATIONS.map((s) => s.group))];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <p className="px-1 text-xs text-muted-foreground">
-        Выберите позицию — покажем, что из неё делать: атаки, свипы, переходы и выходы.
+        Выбери позицию и сторону, покажем, что из неё делать: атаки, свипы, переходы и выходы.
       </p>
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -165,27 +172,38 @@ function Decide() {
           className="w-full rounded-xl border border-input bg-card py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
-      {groups.map((g) => {
-        const items = SITUATIONS.filter((s) => s.group === g && (!q || s.label.toLowerCase().includes(q)));
-        if (!items.length) return null;
+      <div className={`${GRID} px-1 text-[10px] uppercase tracking-widest text-muted-foreground`}>
+        <span>Позиция</span>
+        <span />
+        <span />
+      </div>
+      {BLOCKS.map((block, bi) => {
+        const rows = block.filter((p) => !q || p.name.toLowerCase().includes(q));
+        if (!rows.length) return null;
         return (
-          <section key={g}>
-            <h3 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{g}</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {items.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => navigate({ search: { s: s.id } })}
-                  className="rounded-xl border border-border bg-card p-3 text-left text-xs font-medium transition hover:bg-muted"
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </section>
+          <div key={bi} className="space-y-1.5 border-t border-border pt-2.5 first:border-t-0 first:pt-0">
+            {rows.map((p) => (
+              <div key={p.name} className={`${GRID} items-center px-1`}>
+                <span className="pr-1 text-[13px] leading-tight">{p.name}</span>
+                {p.play ? <RoleBtn slot={p.play} onGo={go} /> : <span />}
+                {p.vs ? <RoleBtn slot={p.vs} onGo={go} /> : <span />}
+              </div>
+            ))}
+          </div>
         );
       })}
     </div>
+  );
+}
+
+function RoleBtn({ slot, onGo }: { slot: Slot; onGo: (id: number) => void }) {
+  return (
+    <button
+      onClick={() => onGo(slot.id)}
+      className="rounded-lg border border-border bg-card px-1 py-2 text-center text-xs font-medium text-primary transition hover:bg-muted"
+    >
+      {slot.verb}
+    </button>
   );
 }
 
