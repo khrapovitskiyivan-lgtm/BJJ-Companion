@@ -99,8 +99,14 @@ export function buildTargets(
     if (!t.nameRu || t.nameRu.length < 4) continue;
     targets.push(makeTarget({ key: `tech:${t.id}`, kind: "technique", techId: t.id }, t.nameRu));
   }
-  // длинная фраза раньше короткой: «Закрытый гард» перебивает «Гард»
-  targets.sort((a, b) => b.length - a.length);
+  // длинная фраза раньше короткой («Закрытый гард» перебивает «Гард»); при равной длине
+  // техника раньше словаря — чтобы тап по термину-названию техники (напр. «гогоплата»,
+  // у которой есть карточка) вёл на карточку, а не в поповер.
+  targets.sort((a, b) => {
+    if (b.length !== a.length) return b.length - a.length;
+    if (a.kind !== b.kind) return a.kind === "technique" ? -1 : 1;
+    return 0;
+  });
   return targets;
 }
 
