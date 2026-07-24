@@ -1,5 +1,7 @@
-import { useProfile } from "@/lib/bjj/store";
+import { useProfile, useProgress, useDiary, useReviewed } from "@/lib/bjj/store";
 import { BELT_LABEL, BELT_ORDER, STYLE_ORDER, STYLE_META, WEEKDAY_SHORT, DEFAULT_TRAINING_DAYS } from "@/lib/bjj/constants";
+import { computeTotalXp, levelForXp } from "@/lib/bjj/xp";
+import { TECHNIQUES } from "@/lib/bjj/data";
 import { Sheet, Section, Toggle } from "@/components/bjj/ui";
 import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
 import type { Belt, Frequency } from "@/lib/bjj/types";
@@ -16,6 +18,13 @@ const FREQ_OPTIONS: { value: Frequency; label: string; desc: string }[] = [
 // Здесь всё, что определяет твою игру: пояс, формат Gi/No-Gi, стиль игры.
 export function CharacterSheet({ onClose }: { onClose: () => void }) {
   const { profile, update } = useProfile();
+  const { progress } = useProgress();
+  const { entries } = useDiary();
+  const { reviewed } = useReviewed();
+
+  const lvl = levelForXp(
+    computeTotalXp({ entries, progress, belt: profile.belt, techniques: TECHNIQUES, reviewed }),
+  );
 
   return (
     <Sheet
@@ -25,6 +34,22 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
       }`}
       onClose={onClose}
     >
+      <div className="rounded-xl border border-border bg-card p-4">
+        <div className="flex items-baseline justify-between">
+          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Уровень</p>
+          <span className="text-2xl font-bold tabular-nums text-primary">{lvl.level}</span>
+        </div>
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-primary"
+            style={{ width: `${Math.round((lvl.xpIntoLevel / lvl.xpForLevel) * 100)}%` }}
+          />
+        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          {lvl.xpIntoLevel} / {lvl.xpForLevel} до {lvl.level + 1} уровня
+        </p>
+      </div>
+
       <Section title="Пояс">
         <div className="grid grid-cols-5 gap-2">
           {BELT_ORDER.map((b: Belt) => (
