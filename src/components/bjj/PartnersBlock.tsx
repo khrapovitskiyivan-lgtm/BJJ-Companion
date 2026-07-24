@@ -37,25 +37,35 @@ function initialsOf(name: string): string {
     .join("");
 }
 
-function Avatar({ name, photo, size = 34 }: { name: string; photo: string | null; size?: number }) {
-  if (photo) {
-    return (
-      <img
-        src={photo}
-        alt=""
-        width={size}
-        height={size}
-        className="shrink-0 rounded-full object-cover"
-        style={{ width: size, height: size }}
-      />
-    );
-  }
-  return (
+function Avatar({ name, photo, size = 34, level }: { name: string; photo: string | null; size?: number; level?: number }) {
+  const inner = photo ? (
+    <img
+      src={photo}
+      alt=""
+      width={size}
+      height={size}
+      className="rounded-full object-cover"
+      style={{ width: size, height: size }}
+    />
+  ) : (
     <span
-      className="grid shrink-0 place-items-center rounded-full bg-muted text-xs font-medium text-muted-foreground"
+      className="grid place-items-center rounded-full bg-muted text-xs font-medium text-muted-foreground"
       style={{ width: size, height: size }}
     >
       {initialsOf(name) || "?"}
+    </span>
+  );
+  return (
+    <span className="relative block shrink-0" style={{ width: size, height: size }}>
+      {inner}
+      {level != null && (
+        <span
+          className="absolute -bottom-1.5 -right-1.5 grid place-items-center rounded-md px-1 py-0.5 text-[9px] font-bold leading-none tracking-tight text-white"
+          style={{ background: "var(--color-primary)", boxShadow: "0 0 0 2px var(--color-card)" }}
+        >
+          LVL {level}
+        </span>
+      )}
     </span>
   );
 }
@@ -94,7 +104,7 @@ function PartnerRow({ p, onOpen }: { p: PartnerProfile; onOpen: () => void }) {
       onClick={onOpen}
       className="flex w-full items-center gap-2.5 rounded-xl border border-border bg-card p-2.5 text-left transition hover:bg-muted"
     >
-      <Avatar name={name} photo={p.photo_url} />
+      <Avatar name={name} photo={p.photo_url} level={p.level ?? 1} />
       {p.belt && (
         <span
           className="h-5 w-2 shrink-0 rounded-[3px]"
@@ -102,15 +112,7 @@ function PartnerRow({ p, onOpen }: { p: PartnerProfile; onOpen: () => void }) {
         />
       )}
       <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-1.5 truncate text-sm font-medium">
-          <span className="truncate">{name}</span>
-          <span
-            className="grid h-[18px] min-w-[18px] shrink-0 place-items-center rounded-md px-1 text-[11px] font-bold leading-none text-white"
-            style={{ background: "var(--color-primary)" }}
-          >
-            {p.level ?? 1}
-          </span>
-        </p>
+        <p className="truncate text-sm font-medium">{name}</p>
         <p
           className="mt-0.5 inline-flex items-center gap-1.5 text-xs"
           style={{ color: met ? "var(--status-done)" : "var(--color-muted-foreground)" }}
@@ -146,7 +148,7 @@ function PartnerDetail({
   return (
     <Sheet title={name} onClose={onClose}>
       <div className="flex items-center gap-3">
-        <Avatar name={name} photo={p.photo_url} size={48} />
+        <Avatar name={name} photo={p.photo_url} size={48} level={p.level ?? 1} />
         <div className="text-xs text-muted-foreground">
           {p.belt && (
             <span className="inline-flex items-center gap-1.5">
@@ -159,9 +161,6 @@ function PartnerDetail({
           )}
           <span className="ml-1">
             {[p.gi && "Gi", p.nogi && "No-Gi"].filter(Boolean).join(" · ")}
-          </span>
-          <span className="ml-1 font-medium" style={{ color: "var(--color-primary)" }}>
-            · Уровень {p.level ?? 1}
           </span>
         </div>
       </div>

@@ -17,7 +17,7 @@ interface Props {
   profile: StyleProfile;
   stats: { pct: number; done: number; inProgress: number; total: number };
   favCount: number;
-  level?: { level: number; xpIntoLevel: number; xpForLevel: number } | null;
+  level?: { level: number; xpIntoLevel: number; xpForLevel: number; xpToNext: number } | null;
   today: TodayCardModel | null; // null до гидратации (new Date() только на клиенте)
   openList: StatListKind | null;
   onToggleList: (k: StatListKind) => void;
@@ -121,10 +121,10 @@ export function ProgressTop({
           )}
           {level && (
             <span
-              className="absolute -bottom-1 -right-1 grid min-w-[18px] place-items-center rounded-md px-1 text-[11px] font-bold leading-none text-white"
+              className="absolute -bottom-1.5 -right-1.5 grid place-items-center rounded-md px-1 py-0.5 text-[10px] font-bold leading-none tracking-tight text-white"
               style={{ background: "var(--color-primary)", boxShadow: "0 0 0 2px var(--color-card)" }}
             >
-              {level.level}
+              LVL {level.level}
             </span>
           )}
         </span>
@@ -147,8 +147,8 @@ export function ProgressTop({
                   }}
                 />
               </span>
-              <span className="text-[10px] tabular-nums text-muted-foreground">
-                {level.xpIntoLevel}/{level.xpForLevel}
+              <span className="whitespace-nowrap text-[10px] tabular-nums text-muted-foreground">
+                ещё {level.xpToNext} XP
               </span>
             </span>
           )}

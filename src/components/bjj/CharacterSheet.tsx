@@ -48,7 +48,7 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
           />
         </div>
         <p className="mt-1 text-[11px] text-muted-foreground">
-          {lvl.xpIntoLevel} / {lvl.xpForLevel} до {lvl.level + 1} уровня
+          {lvl.xpIntoLevel} / {lvl.xpForLevel} XP до LVL {lvl.level + 1}
         </p>
       </div>
 

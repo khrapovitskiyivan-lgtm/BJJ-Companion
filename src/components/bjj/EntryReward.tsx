@@ -123,12 +123,19 @@ export function EntryRewardSheet({
               />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-2">
-                  <p
-                    className="text-sm font-semibold"
-                    style={xp.leveledUp ? { color: "var(--brand-gold-ink)" } : undefined}
-                  >
-                    {xp.leveledUp ? `Уровень ${xp.level}!` : "Опыт"}
-                  </p>
+                  <span className="flex items-center gap-2">
+                    <p
+                      className="text-sm font-semibold"
+                      style={xp.leveledUp ? { color: "var(--brand-gold-ink)" } : undefined}
+                    >
+                      {xp.leveledUp ? "Новый уровень!" : "Опыт"}
+                    </p>
+                    {xp.leveledUp && (
+                      <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold leading-none tracking-tight text-white" style={{ background: "var(--brand-gold-ink)" }}>
+                        LVL {xp.level}
+                      </span>
+                    )}
+                  </span>
                   <span className="text-xs font-bold tabular-nums text-primary">+{xp.delta} XP</span>
                 </div>
                 {xp.beltBonus > 0 && (
@@ -143,7 +150,7 @@ export function EntryRewardSheet({
                   />
                 </div>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  {xp.xpIntoLevel} / {xp.xpForLevel} до {xp.level + 1} уровня
+                  ещё {xp.xpForLevel - xp.xpIntoLevel} XP до LVL {xp.level + 1}
                 </p>
               </div>
             </div>
