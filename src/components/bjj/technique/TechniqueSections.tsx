@@ -7,6 +7,7 @@ import {
   Lightbulb,
   Timer,
 } from "lucide-react";
+import { GlossaryText } from "@/components/bjj/GlossaryText";
 
 // === Парсер HTML-списков ===
 function parseHtmlList(html: string): string[] {
@@ -17,7 +18,7 @@ function parseHtmlList(html: string): string[] {
 }
 
 // === МЕХАНИКА — главный акцентный блок ===
-export function MechanismSection({ html }: { html: string }) {
+export function MechanismSection({ html, techId }: { html: string; techId?: number }) {
   if (!html || !html.trim()) return null;
   const items = parseHtmlList(html);
 
@@ -34,19 +35,23 @@ export function MechanismSection({ html }: { html: string }) {
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                 {i + 1}
               </div>
-              <p className="flex-1 pt-0.5 text-sm leading-relaxed">{it}</p>
+              <p className="flex-1 pt-0.5 text-sm leading-relaxed">
+                <GlossaryText text={it} excludeTechId={techId} />
+              </p>
             </li>
           ))}
         </ol>
       ) : (
-        <p className="text-sm leading-relaxed">{items[0]}</p>
+        <p className="text-sm leading-relaxed">
+          <GlossaryText text={items[0]} excludeTechId={techId} />
+        </p>
       )}
     </section>
   );
 }
 
 // === ИНСАЙТ — светлый акцент ===
-export function InsightSection({ html }: { html: string }) {
+export function InsightSection({ html, techId }: { html: string; techId?: number }) {
   if (!html || !html.trim()) return null;
   const items = parseHtmlList(html);
 
@@ -61,12 +66,16 @@ export function InsightSection({ html }: { html: string }) {
           {items.map((it, i) => (
             <li key={i} className="flex gap-2 text-sm leading-relaxed">
               <Lightbulb className="mt-1 h-3 w-3 shrink-0 text-primary" />
-              <span>{it}</span>
+              <span>
+                <GlossaryText text={it} excludeTechId={techId} />
+              </span>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-sm leading-relaxed">{items[0]}</p>
+        <p className="text-sm leading-relaxed">
+          <GlossaryText text={items[0]} excludeTechId={techId} />
+        </p>
       )}
     </section>
   );

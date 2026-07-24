@@ -26,7 +26,8 @@ export type TelemetryEvent =
   | "review_drill"
   | "partner_nudge"
   | "favorite_toggle"
-  | "level_up";
+  | "level_up"
+  | "glossary_open";
 
 const DEDUP_KEY = "bjj.telemetry.v1";
 const DAY = 24 * 60 * 60 * 1000;

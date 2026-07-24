@@ -35,6 +35,7 @@ import {
 } from "@/components/bjj/technique/TechniqueSections";
 import { RelatedList } from "@/components/bjj/technique/RelatedList";
 import { NotesSection } from "@/components/bjj/technique/NotesSection";
+import { GlossaryProvider, GlossaryText } from "@/components/bjj/GlossaryText";
 import { StyleBadges } from "@/components/bjj/StyleBadges";
 
 import { Clock3, AlertTriangle } from "lucide-react";
@@ -159,7 +160,7 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
   };
 
   return (
-    <div className="space-y-5">
+    <GlossaryProvider className="space-y-5">
       <Breadcrumbs tech={tech} />
 
       <div className="flex items-center justify-between">
@@ -237,7 +238,9 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
           </div>
         )}
         {content && (
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{content.concept}</p>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            <GlossaryText text={content.concept} excludeTechId={tech.id} />
+          </p>
         )}
       </header>
 
@@ -325,8 +328,8 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
 
       {content && (
         <>
-          <MechanismSection html={content.mechanics} />
-          <InsightSection html={content.keyPoints} />
+          <MechanismSection html={content.mechanics} techId={tech.id} />
+          <InsightSection html={content.keyPoints} techId={tech.id} />
           <WarningSection html={content.mistakes} />
           <PracticeSection html={content.drills} />
         </>
@@ -361,6 +364,6 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
       <RelatedList title="Типичные сетапы" items={resolve(tech.common_setups)} />
       <RelatedList title="Продолжения" items={resolve(tech.chain_to)} />
       <RelatedList title="Используется в" items={usedBy} />
-    </div>
+    </GlossaryProvider>
   );
 }
