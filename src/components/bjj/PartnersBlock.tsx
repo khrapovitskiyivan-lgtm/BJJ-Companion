@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Users, UserPlus, Flame, ChevronDown, Trash2, Check } from "lucide-react";
-import { getDeviceId, hasConsent, useDiary, useProfile, useProgress } from "@/lib/bjj/store";
+import { getDeviceId, hasConsent, useDiary, useProfile, useProgress, useReviewed } from "@/lib/bjj/store";
 import { isTelegram, getStartParam, haptic, hapticSuccess } from "@/lib/telegram";
 import {
   listPartners,
@@ -17,6 +17,7 @@ import { planStreak, dayStreak, trainedByDate } from "@/lib/bjj/plan";
 import { buildPublishInput } from "@/lib/bjj/partnersProfile";
 import { BELT_LABEL, BELT_ORDER, STYLE_META } from "@/lib/bjj/constants";
 import { STAT_META, STAT_ORDER } from "@/lib/bjj/stats";
+import { skillLevel } from "@/lib/bjj/xp";
 import { fetchGlobalStats, type GlobalStats } from "@/lib/bjj/globalStats";
 import { track } from "@/lib/bjj/telemetry";
 import type { Belt, Style } from "@/lib/bjj/types";
@@ -101,7 +102,15 @@ function PartnerRow({ p, onOpen }: { p: PartnerProfile; onOpen: () => void }) {
         />
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{name}</p>
+        <p className="flex items-center gap-1.5 truncate text-sm font-medium">
+          <span className="truncate">{name}</span>
+          <span
+            className="grid h-[18px] min-w-[18px] shrink-0 place-items-center rounded-md px-1 text-[11px] font-bold leading-none text-white"
+            style={{ background: "var(--color-primary)" }}
+          >
+            {p.level ?? 1}
+          </span>
+        </p>
         <p
           className="mt-0.5 inline-flex items-center gap-1.5 text-xs"
           style={{ color: met ? "var(--status-done)" : "var(--color-muted-foreground)" }}
@@ -151,6 +160,9 @@ function PartnerDetail({
           <span className="ml-1">
             {[p.gi && "Gi", p.nogi && "No-Gi"].filter(Boolean).join(" · ")}
           </span>
+          <span className="ml-1 font-medium" style={{ color: "var(--color-primary)" }}>
+            · Уровень {p.level ?? 1}
+          </span>
         </div>
       </div>
 
@@ -196,6 +208,9 @@ function PartnerDetail({
               <div key={stat} className="flex items-center gap-2">
                 <span className="w-24 shrink-0 text-xs text-muted-foreground">
                   {STAT_META[stat].ru}
+                </span>
+                <span className="w-12 shrink-0 text-[11px] text-muted-foreground">
+                  ур. {skillLevel(v)}
                 </span>
                 <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                   <span
@@ -252,6 +267,7 @@ export function PartnersBlock() {
   const { profile, hydrated } = useProfile();
   const { progress } = useProgress();
   const { entries, practiceCount } = useDiary();
+  const { reviewed } = useReviewed();
 
   const [partners, setPartners] = useState<PartnerProfile[] | null>(null);
   const [detail, setDetail] = useState<PartnerProfile | null>(null);
@@ -287,6 +303,7 @@ export function PartnersBlock() {
       progress,
       practiceCount: practiceCount(),
       entries,
+      reviewed,
       today: new Date(),
     });
 

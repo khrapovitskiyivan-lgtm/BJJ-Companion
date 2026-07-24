@@ -7,8 +7,9 @@ import { EntryRewardSheet } from "@/components/bjj/EntryReward";
 import { TechniqueChip } from "@/components/bjj/TechniqueCard";
 import { Button, Chip, EmptyState, PageHeader } from "@/components/bjj/ui";
 import { computeEntryReward, type EntryReward } from "@/lib/bjj/reward";
+import { computeEntryXpReward, type EntryXpReward } from "@/lib/bjj/xp";
 import { track } from "@/lib/bjj/telemetry";
-import { useDiary, useProfile, useProgress } from "@/lib/bjj/store";
+import { useDiary, useProfile, useProgress, useReviewed } from "@/lib/bjj/store";
 import { hapticSuccess } from "@/lib/telegram";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import { BELT_ORDER, GROUP_LABEL } from "@/lib/bjj/constants";
@@ -45,9 +46,10 @@ function Diary() {
   const { entries, addEntry, updateEntry, deleteEntry, hydrated } = useDiary();
   const { setStatus, progress } = useProgress();
   const { profile } = useProfile();
+  const { reviewed } = useReviewed();
 
   const [adding, setAdding] = useState(false);
-  const [reward, setReward] = useState<{ reward: EntryReward; techniqueIds: number[] } | null>(null);
+  const [reward, setReward] = useState<{ reward: EntryReward; techniqueIds: number[]; xp: EntryXpReward } | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -206,6 +208,14 @@ function Diary() {
           today: new Date(),
         }),
         techniqueIds: shownIds,
+        xp: computeEntryXpReward({
+          entriesBefore: entries,
+          entry: payload,
+          progressBefore: progress,
+          techniques: TECHNIQUES,
+          belt: profile.belt,
+          reviewed,
+        }),
       });
       addEntry(payload);
       track("entry_saved");
@@ -243,6 +253,7 @@ function Diary() {
         <EntryRewardSheet
           reward={reward.reward}
           techniqueIds={reward.techniqueIds}
+          xp={reward.xp}
           onClose={() => setReward(null)}
         />
       )}

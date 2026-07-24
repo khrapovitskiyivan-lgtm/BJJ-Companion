@@ -24,6 +24,7 @@ export function reportPartnerProfile(input: PublishInput): void {
       input.weekDone,
       input.quota,
       input.streak,
+      input.level,
     ]);
     if (localStorage.getItem(KEY) === hash) return;
     void publishProfile(input).then((code) => {

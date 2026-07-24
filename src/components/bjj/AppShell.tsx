@@ -12,6 +12,7 @@ import {
   useDiary,
   useProfile,
   useProgress,
+  useReviewed,
 } from "@/lib/bjj/store";
 import { reportPlayer } from "@/lib/bjj/globalStats";
 import { reportTgPlan } from "@/lib/bjj/tgReport";
@@ -58,6 +59,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
   const { profile, update, hydrated } = useProfile();
   const { progress, setProgress } = useProgress();
   const { entries, practiceCount } = useDiary();
+  const { reviewed } = useReviewed();
   const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -97,6 +99,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
         progress,
         practiceCount: practiceCount(),
         entries,
+        reviewed,
         today: new Date(),
       }),
     );
@@ -111,6 +114,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
     profile.trainingDays,
     progress,
     entries,
+    reviewed,
   ]);
 
   // Самообнаружение участия: если партнёры на сервере есть, а флаг не стоит (напр.
@@ -130,6 +134,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
           progress,
           practiceCount: practiceCount(),
           entries,
+          reviewed,
           today: new Date(),
         }),
       );
