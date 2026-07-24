@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useProfile, useProgress, useDiary, useReviewed } from "@/lib/bjj/store";
 import { BELT_LABEL, BELT_ORDER, STYLE_ORDER, STYLE_META, WEEKDAY_SHORT, DEFAULT_TRAINING_DAYS } from "@/lib/bjj/constants";
 import { computeTotalXp, levelForXp } from "@/lib/bjj/xp";
@@ -22,8 +23,9 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
   const { entries } = useDiary();
   const { reviewed } = useReviewed();
 
-  const lvl = levelForXp(
-    computeTotalXp({ entries, progress, belt: profile.belt, techniques: TECHNIQUES, reviewed }),
+  const lvl = useMemo(
+    () => levelForXp(computeTotalXp({ entries, progress, belt: profile.belt, techniques: TECHNIQUES, reviewed })),
+    [entries, progress, profile.belt, reviewed],
   );
 
   return (

@@ -75,9 +75,10 @@ export function EntryRewardSheet({
     return () => clearTimeout(t);
   }, []);
 
-  // Телеметрия перехода уровня (один раз на показ награды)
+  // Телеметрия перехода уровня. dailyDedup: уровень достигается один раз, дедуп по
+  // (событие+уровень) гасит повторный вызов (StrictMode/перемонтирование шторки).
   useEffect(() => {
-    if (xp?.leveledUp) track("level_up", String(xp.level));
+    if (xp?.leveledUp) track("level_up", String(xp.level), { dailyDedup: true });
   }, [xp]);
 
   const goldWeek = week.kind === "plan" ? week.hitNow || week.over : week.streak >= 2;
