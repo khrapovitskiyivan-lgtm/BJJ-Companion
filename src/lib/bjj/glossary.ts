@@ -53,7 +53,7 @@ export const GLOSSARY: GlossaryTerm[] = [
   { term: "Баттерфляй", en: "Butterfly Guard", category: "positions", definition: "Открытый гард с крюками стоп под бёдрами соперника. Заточен под свипы с подъёмом." },
   { term: "Де-ла-Рива", en: "De La Riva", category: "positions", definition: "Открытый гард с крюком, оплетающим ногу соперника снаружи. Основа современной игры в кимоно." },
   { term: "X-гард", en: "X-Guard", category: "positions", definition: "Гард снизу, где ноги скрещены под ногой стоящего соперника. Мощные свипы за счёт разрушения баланса." },
-  { term: "Паук-гард", en: "Spider Guard", category: "positions", definition: "Гард с упором стоп в бицепсы и захватом рукавов. Работает только в кимоно." },
+  { term: "Спайдер-гард", en: "Spider Guard", category: "positions", definition: "Гард с упором стоп в бицепсы и захватом рукавов. Работает только в кимоно." },
   { term: "50/50", category: "positions", definition: "Симметричный гард с переплетением ног, где позиция одинакова для обоих. Частая точка входа в ножные замки." },
   { term: "Фронт-хедлок", en: "Front Headlock", category: "positions", definition: "Контроль головы и руки спереди. Отсюда идут гильотина, дарс и анаконда." },
 
