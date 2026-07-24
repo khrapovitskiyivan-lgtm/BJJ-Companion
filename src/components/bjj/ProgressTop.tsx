@@ -17,6 +17,7 @@ interface Props {
   profile: StyleProfile;
   stats: { pct: number; done: number; inProgress: number; total: number };
   favCount: number;
+  level?: { level: number; xpIntoLevel: number; xpForLevel: number } | null;
   today: TodayCardModel | null; // null до гидратации (new Date() только на клиенте)
   openList: StatListKind | null;
   onToggleList: (k: StatListKind) => void;
@@ -66,6 +67,7 @@ export function ProgressTop({
   profile,
   stats,
   favCount,
+  level,
   today,
   openList,
   onToggleList,
@@ -96,31 +98,60 @@ export function ProgressTop({
         className="flex w-full items-center gap-2.5 rounded-2xl border border-border bg-card p-3 text-left transition hover:bg-muted"
         aria-label="Мой профиль игрока"
       >
-        {profile.avatarUrl ? (
-          <img
-            src={profile.avatarUrl}
-            alt=""
-            className="block h-10 w-10 shrink-0 rounded-full object-cover"
-            style={{ boxShadow: `0 0 0 2px var(--belt-${profile.belt})` }}
-          />
-        ) : profile.name ? (
-          <span
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold text-white ring-2 ring-border"
-            style={{ background: `var(--belt-${profile.belt})` }}
-          >
-            {initials(profile.name)}
-          </span>
-        ) : (
-          <span
-            className="block h-10 w-10 shrink-0 rounded-full ring-2 ring-border"
-            style={{ background: `var(--belt-${profile.belt})` }}
-          />
-        )}
+        <span className="relative block h-10 w-10 shrink-0">
+          {profile.avatarUrl ? (
+            <img
+              src={profile.avatarUrl}
+              alt=""
+              className="block h-10 w-10 rounded-full object-cover"
+              style={{ boxShadow: `0 0 0 2px var(--belt-${profile.belt})` }}
+            />
+          ) : profile.name ? (
+            <span
+              className="grid h-10 w-10 place-items-center rounded-full text-sm font-bold text-white ring-2 ring-border"
+              style={{ background: `var(--belt-${profile.belt})` }}
+            >
+              {initials(profile.name)}
+            </span>
+          ) : (
+            <span
+              className="block h-10 w-10 rounded-full ring-2 ring-border"
+              style={{ background: `var(--belt-${profile.belt})` }}
+            />
+          )}
+          {level && (
+            <span
+              className="absolute -bottom-1 -right-1 grid min-w-[18px] place-items-center rounded-md px-1 text-[11px] font-bold leading-none text-white"
+              style={{ background: "var(--color-primary)", boxShadow: "0 0 0 2px var(--color-card)" }}
+            >
+              {level.level}
+            </span>
+          )}
+        </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold">{profile.name || "Боец"}</span>
           <span className="block truncate text-[11px] text-muted-foreground">
             {BELT_LABEL[profile.belt]} пояс
           </span>
+          {level && (
+            <span className="mt-1 flex items-center gap-1.5">
+              <span
+                className="block h-1 flex-1 overflow-hidden rounded-full"
+                style={{ background: "var(--color-muted)" }}
+              >
+                <span
+                  className="block h-full rounded-full"
+                  style={{
+                    width: `${Math.round((level.xpIntoLevel / level.xpForLevel) * 100)}%`,
+                    background: "var(--color-primary)",
+                  }}
+                />
+              </span>
+              <span className="text-[10px] tabular-nums text-muted-foreground">
+                {level.xpIntoLevel}/{level.xpForLevel}
+              </span>
+            </span>
+          )}
         </span>
         <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
       </button>

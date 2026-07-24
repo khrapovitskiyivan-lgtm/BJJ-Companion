@@ -10,7 +10,8 @@ import { todayCardModel } from "@/lib/bjj/todayCard";
 import { CharacterSheet } from "@/components/bjj/CharacterSheet";
 import { ProgressSheet } from "@/components/bjj/ProgressSheet";
 import { Button, PageHeader, buttonClass } from "@/components/bjj/ui";
-import { useProgress, useProfile, useDiary, useFavorites } from "@/lib/bjj/store";
+import { useProgress, useProfile, useDiary, useFavorites, useReviewed } from "@/lib/bjj/store";
+import { computeTotalXp, levelForXp, skillLevel } from "@/lib/bjj/xp";
 import { currentFocus, nextToLearn } from "@/lib/bjj/recommend";
 import { computeStyleAffinity, type StyleScore } from "@/lib/bjj/styleProfile";
 import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
@@ -48,6 +49,13 @@ function ProgressPage() {
   const { profile, hydrated: profileHydrated } = useProfile();
   const { entries, practiceCount, hydrated: diaryHydrated } = useDiary();
   const { favorites } = useFavorites();
+  const { reviewed } = useReviewed();
+
+  // Уровень игрока: выводится из дневника/прогресса/пояса + разбор (reviewed)
+  const level = useMemo(
+    () => levelForXp(computeTotalXp({ entries, progress, belt: profile.belt, techniques: TECHNIQUES, reviewed })),
+    [entries, progress, profile.belt, reviewed],
+  );
 
   // Текущий фокус (в процессе) + следующая цель (рекомендации)
   const focusTech = useMemo(() => currentFocus(TECHNIQUES, progress), [progress]);
@@ -159,6 +167,7 @@ function ProgressPage() {
           profile={profile}
           stats={stats}
           favCount={favCount}
+          level={level}
           today={today}
           openList={openList}
           onToggleList={(k) => setOpenList((v) => (v === k ? null : k))}
@@ -335,6 +344,9 @@ function ProgressPage() {
                 {statScores.map((s) => (
                   <div key={s.stat} className="flex items-center gap-2">
                     <span className="w-24 shrink-0 text-[11px]">{STAT_META[s.stat].ru}</span>
+                    <span className="w-12 shrink-0 text-[11px] text-muted-foreground">
+                      ур. {skillLevel(s.pct)}
+                    </span>
                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                       <div
                         className="h-full rounded-full bg-primary transition-all duration-500"
