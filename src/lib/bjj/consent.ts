@@ -8,7 +8,7 @@ const PROFILE_KEY = "bjj.profile.v1";
 // Версия согласия. Bump заставит гейт показаться повторно всем пользователям
 // (например, при существенном изменении Политики). Гейт виден, пока
 // profile.consentVersion < CONSENT_VERSION.
-export const CONSENT_VERSION = 1;
+export const CONSENT_VERSION = 2;
 
 // Разрешена ли отправка данных на сервер. Читается синхронно самими
 // отправщиками (telemetry/globalStats/tgReport/sync): update() пишет профиль в

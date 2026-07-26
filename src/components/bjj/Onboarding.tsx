@@ -154,7 +154,7 @@ function WelcomeScreen() {
     },
     {
       icon: BookOpen,
-      title: "335 приёмов и позиций",
+      title: "336 приёмов и позиций",
       description: "С механикой, рисками и пререквизитами. От белого до чёрного пояса.",
       accent: "var(--belt-blue)",
     },
