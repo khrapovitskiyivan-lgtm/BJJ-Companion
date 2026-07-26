@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { TrendingUp, BookOpen, CircleDot, Star, Flame, CheckCircle2, NotebookPen, ChevronRight } from "lucide-react";
+import { TrendingUp, BookOpen, CircleDot, Star, Flame, CheckCircle2, NotebookPen, ChevronRight, ChevronDown } from "lucide-react";
 import { buttonClass } from "@/components/bjj/ui";
 import { initials } from "@/components/bjj/AppShell";
 import { BELT_LABEL } from "@/lib/bjj/constants";
@@ -39,6 +39,7 @@ function StatRow({
   value,
   valueColor,
   active,
+  kind,
   onClick,
 }: {
   icon: React.ReactNode;
@@ -46,6 +47,7 @@ function StatRow({
   value: string;
   valueColor?: string;
   active?: boolean;
+  kind: "sheet" | "toggle"; // sheet — открывает шторку (шеврон вправо), toggle — раскрывает список ниже
   onClick: () => void;
 }) {
   return (
@@ -55,10 +57,17 @@ function StatRow({
       className={`flex w-full flex-1 items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition hover:bg-muted ${active ? "border-primary bg-muted" : "border-border"}`}
     >
       {icon}
-      <span className="flex-1 text-xs text-muted-foreground">{label}</span>
+      <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{label}</span>
       <span className="text-sm font-semibold tabular-nums" style={valueColor ? { color: valueColor } : undefined}>
         {value}
       </span>
+      {kind === "sheet" ? (
+        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      ) : (
+        <ChevronDown
+          className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform ${active ? "rotate-180" : ""}`}
+        />
+      )}
     </button>
   );
 }
@@ -165,6 +174,7 @@ export function ProgressTop({
             label="Прогресс"
             value={`${stats.pct}%`}
             valueColor="var(--color-primary)"
+            kind="sheet"
             onClick={onOpenProgress}
           />
           <StatRow
@@ -172,6 +182,7 @@ export function ProgressTop({
             label="Изучено"
             value={`${stats.done}`}
             active={openList === "done"}
+            kind="toggle"
             onClick={() => onToggleList("done")}
           />
           <StatRow
@@ -179,6 +190,7 @@ export function ProgressTop({
             label="В процессе"
             value={`${stats.inProgress}`}
             active={openList === "in_progress"}
+            kind="toggle"
             onClick={() => onToggleList("in_progress")}
           />
           <StatRow
@@ -187,6 +199,7 @@ export function ProgressTop({
             value={`${favCount}`}
             valueColor="var(--brand-gold-ink)"
             active={openList === "favorites"}
+            kind="toggle"
             onClick={() => onToggleList("favorites")}
           />
         </div>

@@ -3,7 +3,6 @@ import {
   BookOpen,
   Dumbbell,
   HelpCircle,
-  NotebookPen,
   ChevronRight,
   ChevronLeft,
   Shield,
@@ -144,14 +143,8 @@ export function Onboarding({
 // === ШАГ 0: Welcome-слайдер ===
 function WelcomeScreen() {
   const [slide, setSlide] = useState(0);
-  // Первый слайд — дневник: приложение в первую очередь ежедневник
+  // Тизер согласия уже несёт посыл «дневник -> план/стиль/прогресс»; здесь — остальные разделы
   const slides = [
-    {
-      icon: NotebookPen,
-      title: "Дневник и план",
-      description: "Отмечай тренировки — календарь покажет план недели, твой стиль и прогресс.",
-      accent: "var(--brand-gold)",
-    },
     {
       icon: BookOpen,
       title: "336 приёмов и позиций",
