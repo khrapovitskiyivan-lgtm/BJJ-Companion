@@ -44,6 +44,15 @@ function goalScore(t: Technique, opts?: { goal?: Goal; gi?: boolean; noGi?: bool
     if (t.legal_adcc) s += 1;
     return s;
   }
+  if (opts.goal === "health") {
+    // Здоровье/долголетие: выживание + фундамент вверх, высокий риск для суставов/шеи вниз
+    let s = 0;
+    if (t.group === "escape" || t.group === "retention") s += 2;
+    if (t.tags.includes("fundamental")) s += 1;
+    const critical = (t.content?.ru?.injuryRisk ?? "").startsWith("КРИТИЧНО");
+    if (critical || t.tags.includes("leg_locks") || t.tags.includes("spinal_lock")) s -= 2;
+    return s;
+  }
   return 0; // hobby: разнообразие уже даёт round-robin по группам
 }
 

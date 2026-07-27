@@ -33,6 +33,15 @@ describe("nextToLearn с целью", () => {
     expect(out[0].id).toBe(2);
   });
 
+  it("health поднимает escape выше leg-lock сабмишена", () => {
+    const ts = [
+      tech(1, { group: "submission", tags: ["leg_locks"] }),
+      tech(2, { group: "escape" }),
+    ];
+    const out = nextToLearn(ts, {}, "white", 2, { goal: "health" });
+    expect(out[0].id).toBe(2);
+  });
+
   it("без цели порядок прежний (пояс, сложность)", () => {
     const ts = [
       tech(1, { difficulty: 2 }),

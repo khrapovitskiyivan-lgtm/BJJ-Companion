@@ -78,7 +78,7 @@ export interface Technique {
 }
 
 // Цель тренировок и частота — из онбординга, влияют на рекомендации.
-export type Goal = "self-defense" | "competition" | "hobby";
+export type Goal = "self-defense" | "competition" | "hobby" | "health";
 export type Frequency = 1 | 2 | 3 | 4;
 
 export interface StyleProfile {

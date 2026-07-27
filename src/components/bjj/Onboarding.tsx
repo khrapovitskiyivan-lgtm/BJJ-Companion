@@ -8,6 +8,7 @@ import {
   Shield,
   Trophy,
   Smile,
+  Heart,
   Check,
   Sparkles,
   Search,
@@ -329,6 +330,7 @@ function GoalStep({
     { value: "self-defense", label: "Самооборона", desc: "Защита на улице", Icon: Shield },
     { value: "competition", label: "Соревнования", desc: "Готовлюсь к турнирам", Icon: Trophy },
     { value: "hobby", label: "Для удовольствия", desc: "Тренируюсь в кайф", Icon: Smile },
+    { value: "health", label: "Здоровье и долголетие", desc: "Тренироваться долго и без травм", Icon: Heart },
   ];
 
   return (
@@ -548,9 +550,10 @@ function FinalScreen({
   belt: Belt; gi: boolean; noGi: boolean; goal: Goal | null; knownCount: number;
 }) {
   const goalLabel = {
-    "self-defense": "самообороне",
-    competition: "соревнованиям",
-    hobby: "удовольствию",
+    "self-defense": "Самооборона",
+    competition: "Соревнования",
+    hobby: "Для удовольствия",
+    health: "Здоровье и долголетие",
   }[goal || "hobby"];
 
   return (
