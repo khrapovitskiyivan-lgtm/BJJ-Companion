@@ -6,6 +6,8 @@ import { createFileRoute } from "@tanstack/react-router";
 // с secret_token; чужие запросы отсекаются по заголовку.
 
 const APP_URL = "https://bjj-companionkhr.vercel.app";
+// PDF-инструкция лежит в public/ и отдаётся Vercel по URL; бот шлёт её sendDocument
+const GUIDE_URL = APP_URL + "/BJJ-Companion-guide.pdf";
 
 const COMMANDS_HINT = [
   "Команды:",
@@ -13,6 +15,7 @@ const COMMANDS_HINT = [
   "/about — что это за приложение",
   "/train — готовая отработка",
   "/diary — отметить тренировку",
+  "/guide — инструкция (файл)",
   "/mute — выключить напоминания",
 ].join("\n");
 
@@ -71,6 +74,15 @@ interface TgUpdate {
   message?: { chat?: { id?: number }; text?: string };
 }
 
+// Отправить PDF-инструкцию (Telegram сам забирает файл по URL из public/)
+async function sendGuide(chatId: number, token: string, caption: string): Promise<void> {
+  await fetch(`https://api.telegram.org/bot${token}/sendDocument`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, document: GUIDE_URL, caption }),
+  });
+}
+
 // /mute и /unmute: security definer RPC тем же anon-ключом, что у приложения
 async function setMuted(chatId: number, muted: boolean): Promise<boolean> {
   const url = process.env.VITE_SUPABASE_URL;
@@ -126,12 +138,18 @@ export const Route = createFileRoute("/api/tg-webhook")({
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ chat_id: chatId, text: ok ? muteCmd.ok : muteCmd.fail }),
             });
+          } else if (chatId && command === "/guide") {
+            await sendGuide(chatId, token, "Инструкция: как пользоваться BJJ Companion.");
           } else if (chatId && reply) {
             await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ chat_id: chatId, text: reply.text, reply_markup: reply.reply_markup }),
             });
+            // На /start прикладываем PDF-инструкцию вместе с приветствием
+            if (command === "/start") {
+              await sendGuide(chatId, token, "Подробная инструкция по приложению.");
+            }
           }
         } catch {
           // битый апдейт: отвечаем 200, чтобы Telegram не заваливал ретраями
