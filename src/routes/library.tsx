@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TechniqueCard } from "@/components/bjj/TechniqueCard";
 import { useProfile, useProgress } from "@/lib/bjj/store";
@@ -48,7 +48,7 @@ function LibraryPage() {
 }
 
 function Library() {
-  const { profile } = useProfile();
+  const { profile, hydrated } = useProfile();
   const { progress, cycleStatus } = useProgress();
 
   // Дефолтные значения из профиля (для сброса и сравнения)
@@ -68,6 +68,16 @@ function Library() {
   );
   const [group, setGroup] = useState<Group | "all">(() => libFiltersCache?.group ?? "all");
   const [page, setPage] = useState(() => libFiltersCache?.page ?? 1);
+
+  // Дефолт фильтра пояса берётся из profile.belt, но до гидратации стора пояс = "white".
+  // На свежем заходе (без кэша) и пока фильтр не трогали руками — пересеиваем по реальному поясу.
+  const hadCacheAtMount = useRef(libFiltersCache != null);
+  const beltsTouched = useRef(false);
+  useEffect(() => {
+    if (!hydrated || hadCacheAtMount.current || beltsTouched.current) return;
+    setBelts(profile.belt === "black" ? filterBelts : [profile.belt]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
 
   // Держим кэш в актуальном состоянии, чтобы восстановить фильтры после возврата
   useEffect(() => {
@@ -100,6 +110,7 @@ function Library() {
 
   // ✅ Сброс всех фильтров к значениям по умолчанию (из профиля)
   const resetAllFilters = () => {
+    beltsTouched.current = true;
     setSearch("");
     setBelts(defBelts);
     setGiMode(defaultGiMode);
@@ -180,6 +191,7 @@ function Library() {
             key={b}
             active={belts.includes(b)}
             onClick={() => {
+              beltsTouched.current = true;
               setBelts((prev) => (prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]));
               resetPage();
             }}

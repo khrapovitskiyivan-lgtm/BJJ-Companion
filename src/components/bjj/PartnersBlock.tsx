@@ -417,6 +417,11 @@ export function PartnersBlock() {
         ? `${daysStreakNoPlan} дн. подряд — держи темп с партнёром`
         : "Ты в темпе — позови партнёра по залу";
 
+  // Партнёры работают только в Telegram с включённой синхронизацией. В вебе и
+  // в локальном режиме фича недоступна в принципе - не показываем мёртвый блок-нудж,
+  // уважая приватный выбор пользователя (включить можно в Настройках).
+  if (!enabled) return null;
+
   return (
     <section className="rounded-2xl border border-border bg-card p-4">
       <div className="flex items-center justify-between">
