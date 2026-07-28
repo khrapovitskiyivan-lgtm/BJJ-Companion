@@ -58,3 +58,23 @@ describe("defensesFor", () => {
     expect(defensesFor(-1, TECHNIQUES)).toEqual([]);
   });
 });
+
+describe("topCatchers окно", () => {
+  it("с sinceMs игнорирует записи старше окна", () => {
+    const entries: DiaryEntry[] = [
+      { id: "1", date: "2026-07-25", techniqueIds: [], caughtBy: [31, 31] }, // свежее, 2x
+      { id: "2", date: "2026-06-01", techniqueIds: [], caughtBy: [40, 40] }, // старое, 2x
+    ];
+    const sinceMs = new Date(2026, 6, 1).getTime(); // 1 июля 2026
+    const out = topCatchers(entries, 3, { sinceMs });
+    expect(out.map((c) => c.id)).toEqual([31]);
+  });
+
+  it("без sinceMs поведение прежнее", () => {
+    const entries: DiaryEntry[] = [
+      { id: "1", date: "2026-07-25", techniqueIds: [], caughtBy: [31, 31] },
+      { id: "2", date: "2026-06-01", techniqueIds: [], caughtBy: [40, 40] },
+    ];
+    expect(topCatchers(entries, 3).map((c) => c.id).sort()).toEqual([31, 40]);
+  });
+});

@@ -13,9 +13,21 @@ export function caughtCounts(entries: DiaryEntry[]): Map<number, number> {
   return map;
 }
 
-// Чем ловят: 2+ раз — закономерность, один раз — случайность
-export function topCatchers(entries: DiaryEntry[], limit = 3): { id: number; count: number }[] {
-  return [...caughtCounts(entries)]
+// Локальная полночь 'yyyy-mm-dd' в ms
+function dayMs(date: string): number {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(y, m - 1, d).getTime();
+}
+
+// Чем ловят: 2+ раз — закономерность, один раз — случайность.
+// opts.sinceMs — учитывать только записи начиная с этой полночи (окно свежести).
+export function topCatchers(
+  entries: DiaryEntry[],
+  limit = 3,
+  opts?: { sinceMs?: number },
+): { id: number; count: number }[] {
+  const within = opts?.sinceMs != null ? entries.filter((e) => dayMs(e.date) >= opts.sinceMs!) : entries;
+  return [...caughtCounts(within)]
     .filter(([, count]) => count >= 2)
     .sort((a, b) => b[1] - a[1] || a[0] - b[0])
     .slice(0, limit)
