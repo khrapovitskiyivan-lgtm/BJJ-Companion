@@ -16,7 +16,6 @@ import {
 import type { Belt, StyleProfile, Goal, Frequency, Technique } from "@/lib/bjj/types";
 import { BELT_LABEL, BELT_LABEL_EN, BELT_ORDER, GROUP_LABEL } from "@/lib/bjj/constants";
 import { TECHNIQUES } from "@/lib/bjj/data";
-import { BrandLogo } from "./Logo";
 import { Button, IconButton } from "@/components/bjj/ui";
 
 type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -148,8 +147,8 @@ function WelcomeScreen() {
   const slides = [
     {
       icon: BookOpen,
-      title: "336 приёмов и позиций",
-      description: "С механикой, рисками и пререквизитами. От белого до чёрного пояса.",
+      title: "340 приёмов и позиций",
+      description: "С механикой, рисками и пререквизитами. От белого до коричневого пояса.",
       accent: "var(--belt-blue)",
     },
     {
@@ -169,7 +168,6 @@ function WelcomeScreen() {
   return (
     <div className="space-y-6">
       <div>
-        <BrandLogo className="mb-4" />
         <h1 className="text-center text-xl font-bold tracking-tight">Добро пожаловать</h1>
         <p className="mt-2 text-center text-sm text-muted-foreground">
           Пройдём короткую настройку — это займёт 30 секунд.
