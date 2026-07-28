@@ -4,6 +4,7 @@ import { AppShell } from "@/components/bjj/AppShell";
 import { TechniqueCard } from "@/components/bjj/TechniqueCard";
 import { useProfile, useProgress } from "@/lib/bjj/store";
 import { filterTechniques } from "@/lib/bjj/workout";
+import { ReverseSearch } from "@/components/bjj/ReverseSearch";
 import { TECHNIQUES } from "@/lib/bjj/data";
 import {
   BELT_LABEL,
@@ -61,6 +62,7 @@ function Library() {
   const defBelts: Belt[] = profile.belt === "black" ? filterBelts : [profile.belt];
 
   const [search, setSearch] = useState(() => libFiltersCache?.search ?? "");
+  const [showReverse, setShowReverse] = useState(false);
   // Мультивыбор поясов (точное объединение). Дефолт — пояс профиля; пусто = все
   const [belts, setBelts] = useState<Belt[]>(() => libFiltersCache?.belts ?? defBelts);
   const [giMode, setGiMode] = useState<"both" | "gi" | "nogi">(
@@ -183,6 +185,16 @@ function Library() {
           </button>
         )}
       </div>
+
+      {/* Обратный поиск для новичка: не знаешь названия -> опиши, что случилось */}
+      <button
+        type="button"
+        onClick={() => setShowReverse(true)}
+        className="-mt-1 self-start text-xs text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
+      >
+        Не знаешь названия? Опиши, что случилось
+      </button>
+      {showReverse && <ReverseSearch onClose={() => setShowReverse(false)} />}
 
       {/* Belt filter */}
       <FilterRow label="Пояс">
