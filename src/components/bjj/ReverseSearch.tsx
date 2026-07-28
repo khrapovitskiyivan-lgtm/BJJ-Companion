@@ -6,25 +6,28 @@ import { TECHNIQUES } from "@/lib/bjj/data";
 import { reverseCandidates, type Scenario, type Region } from "@/lib/bjj/reverseSearch";
 import { track } from "@/lib/bjj/telemetry";
 
-// Обратный поиск: «опиши, что со мной случилось» -> кандидаты. Шторка из поиска
-// Библиотеки. Для новичка, который не знает названия. Не отдельная вкладка.
+// Найди приём по описанию: новичок не знает названия того, что показали или чем
+// поймали -> описывает простыми словами -> открываем карточку. Шторка из поиска
+// Библиотеки, не отдельная вкладка. Просто помогаем найти, ничего не обещаем сверх.
 
 const SCENARIOS: { key: Scenario; label: string; sub: string }[] = [
-  { key: "submission", label: "Заставили сдаться, было больно", sub: "удушение или болевой" },
-  { key: "control", label: "Прижали, не мог двигаться", sub: "контроль сверху" },
-  { key: "takedown", label: "Свалили в стойке", sub: "тейкдаун" },
+  { key: "submission", label: "Душили или было больно", sub: "удушение или болевой" },
+  { key: "takedown", label: "Свалили в стойке", sub: "бросок" },
+  { key: "sweep", label: "Перевернули снизу", sub: "свип" },
+  { key: "pass", label: "Прошли мои ноги", sub: "проход гарда" },
+  { key: "escape", label: "Держали, не мог выйти", sub: "выход из-под контроля" },
 ];
 const REGIONS: { key: Region; label: string }[] = [
-  { key: "neck", label: "Шея, душили" },
-  { key: "arm", label: "Рука, ломали" },
-  { key: "leg", label: "Нога, крутили" },
+  { key: "neck", label: "Шея (душили)" },
+  { key: "arm", label: "Рука (выкручивали, ломали)" },
+  { key: "leg", label: "Нога (стопа или колено)" },
 ];
 const POSITIONS: { id: number; label: string }[] = [
-  { id: 13, label: "Сбоку (сайд-контроль)" },
-  { id: 15, label: "Сверху (маунт)" },
-  { id: 25, label: "Колено на животе" },
-  { id: 18, label: "Взяли спину" },
-  { id: 20, label: "В черепахе" },
+  { id: 13, label: "Сбоку" },
+  { id: 15, label: "Сел на грудь" },
+  { id: 18, label: "Со спины" },
+  { id: 25, label: "Коленом на живот" },
+  { id: 20, label: "Я был на четвереньках" },
 ];
 
 function OptionButton({ label, sub, onClick }: { label: string; sub?: string; onClick: () => void }) {
@@ -48,11 +51,12 @@ export function ReverseSearch({ onClose }: { onClose: () => void }) {
   const [region, setRegion] = useState<Region | null>(null);
   const [position, setPosition] = useState<number | null>(null);
 
-  // Готов ли запрос: сабмишен нужен регион; контроль нужна позиция; тейкдаун сразу
+  // Второй шаг нужен только сабмишену (регион) и выходу (позиция); остальным - сразу список
+  const needsRegion = scenario === "submission";
+  const needsPosition = scenario === "escape";
   const ready =
-    scenario === "takedown" ||
-    (scenario === "submission" && region != null) ||
-    (scenario === "control" && position != null);
+    scenario != null &&
+    (needsRegion ? region != null : needsPosition ? position != null : true);
 
   const results = useMemo(() => {
     if (!ready || !scenario) return [];
@@ -74,18 +78,18 @@ export function ReverseSearch({ onClose }: { onClose: () => void }) {
   };
 
   const title = !scenario
-    ? "Что со мной случилось?"
+    ? "Что это было?"
     : !ready
-      ? scenario === "submission"
+      ? needsRegion
         ? "Куда пришлось?"
         : "Где держали?"
       : "Похоже на это?";
 
   return (
     <Sheet
-      kicker="Не знаешь названия"
+      kicker="Найди приём по описанию"
       title={title}
-      subtitle={ready ? "Тапни технику - покажем, как защититься" : undefined}
+      subtitle={ready ? "Тапни - откроем карточку приёма" : undefined}
       onClose={onClose}
     >
       {scenario && (
@@ -106,7 +110,7 @@ export function ReverseSearch({ onClose }: { onClose: () => void }) {
         </div>
       )}
 
-      {scenario === "submission" && region == null && (
+      {needsRegion && region == null && (
         <div className="space-y-2">
           {REGIONS.map((r) => (
             <OptionButton key={r.key} label={r.label} onClick={() => setRegion(r.key)} />
@@ -114,7 +118,7 @@ export function ReverseSearch({ onClose }: { onClose: () => void }) {
         </div>
       )}
 
-      {scenario === "control" && position == null && (
+      {needsPosition && position == null && (
         <div className="space-y-2">
           {POSITIONS.map((p) => (
             <OptionButton key={p.id} label={p.label} onClick={() => setPosition(p.id)} />

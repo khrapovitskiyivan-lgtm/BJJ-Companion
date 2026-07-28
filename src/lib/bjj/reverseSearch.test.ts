@@ -39,6 +39,8 @@ describe("reverseCandidates", () => {
     t(10, { nameRu: "Креветка", group: "escape", setup_from: [13] }),
     t(11, { nameRu: "Мост из маунта", group: "escape", setup_from: [15] }),
     t(20, { nameRu: "Проход в обе ноги", group: "takedown", difficulty: 2 }),
+    t(30, { nameRu: "Свип ножницы", group: "sweep", difficulty: 1 }),
+    t(40, { nameRu: "Проход коленом", group: "guard_pass", difficulty: 2 }),
   ];
 
   it("сабмишен + шея -> только удушения, простое первым", () => {
@@ -46,13 +48,21 @@ describe("reverseCandidates", () => {
     expect(out.map((x) => x.id)).toEqual([1, 2]); // 3 - рука, не попадает
   });
 
-  it("контроль + позиция -> эскейпы из этой позиции", () => {
-    const out = reverseCandidates(techs, { scenario: "control", fromPosition: 13 });
+  it("выход + позиция -> эскейпы из этой позиции", () => {
+    const out = reverseCandidates(techs, { scenario: "escape", fromPosition: 13 });
     expect(out.map((x) => x.id)).toEqual([10]);
   });
 
   it("тейкдаун -> броски", () => {
     const out = reverseCandidates(techs, { scenario: "takedown" });
     expect(out.map((x) => x.id)).toEqual([20]);
+  });
+
+  it("свип -> перевороты снизу", () => {
+    expect(reverseCandidates(techs, { scenario: "sweep" }).map((x) => x.id)).toEqual([30]);
+  });
+
+  it("проход гарда -> проходы", () => {
+    expect(reverseCandidates(techs, { scenario: "pass" }).map((x) => x.id)).toEqual([40]);
   });
 });

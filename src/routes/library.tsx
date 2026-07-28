@@ -192,7 +192,7 @@ function Library() {
         onClick={() => setShowReverse(true)}
         className="-mt-1 self-start text-xs text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
       >
-        Не знаешь названия? Опиши, что случилось
+        Не знаешь названия? Найди приём по описанию
       </button>
       {showReverse && <ReverseSearch onClose={() => setShowReverse(false)} />}
 
