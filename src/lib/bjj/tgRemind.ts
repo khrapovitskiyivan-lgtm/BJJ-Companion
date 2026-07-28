@@ -85,8 +85,8 @@ export function decide(row: TgChatRow, todayIso: string, dow: number, mondayIso:
     if (!fresh) return { kind: "none" }; // неактивная неделя — нечего подводить
     const text =
       done >= quota
-        ? `План недели закрыт: ${done} из ${quota}. Так держать.`
-        : `На этой неделе ${done} из ${quota}. Новая неделя с понедельника.`;
+        ? `Неделя закрыта: ${done} из ${quota}. 3 минуты — открой «Сегодня» и повтори, что показывали.`
+        : `На этой неделе ${done} из ${quota}. 3 минуты — открой «Сегодня» и повтори перед новой неделей.`;
     return { kind: "recap", text };
   }
 

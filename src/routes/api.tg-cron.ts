@@ -49,6 +49,9 @@ export const Route = createFileRoute("/api/tg-cron")({
         for (const row of rows) {
           const d = decide(row, todayIso, dow, mondayIso);
           if (d.kind === "none") continue;
+          // Воскресный итог ведёт на экран «Сегодня» (TodayAction), остальные — в дневник
+          const btnUrl = d.kind === "recap" ? `${APP_URL}/progress` : `${APP_URL}/diary`;
+          const btnText = d.kind === "recap" ? "Открыть Сегодня" : "Открыть дневник";
 
           const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: "POST",
@@ -57,7 +60,7 @@ export const Route = createFileRoute("/api/tg-cron")({
               chat_id: row.tg_user_id,
               text: d.text,
               reply_markup: {
-                inline_keyboard: [[{ text: "Открыть дневник", web_app: { url: `${APP_URL}/diary` } }]],
+                inline_keyboard: [[{ text: btnText, web_app: { url: btnUrl } }]],
               },
             }),
           }).catch(() => null);

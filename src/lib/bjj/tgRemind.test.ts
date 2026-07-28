@@ -78,13 +78,14 @@ describe("decide: суббота и воскресенье", () => {
     expect(decide(row({ week_done: 3 }), "2026-07-18", 6, MONDAY).kind).toBe("none");
   });
 
-  it("воскресенье: золотой итог при закрытом плане, мягкий при недоборе", () => {
+  it("воскресенье: итог недели с призывом открыть «Сегодня»", () => {
     const gold = decide(row({ week_done: 3 }), "2026-07-19", 7, MONDAY);
     expect(gold.kind).toBe("recap");
-    expect(gold.kind === "recap" && gold.text).toContain("закрыт: 3 из 3");
+    expect(gold.kind === "recap" && gold.text).toContain("3 из 3");
+    expect(gold.kind === "recap" && gold.text).toContain("Сегодня");
     const soft = decide(row({ week_done: 2 }), "2026-07-19", 7, MONDAY);
     expect(soft.kind === "recap" && soft.text).toContain("2 из 3");
-    expect(soft.kind === "recap" && soft.text).toContain("понедельника");
+    expect(soft.kind === "recap" && soft.text).toContain("Сегодня");
   });
 
   it("воскресенье без активности на неделе — молчим", () => {
