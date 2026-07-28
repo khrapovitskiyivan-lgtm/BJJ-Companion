@@ -64,6 +64,7 @@ export interface Technique {
   points_ibjjf: number;
   points_adcc: number;
   tags: string[];
+  aliases?: string[];     // поисковые синонимы (сленг сообщества), не показываются в UI; в сгенерированных данных всегда массив
   prerequisites: number[];
   setup_from: number[];
   common_setups: number[];

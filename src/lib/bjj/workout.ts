@@ -43,7 +43,7 @@ export function filterTechniques(opts: {
     if (noGi === true && !t.noGi) return false;
     if (group && group !== "all" && t.group !== group) return false;
     if (needle) {
-      const hay = `${t.label} ${t.title} ${t.tags.join(" ")}`.toLowerCase();
+      const hay = `${t.label} ${t.title} ${t.tags.join(" ")} ${(t.aliases ?? []).join(" ")}`.toLowerCase();
       if (!hay.includes(needle)) return false;
     }
     return true;

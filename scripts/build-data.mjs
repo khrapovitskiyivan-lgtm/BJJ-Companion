@@ -43,6 +43,10 @@ const csv = readFileSync(join(ROOT, 'data', 'techniques.csv'), 'utf8').replace(/
 const videoUrls = JSON.parse(
   readFileSync(join(ROOT, 'data', 'video-urls.json'), 'utf8'),
 );
+// Поисковые алиасы (сленг сообщества -> карточка): id -> string[]
+const aliasMap = JSON.parse(
+  readFileSync(join(ROOT, 'data', 'aliases.json'), 'utf8'),
+);
 const rows = parseCSV(csv);
 const header = rows[0];
 const recs = rows.slice(1).filter((r) => r.length > 1 && r[0].trim())
@@ -71,6 +75,7 @@ const techniques = recs.map((r) => {
     points_ibjjf: parseInt(r.points_ibjjf, 10) || 0,
     points_adcc: parseInt(r.points_adcc, 10) || 0,
     tags,
+    aliases: aliasMap[r.id] || [],
     prerequisites: ids(r.prerequisites),
     setup_from: ids(r.setup_from),
     common_setups: ids(r.common_setups),
