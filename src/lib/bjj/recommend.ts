@@ -29,7 +29,7 @@ export function currentFocus(techniques: Technique[], progress: ProgressMap): Te
 }
 
 // Бонус техники под цель тренировок (мягкий приоритет сортировки, не фильтр)
-function goalScore(t: Technique, opts?: { goal?: Goal; gi?: boolean; noGi?: boolean }): number {
+export function goalScore(t: Technique, opts?: { goal?: Goal; gi?: boolean; noGi?: boolean }): number {
   if (!opts?.goal) return 0;
   if (opts.goal === "self-defense") {
     let s = 0;

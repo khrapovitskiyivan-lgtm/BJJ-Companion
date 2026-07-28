@@ -4,7 +4,7 @@ import { BELT_ORDER, COOLDOWN_BY_BELT, MAX_DIFFICULTY_BY_BELT, WARMUP_BY_BELT } 
 import { TECHNIQUES } from "./data";
 import type { StyleProfile } from "./types";
 import type { ProgressMap } from "./store";
-import { isUnlocked } from "./recommend";
+import { isUnlocked, goalScore } from "./recommend";
 import { caughtCounts } from "./caught";
 
 const CRITICAL_TAGS = ["dangerous", "critical", "high_risk"];
@@ -135,13 +135,16 @@ export function generateWorkout(
   if (profile.long_limbs) preferred.push("long_limbs");
   if (profile.speed) preferred.push("speed");
 
+  // Цель (goal) — мягкий нудж подбора, та же семантика, что в nextToLearn
+  const goalOpts = { goal: profile.goal, gi: profile.gi, noGi: profile.noGi };
+  const pref = (t: Technique) =>
+    (t.tags.some((x) => preferred.includes(x)) ? 1 : 0) + goalScore(t, goalOpts);
+
   available.sort((a, b) => {
-    const aMatch = a.tags.some((t) => preferred.includes(t)) ? 1 : 0;
-    const bMatch = b.tags.some((t) => preferred.includes(t)) ? 1 : 0;
     if (config.intensity === "hard") {
-      return (b.difficulty || 1) - (a.difficulty || 1) || bMatch - aMatch;
+      return (b.difficulty || 1) - (a.difficulty || 1) || pref(b) - pref(a);
     }
-    return bMatch - aMatch || (a.difficulty || 1) - (b.difficulty || 1);
+    return pref(b) - pref(a) || (a.difficulty || 1) - (b.difficulty || 1);
   });
 
   const times = splitTime(config);
@@ -179,6 +182,8 @@ export function generateWorkoutFromDiary(
 
   // «Чем поймали»: защиты от сабмишенов соперника получают приоритет
   const caught = caughtCounts(entries);
+  // Цель — мягкий нудж поверх дневникового скоринга (не перебивает «в работе»/защиты)
+  const goalOpts = { goal: profile.goal, gi: profile.gi, noGi: profile.noGi };
 
   const score = (t: Technique): number => {
     const status = progress[t.id] ?? "not_started";
@@ -202,7 +207,7 @@ export function generateWorkoutFromDiary(
       const c = caught.get(id);
       if (c) defenseBoost = Math.max(defenseBoost, 25 + Math.min(c, 3) * 10);
     }
-    return s + defenseBoost;
+    return s + defenseBoost + goalScore(t, goalOpts) * 8;
   };
 
   const available = availableFor(config, profile);
