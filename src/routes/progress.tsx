@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
-import { TechniqueRow, TechniqueChip } from "@/components/bjj/TechniqueCard";
+import { TechniqueRow } from "@/components/bjj/TechniqueCard";
 import { GapCard } from "@/components/bjj/GapCard";
 import { ProgressTop } from "@/components/bjj/ProgressTop";
-import { ReviewShownBlock } from "@/components/bjj/ReviewShownBlock";
+import { TodayAction } from "@/components/bjj/TodayAction";
 import { PartnersBlock } from "@/components/bjj/PartnersBlock";
 import { todayCardModel } from "@/lib/bjj/todayCard";
 import { CharacterSheet } from "@/components/bjj/CharacterSheet";
@@ -12,11 +12,10 @@ import { ProgressSheet } from "@/components/bjj/ProgressSheet";
 import { Button, PageHeader, buttonClass } from "@/components/bjj/ui";
 import { useProgress, useProfile, useDiary, useFavorites, useReviewed } from "@/lib/bjj/store";
 import { computeTotalXp, levelForXp, skillLevel } from "@/lib/bjj/xp";
-import { currentFocus, nextToLearn } from "@/lib/bjj/recommend";
+import { computeInsights } from "@/lib/bjj/insights";
 import { computeStyleAffinity, type StyleScore } from "@/lib/bjj/styleProfile";
 import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
-import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
-import { topCatchers, defensesFor } from "@/lib/bjj/caught";
+import { TECHNIQUES } from "@/lib/bjj/data";
 import { track } from "@/lib/bjj/telemetry";
 import { buildStyleShare, shareText } from "@/lib/bjj/share";
 import { BELT_ORDER, BELT_LABEL, STYLE_META } from "@/lib/bjj/constants";
@@ -28,16 +27,7 @@ import {
   ARCHETYPE_STATS,
 } from "@/lib/bjj/stats";
 import type { Technique } from "@/lib/bjj/types";
-import {
-  Target,
-  Flag,
-  History,
-  ArrowRight,
-  ShieldAlert,
-  Share2,
-  Check,
-  ChevronDown,
-} from "lucide-react";
+import { Share2, Check, ChevronDown } from "lucide-react";
 
 export const Route = createFileRoute("/progress")({
   component: ProgressPage,
@@ -57,18 +47,6 @@ function ProgressPage() {
     [entries, progress, profile.belt, reviewed],
   );
 
-  // Текущий фокус (в процессе) + следующая цель (рекомендации)
-  const focusTech = useMemo(() => currentFocus(TECHNIQUES, progress), [progress]);
-  const recommendations = useMemo(
-    () =>
-      nextToLearn(TECHNIQUES, progress, profile.belt, 4, {
-        goal: profile.goal,
-        gi: profile.gi,
-        noGi: profile.noGi,
-      }),
-    [progress, profile.belt, profile.goal, profile.gi, profile.noGi],
-  );
-
   // «Твой стиль» — аффинити к 10 архетипам из прогресса + отработок дневника
   const styleScores = useMemo(
     () => computeStyleAffinity(progress, practiceCount()),
@@ -81,39 +59,6 @@ function ProgressPage() {
     [progress, practiceCount],
   );
   const doneCount = useMemo(() => countDone(progress), [progress]);
-
-  // «Что тебя ловит»: сабмишены, которыми попадаются 2+ раз, и защиты от них из графа
-  const catchers = useMemo(() => {
-    return topCatchers(entries, 2)
-      .map(({ id, count }) => ({
-        tech: TECH_BY_ID[id],
-        count,
-        defenses: defensesFor(id, TECHNIQUES, 3),
-      }))
-      .filter((c) => c.tech);
-  }, [entries]);
-
-  // «Пора повторить»: изученное, чего давно (3+ недели) или вообще не было в дневнике.
-  // Показываем только когда дневник ведётся — иначе кричали бы на всё изученное разом.
-  const staleTechniques = useMemo(() => {
-    if (entries.length === 0) return [];
-    const last = new Map<number, string>();
-    for (const e of entries) {
-      for (const id of e.techniqueIds) {
-        const prev = last.get(id);
-        if (!prev || e.date > prev) last.set(id, e.date);
-      }
-    }
-    const now = Date.now();
-    const staleDays = (id: number) => {
-      const iso = last.get(id);
-      if (!iso) return Infinity; // изучена, но в дневнике ни разу
-      return (now - new Date(iso).getTime()) / 86_400_000;
-    };
-    return TECHNIQUES.filter((t) => progress[t.id] === "done" && staleDays(t.id) >= 21)
-      .sort((a, b) => staleDays(b.id) - staleDays(a.id))
-      .slice(0, 5);
-  }, [entries, progress]);
 
   // Раскрытие списка техник: клик по стату «Изучено» / «В процессе» / «Избранное»
   const [openList, setOpenList] = useState<"done" | "in_progress" | "favorites" | null>(null);
@@ -156,6 +101,19 @@ function ProgressPage() {
     profileHydrated && diaryHydrated
       ? todayCardModel(entries, profile.frequency, new Date(), profile.trainingDays)
       : null;
+
+  // Инсайты «что сделать сегодня» — только на клиенте после гидратации (new Date())
+  const insights = useMemo(
+    () =>
+      profileHydrated && diaryHydrated
+        ? computeInsights({
+            entries, progress, reviewed, belt: profile.belt, goal: profile.goal,
+            gi: profile.gi, noGi: profile.noGi, frequency: profile.frequency,
+            techniques: TECHNIQUES, today: new Date(),
+          })
+        : [],
+    [entries, progress, reviewed, profile.belt, profile.goal, profile.gi, profile.noGi, profile.frequency, profileHydrated, diaryHydrated],
+  );
 
   return (
     <AppShell>
@@ -214,100 +172,9 @@ function ProgressPage() {
           </section>
         )}
 
-        <ReviewShownBlock />
+        <TodayAction insights={insights} />
 
         <PartnersBlock />
-
-        {/* Текущий фокус + следующая цель (перенесено из графа) */}
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <FocusCard
-            icon={<Target className="h-4 w-4" />}
-            caption="Текущий фокус"
-            tech={focusTech}
-            empty="Отметьте технику «в процессе» — она появится здесь"
-          />
-          <FocusCard
-            icon={<Flag className="h-4 w-4" />}
-            caption="Следующая цель"
-            tech={recommendations[0] ?? null}
-            extra={recommendations.slice(1)}
-            empty="Всё доступное освоено!"
-            highlight
-            onNav={() => track("reco_click", "next")}
-          />
-        </section>
-
-        {/* Что тебя ловит: повторяющиеся сабмишены соперников и защиты от них */}
-        {catchers.length > 0 && (
-          <section
-            onClickCapture={() => track("reco_click", "catcher")}
-            className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4"
-          >
-            <h2 className="mb-1 flex items-center gap-1.5 text-sm font-semibold">
-              <ShieldAlert className="h-4 w-4 text-destructive" />
-              Что тебя ловит
-            </h2>
-            <p className="mb-3 text-[11px] text-muted-foreground">
-              Из «Чем поймали» в дневнике. Разучи защиты — генератор уже поднял их в приоритете.
-            </p>
-            <div className="space-y-4">
-              {catchers.map(({ tech, count, defenses }) => (
-                <div key={tech.id}>
-                  <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <span className="min-w-0 truncate text-sm font-medium">{tech.nameRu}</span>
-                    <span className="shrink-0 text-[11px] tabular-nums text-destructive">
-                      {count} {count === 1 ? "раз" : count < 5 ? "раза" : "раз"}
-                    </span>
-                  </div>
-                  {defenses.length > 0 ? (
-                    <ul className="space-y-1.5">
-                      {defenses.map((d) => (
-                        <li key={d.id}>
-                          <TechniqueRow technique={d} inset />
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-[11px] text-muted-foreground">
-                      Прямых защит в базе нет — разбери позицию входа на карте.
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Пора повторить: изученное выветривается — дневник это видит */}
-        {staleTechniques.length > 0 && (
-          <section
-            onClickCapture={() => track("reco_click", "repeat")}
-            className="rounded-2xl border border-border bg-card p-4"
-          >
-            <h2 className="mb-1 flex items-center gap-1.5 text-sm font-semibold">
-              <History className="h-4 w-4 text-primary" />
-              Пора повторить
-            </h2>
-            <p className="mb-3 text-[11px] text-muted-foreground">
-              Изучено, но в дневнике давно не появлялось. Изученное без повторения выветривается.
-            </p>
-            <ul className="space-y-1.5">
-              {staleTechniques.map((t) => (
-                <li key={t.id}>
-                  <TechniqueRow technique={t} inset />
-                </li>
-              ))}
-            </ul>
-            <Link
-              to="/workout"
-              search={{ src: "diary" }}
-              className={buttonClass("secondary", "sm", "mt-3 w-full text-muted-foreground")}
-            >
-              Собрать отработку по дневнику
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </section>
-        )}
 
         <YourStyle scores={styleScores} doneCount={doneCount} />
 
@@ -486,51 +353,3 @@ function YourStyle({ scores, doneCount }: { scores: StyleScore[]; doneCount: num
   );
 }
 
-// Карточка «Текущий фокус» / «Следующая цель» — клик открывает технику
-function FocusCard({
-  icon,
-  caption,
-  tech,
-  extra,
-  empty,
-  highlight,
-  onNav,
-}: {
-  icon: React.ReactNode;
-  caption: string;
-  tech: Technique | null;
-  extra?: Technique[];
-  empty: string;
-  highlight?: boolean;
-  onNav?: () => void; // телеметрия кликов по рекомендации (капчур, не мешает Link)
-}) {
-  return (
-    <div
-      onClickCapture={onNav}
-      className={`rounded-2xl border p-4 ${
-        highlight ? "border-ring/50 bg-primary/5" : "border-border bg-card"
-      }`}
-    >
-      <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-muted-foreground">
-        {icon}
-        {caption}
-      </p>
-      {tech ? (
-        <>
-          <div className="mt-2">
-            <TechniqueRow technique={tech} inset />
-          </div>
-          {extra && extra.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {extra.map((t) => (
-                <TechniqueChip key={t.id} technique={t} />
-              ))}
-            </div>
-          )}
-        </>
-      ) : (
-        <p className="mt-1.5 text-xs text-muted-foreground">{empty}</p>
-      )}
-    </div>
-  );
-}
