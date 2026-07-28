@@ -68,7 +68,8 @@ export const Route = createFileRoute("/api/tg-cron")({
           if (res?.ok) {
             sent++;
             const patch: Record<string, unknown> = { last_ping: todayIso };
-            if (d.kind === "soft") {
+            // Оба вечерних нуджа (soft и remind) считаются в общий недельный кап
+            if (d.kind === "soft" || d.kind === "remind") {
               const used = row.soft_ping_week === mondayIso ? row.soft_ping_count : 0;
               patch.soft_ping_week = mondayIso;
               patch.soft_ping_count = used + 1;

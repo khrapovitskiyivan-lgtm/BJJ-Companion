@@ -124,9 +124,20 @@ describe("decide: вечерний soft-пинг", () => {
     expect(d.kind === "soft" && d.text).toContain("Была тренировка");
   });
 
-  it("кап 2/нед: третий soft на неделе -> тишина", () => {
+  it("второй soft теперь проходит (кап вечерних нуджей = 3)", () => {
     const r = row({ soft_ping_week: MONDAY, soft_ping_count: 2 });
+    expect(decide(r, "2026-07-13", 1, MONDAY).kind).toBe("soft");
+  });
+
+  it("кап 3/нед: четвёртый вечерний нудж -> тишина", () => {
+    const r = row({ soft_ping_week: MONDAY, soft_ping_count: 3 });
     expect(decide(r, "2026-07-13", 1, MONDAY).kind).toBe("none");
+  });
+
+  it("кап распространяется и на remind (не только soft)", () => {
+    // ср пустой недели: need 3 >= after 3 -> обычно remind, но недельный кап исчерпан
+    const r = row({ soft_ping_week: MONDAY, soft_ping_count: 3 });
+    expect(decide(r, "2026-07-15", 3, MONDAY).kind).toBe("none");
   });
 
   it("счётчик прошлой недели не считается (сброс)", () => {

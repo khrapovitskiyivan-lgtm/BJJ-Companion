@@ -51,7 +51,7 @@ export type CronDecision =
   | { kind: "none" }
   | { kind: "remind" | "recap" | "soft"; text: string };
 
-export const SOFT_CAP = 2; // максимум мягких нуджей в неделю
+export const EVENING_CAP = 3; // макс вечерних нуджей (remind + soft) в неделю
 const SOFT_TEXT =
   "Была тренировка сегодня? Запиши, что показали — потом разберёшь в приложении. Отключить: /mute";
 
@@ -103,10 +103,12 @@ export function decide(row: TgChatRow, todayIso: string, dow: number, mondayIso:
   const need = quota - done;
   if (need <= 0) return { kind: "none" };
   if (row.last_entry === todayIso) return { kind: "none" }; // сегодня уже отметился
+  // Общий недельный кап вечерних нуджей (remind + soft): после нескольких
+  // проигнорированных нуджей отступаем, иначе дрейфующий пользователь -> mute.
+  const usedThisWeek = row.soft_ping_week === mondayIso ? row.soft_ping_count : 0;
+  if (usedThisWeek >= EVENING_CAP) return { kind: "none" };
   if (need < after) {
-    // План не горит: мягкий вечерний нудж, если кап недели не исчерпан
-    const usedThisWeek = row.soft_ping_week === mondayIso ? row.soft_ping_count : 0;
-    if (usedThisWeek >= SOFT_CAP) return { kind: "none" };
+    // План не горит: мягкий вечерний нудж
     return { kind: "soft", text: SOFT_TEXT };
   }
   const text = `План недели под угрозой: ${done} из ${quota}, осталось ${after} ${dayWord(after)} до конца недели. Тренировался — отметь в два тапа. Отключить напоминания: /mute`;
