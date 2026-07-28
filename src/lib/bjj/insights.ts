@@ -41,7 +41,7 @@ export function staleToRepeat(
   return out.slice(0, cap).map((x) => x.id);
 }
 
-export type InsightKind = "cold-start" | "catcher-defense" | "review-shown" | "repeat-stale" | "plan" | "learn-next";
+export type InsightKind = "return-after-pause" | "cold-start" | "catcher-defense" | "review-shown" | "repeat-stale" | "plan" | "learn-next";
 export interface Insight { kind: InsightKind; weight: number; techniqueIds: number[]; reason: string; route: string }
 export interface InsightsInput {
   entries: DiaryEntry[];
@@ -66,9 +66,27 @@ export function computeInsights(input: InsightsInput): Insight[] {
   const nowMs = todayMs(today);
   const out: Insight[] = [];
 
+  // return-after-pause: был активен (есть дневник), но последняя запись 14-90 дней назад.
+  // Момент возвращения - самый ценный для мягкого захода: повтори знакомое, запиши снова.
+  // Перебивает cold-start (более специфичный и тёплый сигнал).
+  const lastMs = entries.length ? Math.max(...entries.map((e) => dayMs(e.date))) : 0;
+  const gapDays = entries.length ? (nowMs - lastMs) / DAY : 0;
+  const returnPause = entries.length > 0 && gapDays >= 14 && gapDays <= 90;
+  if (returnPause) {
+    const last = entries.reduce((a, b) => (dayMs(b.date) > dayMs(a.date) ? b : a));
+    const ids = last.techniqueIds.slice(0, 2);
+    out.push({
+      kind: "return-after-pause", weight: 220, techniqueIds: ids,
+      reason: ids.length
+        ? `Давно не тренировался - вернись мягко: повтори «${nameOf(techniques, ids[0])}»`
+        : "Давно не тренировался - вернись мягко, запиши тренировку",
+      route: ids.length ? `/technique/${ids[0]}` : "/diary?add",
+    });
+  }
+
   // cold-start: нет записей за последние 7 дней -> вернуть к записи (перебивает контент)
   const recent = entries.some((e) => dayMs(e.date) >= nowMs - 6 * DAY);
-  if (!recent) {
+  if (!recent && !returnPause) {
     out.push({ kind: "cold-start", weight: 200, techniqueIds: [], reason: "Запиши тренировку за 30 секунд", route: "/diary?add" });
   }
 

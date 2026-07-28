@@ -11,6 +11,7 @@ import type { Insight, InsightKind } from "@/lib/bjj/insights";
 // Консолидирует прежние реко-блоки в одно ранжированное действие.
 
 const CTA: Record<InsightKind, string> = {
+  "return-after-pause": "Повторить за 3 минуты",
   "cold-start": "Записать тренировку",
   "catcher-defense": "Разобрать защиту",
   "review-shown": "Разобрать показанное",

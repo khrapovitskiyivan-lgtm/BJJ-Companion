@@ -44,6 +44,27 @@ describe("computeInsights / primaryAction", () => {
     expect(pa?.weight).toBe(200);
   });
 
+  it("был активен, последняя запись 3 недели назад -> primary return-after-pause (вес 220), повтор из последней записи", () => {
+    const entries: DiaryEntry[] = [
+      { id: "1", date: "2026-07-05", techniqueIds: [70, 132], caughtBy: [] }, // 22 дня назад
+    ];
+    const ins = computeInsights({ ...base, techniques: [tech(70)], entries, progress: {}, reviewed: {}, frequency: 3 });
+    const pa = primaryAction(ins);
+    expect(pa?.kind).toBe("return-after-pause");
+    expect(pa?.weight).toBe(220);
+    expect(pa?.techniqueIds).toContain(70);
+    // cold-start подавлен, хотя записей за 7 дней нет
+    expect(ins.some((i) => i.kind === "cold-start")).toBe(false);
+  });
+
+  it("пауза больше 90 дней -> не return-after-pause, обычный cold-start", () => {
+    const entries: DiaryEntry[] = [
+      { id: "1", date: "2026-01-01", techniqueIds: [70], caughtBy: [] },
+    ];
+    const ins = computeInsights({ ...base, entries, progress: {}, reviewed: {}, frequency: 3 });
+    expect(primaryAction(ins)?.kind).toBe("cold-start");
+  });
+
   it("свежий паттерн ловли (2+ в окне) с защитой -> primary catcher-defense", () => {
     const defense = tech(900, { group: "escape", setup_from: [31] });
     const entries: DiaryEntry[] = [
