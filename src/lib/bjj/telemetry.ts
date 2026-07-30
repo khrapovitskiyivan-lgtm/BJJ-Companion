@@ -31,7 +31,8 @@ export type TelemetryEvent =
   | "insight_shown"
   | "insight_click"
   | "reverse_search"
-  | "workout_theme";
+  | "workout_theme"
+  | "gap_shown";
 
 const DEDUP_KEY = "bjj.telemetry.v1";
 const DAY = 24 * 60 * 60 * 1000;

@@ -36,7 +36,7 @@ export const Route = createFileRoute("/progress")({
 // === ГЛАВНЫЙ КОМПОНЕНТ ===
 function ProgressPage() {
   const { progress } = useProgress();
-  const { profile, hydrated: profileHydrated } = useProfile();
+  const { profile, update, hydrated: profileHydrated } = useProfile();
   const { entries, practiceCount, hydrated: diaryHydrated } = useDiary();
   const { favorites } = useFavorites();
   const { reviewed } = useReviewed();
@@ -188,6 +188,7 @@ function ProgressPage() {
             progress={progress}
             belt={profile.belt}
             doneCount={doneCount}
+            onPickStyle={(s) => update({ preferredStyles: [s] })}
           />
         </div>
 
