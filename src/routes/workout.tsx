@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "@/components/bjj/AppShell";
 import { TechniqueCard } from "@/components/bjj/TechniqueCard";
 import { Scenarios } from "@/components/bjj/Scenarios";
-import { useDiary, useProfile, useProgress } from "@/lib/bjj/store";
+import { useDiary, useProfile, useProgress, useFavorites } from "@/lib/bjj/store";
 import { generateWorkout, generateWorkoutFromDiary } from "@/lib/bjj/workout";
 import { track } from "@/lib/bjj/telemetry";
 import { GROUP_LABEL } from "@/lib/bjj/constants";
@@ -140,6 +140,7 @@ function WorkoutGenerator({
   const { profile, hydrated: profileHydrated } = useProfile();
   const { progress, cycleStatus, hydrated: progressHydrated } = useProgress();
   const { entries, hydrated: diaryHydrated } = useDiary();
+  const { favorites } = useFavorites();
   // Генерация зависит от всех трёх сторов: ждём полной гидратации
   const hydrated = profileHydrated && progressHydrated && diaryHydrated;
 
@@ -166,8 +167,8 @@ function WorkoutGenerator({
 
   const generate = (cfg: WorkoutConfig, src: "profile" | "diary"): Workout =>
     src === "diary"
-      ? generateWorkoutFromDiary(cfg, profile, progress, entries)
-      : generateWorkout(cfg, profile);
+      ? generateWorkoutFromDiary(cfg, profile, progress, entries, favorites)
+      : generateWorkout(cfg, profile, progress, favorites, entries);
 
   // Готовый план сразу при заходе: генерация только на клиенте после гидратации
   // (в генераторе Math.random — на SSR дал бы hydration mismatch)

@@ -102,11 +102,6 @@ export interface StyleProfile {
   // Из них считается план недели и «до плана осталось Y дней».
   trainingDays?: number[];
   preferredStyles?: Style[]; // выбранные игроком стили игры (заменяют «качества»)
-  // Устаревшее — «качества» (заменены на preferredStyles); поля оставлены для совместимости
-  flexibility?: boolean;
-  pressure?: boolean;
-  long_limbs?: boolean;
-  speed?: boolean;
   // Профиль пользователя (в т.ч. из Telegram)
   name?: string;
   avatarUrl?: string;

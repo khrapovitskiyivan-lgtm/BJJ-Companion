@@ -1,11 +1,10 @@
 // === WORKOUT GENERATOR === (перенос логики из bjj-map/index.html:6130+)
-import type { Belt, DiaryEntry, Group, Technique, Workout, WorkoutConfig } from "./types";
+import type { Belt, DiaryEntry, Group, Technique, Workout, WorkoutConfig, WorkoutDrill } from "./types";
 import { BELT_ORDER, COOLDOWN_BY_BELT, MAX_DIFFICULTY_BY_BELT, WARMUP_BY_BELT } from "./constants";
 import { TECHNIQUES } from "./data";
 import type { StyleProfile } from "./types";
-import type { ProgressMap } from "./store";
-import { isUnlocked, goalScore } from "./recommend";
-import { caughtCounts } from "./caught";
+import type { FavoritesMap, ProgressMap } from "./store";
+import { effectiveStyleSet, practiceCountFrom, pickAnchor, buildCluster, clusterMinutes, themeReason } from "./workoutCluster";
 
 const BANNED_IDS = new Set<number>([384]); // Kani Basami — запрещён во всех режимах smart
 
@@ -95,10 +94,10 @@ function splitTime(config: WorkoutConfig) {
 // === Сборка результата из отобранных техник ===
 function assemble(
   belt: Belt,
-  selected: Technique[],
+  drills: WorkoutDrill[],
   times: ReturnType<typeof splitTime>,
   config: WorkoutConfig,
-  message?: string,
+  extra?: { message?: string; theme?: Workout["theme"] },
 ): Workout {
   const { warmupMinutes, cooldownMinutes, mainMinutes } = times;
   const base = {
@@ -111,7 +110,7 @@ function assemble(
     totalMinutes: config.duration,
   };
 
-  if (selected.length === 0) {
+  if (drills.length === 0) {
     return {
       ...base,
       drills: [],
@@ -119,110 +118,72 @@ function assemble(
     };
   }
 
-  // Ключевое правило: timePerDrill = max(2, mainDuration / selected.length)
-  const timePerDrill = Math.max(2, Math.round(mainMinutes / selected.length));
-  return {
-    ...base,
-    drills: selected.map((t) => ({ technique: t, minutes: timePerDrill })),
-    message,
-  };
+  return { ...base, drills, message: extra?.message, theme: extra?.theme };
 }
 
-// === Генератор по профилю ===
+// === Генераторы отработки: якорный связный кластер ===
+// Ротация якоря между генерациями сессии (свежесть темы)
+let lastAnchorId: number | undefined;
+
+// Общий сборщик: якорь -> кластер -> время по новизне -> заголовок темы
+function clusterWorkout(
+  config: WorkoutConfig,
+  profile: StyleProfile,
+  progress: ProgressMap,
+  favorites: FavoritesMap,
+  entries: DiaryEntry[],
+  source: "profile" | "diary",
+): Workout {
+  const available = availableFor(config, profile);
+  const times = splitTime(config);
+  if (available.length === 0) return assemble(profile.belt, [], times, config);
+
+  const practiceCount = practiceCountFrom(entries);
+  const styleSet = effectiveStyleSet(profile, progress, practiceCount);
+  const opts = { goal: profile.goal, gi: profile.gi, noGi: profile.noGi };
+
+  let anchor = pickAnchor({ available, favorites, progress, entries, styleSet, avoidId: lastAnchorId, source, ...opts });
+  if (!anchor) {
+    // холодный старт: фундаментальная позиция по поясу; стиль решает ничьи
+    const cold = [...available].sort(
+      (a, b) =>
+        (a.group === "position" || a.group === "fundamentals" ? 0 : 1) -
+          (b.group === "position" || b.group === "fundamentals" ? 0 : 1) ||
+        (b.styles.some((s) => styleSet.has(s)) ? 1 : 0) - (a.styles.some((s) => styleSet.has(s)) ? 1 : 0) ||
+        a.difficulty - b.difficulty ||
+        a.id - b.id,
+    );
+    anchor = cold[0];
+  }
+  if (!anchor) return assemble(profile.belt, [], times, config);
+  lastAnchorId = anchor.id;
+
+  const cluster = buildCluster({ anchor, available, styleSet, count: times.techniqueCount, ...opts });
+  const minutes = clusterMinutes(cluster, times.mainMinutes, progress, practiceCount);
+  const drills: WorkoutDrill[] = cluster.map((t, i) => ({ technique: t, minutes: minutes[i] ?? 2 }));
+  const byId = new Map(TECHNIQUES.map((t) => [t.id, t]));
+  const reason = themeReason({ anchor, favorites, progress, entries, byId });
+  return assemble(profile.belt, drills, times, config, { theme: { anchorId: anchor.id, reason } });
+}
+
+// Генератор по профилю: якорь из избранного/в-процессе (дневник не ведёт выбор)
 export function generateWorkout(
   config: WorkoutConfig,
   profile: StyleProfile,
+  progress: ProgressMap,
+  favorites: FavoritesMap,
+  entries: DiaryEntry[],
 ): Workout {
-  const available = availableFor(config, profile);
-
-  // Сортировка: предпочтительные теги профиля + сложность
-  const preferred: string[] = [];
-  if (profile.flexibility) preferred.push("flexibility");
-  if (profile.pressure) preferred.push("pressure");
-  if (profile.long_limbs) preferred.push("long_limbs");
-  if (profile.speed) preferred.push("speed");
-
-  // Цель (goal) — мягкий нудж подбора, та же семантика, что в nextToLearn
-  const goalOpts = { goal: profile.goal, gi: profile.gi, noGi: profile.noGi };
-  const pref = (t: Technique) =>
-    (t.tags.some((x) => preferred.includes(x)) ? 1 : 0) + goalScore(t, goalOpts);
-
-  available.sort((a, b) => {
-    if (config.intensity === "hard") {
-      return (b.difficulty || 1) - (a.difficulty || 1) || pref(b) - pref(a);
-    }
-    return pref(b) - pref(a) || (a.difficulty || 1) - (b.difficulty || 1);
-  });
-
-  const times = splitTime(config);
-  return assemble(profile.belt, available.slice(0, times.techniqueCount), times, config);
+  return clusterWorkout(config, profile, progress, favorites, entries, "profile");
 }
 
-// === Генератор по дневнику ===
-// Отталкивается от реальных тренировок: что учишь сейчас, что давно не трогал,
-// что отработано мало. Дневник пуст → возвращаем обычную генерацию по профилю.
-const DAY_MS = 86_400_000;
-
+// Генератор по дневнику: якорь приоритетно из свежих записей
 export function generateWorkoutFromDiary(
   config: WorkoutConfig,
   profile: StyleProfile,
   progress: ProgressMap,
   entries: DiaryEntry[],
+  favorites: FavoritesMap,
 ): Workout {
-  if (entries.length === 0) {
-    const w = generateWorkout(config, profile);
-    return { ...w, message: "Дневник пуст — план собран по профилю. Отмечайте тренировки, и он станет точнее." };
-  }
-
-  // Сколько раз и когда последний раз отрабатывалась каждая техника
-  const stats = new Map<number, { count: number; last: string }>();
-  for (const e of entries) {
-    for (const id of e.techniqueIds) {
-      const prev = stats.get(id);
-      if (!prev) stats.set(id, { count: 1, last: e.date });
-      else stats.set(id, { count: prev.count + 1, last: e.date > prev.last ? e.date : prev.last });
-    }
-  }
-
-  const today = Date.now();
-  const daysSince = (iso: string) => Math.max(0, Math.round((today - new Date(iso).getTime()) / DAY_MS));
-
-  // «Чем поймали»: защиты от сабмишенов соперника получают приоритет
-  const caught = caughtCounts(entries);
-  // Цель — мягкий нудж поверх дневникового скоринга (не перебивает «в работе»/защиты)
-  const goalOpts = { goal: profile.goal, gi: profile.gi, noGi: profile.noGi };
-
-  const score = (t: Technique): number => {
-    const status = progress[t.id] ?? "not_started";
-    let s = 0;
-    // Что в работе — главный приоритет; затем готовое к изучению; повторение изученного — ниже.
-    if (status === "in_progress") s += 100;
-    else if (status === "not_started") s += isUnlocked(t, progress) ? 45 : 5;
-    else s += 25;
-
-    const st = stats.get(t.id);
-    if (!st) s += 30; // ни разу не отрабатывал
-    else {
-      s += Math.min(daysSince(st.last), 60) * 0.8; // давно не трогал — важнее
-      s -= Math.min(st.count, 10) * 3; // отработано много раз — реже
-    }
-
-    // Техника защищает от того, чем ловили (сабмишен в её setup_from):
-    // один буст по самому частому ловцу, растёт с числом попаданий до х3
-    let defenseBoost = 0;
-    for (const id of t.setup_from) {
-      const c = caught.get(id);
-      if (c) defenseBoost = Math.max(defenseBoost, 25 + Math.min(c, 3) * 10);
-    }
-    return s + defenseBoost + goalScore(t, goalOpts) * 8;
-  };
-
-  const available = availableFor(config, profile);
-  const scored = available
-    .map((t) => ({ t, s: score(t) }))
-    .sort((a, b) => b.s - a.s || (a.t.difficulty || 1) - (b.t.difficulty || 1));
-
-  const times = splitTime(config);
-  const selected = scored.slice(0, times.techniqueCount).map((x) => x.t);
-  return assemble(profile.belt, selected, times, config);
+  return clusterWorkout(config, profile, progress, favorites, entries, "diary");
 }
