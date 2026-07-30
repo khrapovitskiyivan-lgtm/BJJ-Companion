@@ -7,8 +7,15 @@ import type { ProgressMap } from "./store";
 import { isUnlocked, goalScore } from "./recommend";
 import { caughtCounts } from "./caught";
 
-const CRITICAL_TAGS = ["dangerous", "critical", "high_risk"];
 const BANNED_IDS = new Set<number>([384]); // Kani Basami — запрещён во всех режимах smart
+
+// Критичность техники: реальный сигнал риска (тег dangerous/critical/high_risk в базе
+// не встречается — фикс #2). Опасное = injuryRisk «КРИТИЧНО» или ножные/шейные замки.
+export function isCriticalTech(t: Technique): boolean {
+  const injury = t.content?.ru?.injuryRisk ?? "";
+  if (injury.startsWith("КРИТИЧНО")) return true;
+  return t.tags.includes("leg_locks") || t.tags.includes("spinal_lock");
+}
 
 function beltIndex(b: Belt) {
   return BELT_ORDER.indexOf(b);
@@ -18,7 +25,7 @@ function beltIndex(b: Belt) {
 function safetyOk(t: Technique, maxBeltIndex: number, mode: WorkoutConfig["safety"]): boolean {
   if (mode === "all") return true;
   if (BANNED_IDS.has(t.id)) return false;
-  const isCritical = t.tags.some((x) => CRITICAL_TAGS.includes(x));
+  const isCritical = isCriticalTech(t);
   if (mode === "safe") return !isCritical && (t.difficulty || 1) <= 3;
   // smart: белым/синим — без критичных
   if (maxBeltIndex <= 1 && isCritical) return false;
