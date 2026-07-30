@@ -1,5 +1,5 @@
 // Маппинг игрового стиля → lucide-иконка (строгие линейные, как в навигации).
-import { Anvil, Wind, Lock, Frame, RotateCw, Footprints, Crosshair, Grab, Crown, Shield } from "lucide-react";
+import { Anvil, Wind, Lock, Frame, RotateCw, Footprints, Crosshair, Grab, Pin, Shield } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Style } from "./types";
 
@@ -12,6 +12,6 @@ export const STYLE_ICONS: Record<Style, LucideIcon> = {
   leg_game: Footprints,
   back_hunter: Crosshair,
   wrestler: Grab,
-  top_control: Crown,
+  top_control: Pin,
   defense_escape: Shield,
 };
