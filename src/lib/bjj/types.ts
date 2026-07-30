@@ -155,4 +155,6 @@ export interface Workout {
   cooldownMinutes: number;
   totalMinutes: number;
   message?: string;
+  // Тема сессии: якорь кластера + причина (для заголовка на маршруте отработки)
+  theme?: { anchorId: number; reason: string };
 }
