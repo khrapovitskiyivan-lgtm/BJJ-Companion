@@ -1,6 +1,6 @@
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Crown } from "lucide-react";
 import type { TechNodeData } from "./flowLayout";
 import type { Group, ProgressStatus } from "@/lib/bjj/types";
 import { GROUP_LABEL } from "@/lib/bjj/constants";
@@ -31,7 +31,19 @@ const STATUS_LABEL: Record<ProgressStatus, string> = {
   not_started: "Не начато",
 };
 
-export type TechNode = Node<TechNodeData & { status?: ProgressStatus; dimmed?: boolean }, "tech">;
+export type TechNode = Node<
+  TechNodeData & { status?: ProgressStatus; dimmed?: boolean; crown?: boolean; recommended?: boolean },
+  "tech"
+>;
+
+// Мягкий тон фона узла по статусу прогресса — чтобы статус читался, а не только по 8px точке.
+// Смешиваем в oklab, НЕ в oklch: карточный фон ахроматичен (chroma 0), и oklch тянет
+// оттенок по дуге к hue 0 (зелёный «Изучено» краснеет). oklab интерполирует без угла.
+const STATUS_TINT: Record<ProgressStatus, string> = {
+  done: "color-mix(in oklab, var(--status-done) 12%, var(--color-card))",
+  in_progress: "color-mix(in oklab, var(--status-progress) 12%, var(--color-card))",
+  not_started: "var(--color-card)",
+};
 
 // Подпись зоны раскладки («Откуда попадаешь», «Сабмишены: финиш»...)
 export function ZoneLabelNode({ data }: NodeProps<Node<{ text: string }, "zone">>) {
@@ -56,6 +68,8 @@ export function TechniqueNode({ data, selected }: NodeProps<TechNode>) {
   const t = data.tech;
   const status = (data.status ?? "not_started") as ProgressStatus;
   const gc = GROUP_COLOR[t.group];
+  const crown = !!data.crown;
+  const recommended = !!data.recommended;
 
   return (
     <div
@@ -68,7 +82,7 @@ export function TechniqueNode({ data, selected }: NodeProps<TechNode>) {
         borderRight: "1px solid var(--color-border)",
         borderBottom: "1px solid var(--color-border)",
         borderRadius: 12,
-        background: "var(--color-card)",
+        background: STATUS_TINT[status],
         padding: "7px 9px",
         boxShadow: selected
           ? "0 0 0 2px var(--color-primary), 0 0 0 6px color-mix(in oklch, var(--color-primary) 18%, transparent)"
@@ -79,7 +93,45 @@ export function TechniqueNode({ data, selected }: NodeProps<TechNode>) {
       <Handle type="target" position={Position.Top} style={{ opacity: 0, pointerEvents: "none" }} />
       <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--color-muted-foreground)" }}>
         <span style={{ width: 7, height: 7, borderRadius: "50%", background: gc, flex: "none" }} />
-        <span style={{ textTransform: "uppercase", letterSpacing: "0.03em" }}>{GROUP_LABEL[t.group]}</span>
+        <span
+          style={{
+            textTransform: "uppercase",
+            letterSpacing: "0.03em",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            minWidth: 0,
+          }}
+        >
+          {GROUP_LABEL[t.group]}
+        </span>
+        {(recommended || crown) && (
+          <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 4, flex: "none" }}>
+            {recommended && (
+              <span
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.03em",
+                  color: "var(--color-primary)",
+                  background: "color-mix(in oklch, var(--color-primary) 14%, transparent)",
+                  borderRadius: 5,
+                  padding: "1px 4px",
+                  lineHeight: 1.3,
+                }}
+              >
+                Следующее
+              </span>
+            )}
+            {crown && (
+              <Crown
+                aria-label="Коронка"
+                style={{ width: 13, height: 13, color: "var(--brand-gold-ink)", fill: "var(--brand-gold-ink)", flex: "none" }}
+              />
+            )}
+          </span>
+        )}
       </div>
       <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.2, margin: "3px 0", color: "var(--color-foreground)" }}>
         {t.nameRu}

@@ -10,7 +10,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { IconButton } from "@/components/bjj/ui";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
-import { useProgress, useProfile } from "@/lib/bjj/store";
+import { useProgress, useProfile, useFavorites } from "@/lib/bjj/store";
 import { nextToLearn, currentFocus } from "@/lib/bjj/recommend";
 import { GROUP_LABEL } from "@/lib/bjj/constants";
 import { haptic } from "@/lib/telegram";
@@ -39,6 +39,7 @@ function FitButton() {
 export function TechniqueFlow() {
   const { profile } = useProfile();
   const { progress } = useProgress();
+  const { favorites } = useFavorites();
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -51,6 +52,16 @@ export function TechniqueFlow() {
     return (belt ?? TECHNIQUES[0]).id;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.belt, profile.goal, profile.gi, profile.noGi]);
+
+  // Постоянная метка «Следующее» на графе: та же рекомендация, что и точка входа,
+  // но пересчитывается при смене прогресса (метка съезжает, когда рекомендованное освоил).
+  const recommendedId = useMemo(() => {
+    const rec =
+      nextToLearn(TECHNIQUES, progress, profile.belt, 1, { goal: profile.goal, gi: profile.gi, noGi: profile.noGi })[0] ??
+      currentFocus(TECHNIQUES, progress);
+    return rec?.id ?? null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile.belt, profile.goal, profile.gi, profile.noGi, progress]);
 
   const [focusId, setFocusId] = useState<number | null>(null);
   const [history, setHistory] = useState<number[]>([]);
@@ -105,12 +116,17 @@ export function TechniqueFlow() {
           ? {
               ...n,
               selected: Number(n.id) === activeId,
-              data: { ...n.data, status: progress[Number(n.id)] ?? "not_started" },
+              data: {
+                ...n.data,
+                status: progress[Number(n.id)] ?? "not_started",
+                crown: !!favorites[Number(n.id)],
+                recommended: Number(n.id) === recommendedId,
+              },
             }
           : n,
       ),
     );
-  }, [layoutData.nodes, progress, activeId, setRfNodes]);
+  }, [layoutData.nodes, progress, favorites, recommendedId, activeId, setRfNodes]);
 
   const goTo = (id: number) => {
     if (id === activeId || !TECH_BY_ID[id]) return;
