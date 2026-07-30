@@ -7,6 +7,7 @@ import { useDiary, useProfile, useProgress, useFavorites } from "@/lib/bjj/store
 import { generateWorkout, generateWorkoutFromDiary } from "@/lib/bjj/workout";
 import { track } from "@/lib/bjj/telemetry";
 import { GROUP_LABEL } from "@/lib/bjj/constants";
+import { TECH_BY_ID } from "@/lib/bjj/data";
 import type {
   Group,
   Intensity,
@@ -182,6 +183,11 @@ function WorkoutGenerator({
     if (workout) workoutCache = { workout, config, source };
   }, [workout, config, source]);
 
+  // Телеметрия темы: раз в сутки на якорь (как workout_filter)
+  useEffect(() => {
+    if (workout?.theme) track("workout_theme", String(workout.theme.anchorId), { dailyDedup: true });
+  }, [workout?.theme?.anchorId]);
+
   // ?run=true без тренировки (свежая загрузка страницы) — выходим из режима раннера
   useEffect(() => {
     if (running && hydrated && !workout) onExitRun();
@@ -282,6 +288,15 @@ function WorkoutGenerator({
 
       {workout && (
         <section className="space-y-4">
+          {workout.theme && (
+            <div className="rounded-2xl border-2 border-ring bg-primary/5 p-4">
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Тема</p>
+              <p className="mt-0.5 text-base font-semibold">
+                {TECH_BY_ID[workout.theme.anchorId]?.nameRu ?? "Отработка"}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{workout.theme.reason}</p>
+            </div>
+          )}
           {/* Рамкой, а не заливкой: главное действие экрана выше — генератор */}
           <Button
             variant="soft"
