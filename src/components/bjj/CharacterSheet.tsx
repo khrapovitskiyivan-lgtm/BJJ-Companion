@@ -5,14 +5,22 @@ import { computeTotalXp, levelForXp } from "@/lib/bjj/xp";
 import { TECHNIQUES } from "@/lib/bjj/data";
 import { Sheet, Section, Toggle } from "@/components/bjj/ui";
 import { STYLE_ICONS } from "@/lib/bjj/styleIcons";
-import type { Belt, Frequency } from "@/lib/bjj/types";
-import { Check } from "lucide-react";
+import type { Belt, Frequency, Goal } from "@/lib/bjj/types";
+import { Check, Shield, Trophy, Smile, Heart } from "lucide-react";
 
 // Частота тренировок — те же варианты, что в онбординге; задаёт план дневника
 const FREQ_OPTIONS: { value: Frequency; label: string; desc: string }[] = [
   { value: 1, label: "1-2 раза в неделю", desc: "Поддерживаю форму" },
   { value: 3, label: "3 раза", desc: "Стабильный прогресс" },
   { value: 4, label: "4+ раз", desc: "Интенсивные тренировки" },
+];
+
+// Цель — те же 4 варианта, что в онбординге; влияет на рекомендации подбора
+const GOAL_OPTIONS: { value: Goal; label: string; Icon: typeof Shield }[] = [
+  { value: "self-defense", label: "Самооборона", Icon: Shield },
+  { value: "competition", label: "Соревнования", Icon: Trophy },
+  { value: "hobby", label: "Для удовольствия", Icon: Smile },
+  { value: "health", label: "Здоровье", Icon: Heart },
 ];
 
 // Лист игрока: открывается тапом по кружку профиля в «Моей игре».
@@ -81,6 +89,29 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
         <div className="grid grid-cols-2 gap-2">
           <Toggle label="Gi (в кимоно)" active={profile.gi} onClick={() => (profile.noGi || !profile.gi) && update({ gi: !profile.gi })} />
           <Toggle label="No-Gi" active={profile.noGi} onClick={() => (profile.gi || !profile.noGi) && update({ noGi: !profile.noGi })} />
+        </div>
+      </Section>
+
+      {/* Цель — редактируемая (была заморожена после онбординга); влияет на подбор */}
+      <Section title="Цель" hint="Влияет на рекомендации в отработке и следующих техниках.">
+        <div className="grid grid-cols-2 gap-2">
+          {GOAL_OPTIONS.map(({ value, label, Icon }) => (
+            <button
+              key={value}
+              onClick={() => update({ goal: value })}
+              className="flex items-center gap-2 rounded-xl border-2 p-2.5 text-left transition-all"
+              style={{
+                borderColor: profile.goal === value ? "var(--color-primary)" : "var(--color-border)",
+                background:
+                  profile.goal === value
+                    ? "color-mix(in oklch, var(--color-primary) 8%, var(--color-card))"
+                    : "var(--color-card)",
+              }}
+            >
+              <Icon className="h-4 w-4 shrink-0 text-foreground/80" strokeWidth={1.9} />
+              <span className="text-sm font-medium">{label}</span>
+            </button>
+          ))}
         </div>
       </Section>
 
