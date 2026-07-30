@@ -108,7 +108,7 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
     if (reviewedHydrated) markReviewed(tech.id);
   }, [reviewedHydrated, tech.id, markReviewed]);
 
-  // Коронка: корона в шапке карточки (техника, на которую ставишь)
+  // Избранное: корона в шапке карточки
   const { favorites, toggleFavorite } = useFavorites();
   const isFav = !!favorites[tech.id];
 
@@ -179,7 +179,7 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
               toggleFavorite(tech.id);
               track("favorite_toggle", String(tech.id));
             }}
-            aria-label={isFav ? "Убрать коронку" : "Отметить коронкой"}
+            aria-label={isFav ? "Убрать из избранного" : "В избранное"}
             className="inline-flex items-center justify-center rounded-full border border-border p-2 transition hover:bg-muted"
             style={isFav ? { color: "var(--brand-gold-ink)" } : { color: "var(--color-muted-foreground)" }}
           >

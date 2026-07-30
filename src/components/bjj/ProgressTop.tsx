@@ -195,7 +195,7 @@ export function ProgressTop({
           />
           <StatRow
             icon={<Crown className="h-4 w-4 shrink-0" style={{ color: "var(--brand-gold-ink)" }} />}
-            label="Коронки"
+            label="Избранное"
             value={`${favCount}`}
             valueColor="var(--brand-gold-ink)"
             active={openList === "favorites"}

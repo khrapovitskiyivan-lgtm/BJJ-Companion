@@ -126,7 +126,7 @@ export function TechniqueNode({ data, selected }: NodeProps<TechNode>) {
             )}
             {crown && (
               <Crown
-                aria-label="Коронка"
+                aria-label="Избранное"
                 style={{ width: 13, height: 13, color: "var(--brand-gold-ink)", fill: "var(--brand-gold-ink)", flex: "none" }}
               />
             )}
