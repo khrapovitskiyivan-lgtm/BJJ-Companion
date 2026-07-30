@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { TrendingUp, BookOpen, CircleDot, Star, Flame, CheckCircle2, NotebookPen, ChevronRight, ChevronDown } from "lucide-react";
+import { TrendingUp, BookOpen, CircleDot, Crown, Flame, CheckCircle2, NotebookPen, ChevronRight, ChevronDown } from "lucide-react";
 import { buttonClass } from "@/components/bjj/ui";
 import { initials } from "@/components/bjj/AppShell";
 import { BELT_LABEL } from "@/lib/bjj/constants";
@@ -194,8 +194,8 @@ export function ProgressTop({
             onClick={() => onToggleList("in_progress")}
           />
           <StatRow
-            icon={<Star className="h-4 w-4 shrink-0" style={{ color: "var(--brand-gold-ink)" }} />}
-            label="Избранное"
+            icon={<Crown className="h-4 w-4 shrink-0" style={{ color: "var(--brand-gold-ink)" }} />}
+            label="Коронки"
             value={`${favCount}`}
             valueColor="var(--brand-gold-ink)"
             active={openList === "favorites"}

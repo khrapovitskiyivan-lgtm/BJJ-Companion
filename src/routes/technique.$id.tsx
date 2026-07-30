@@ -18,7 +18,7 @@ import {
   Sparkles,
   History,
   Link2,
-  Star,
+  Crown,
 } from "lucide-react";
 
 // Новые компоненты
@@ -108,7 +108,7 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
     if (reviewedHydrated) markReviewed(tech.id);
   }, [reviewedHydrated, tech.id, markReviewed]);
 
-  // Избранное: звезда в шапке карточки
+  // Коронка: корона в шапке карточки (техника, на которую ставишь)
   const { favorites, toggleFavorite } = useFavorites();
   const isFav = !!favorites[tech.id];
 
@@ -179,11 +179,11 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
               toggleFavorite(tech.id);
               track("favorite_toggle", String(tech.id));
             }}
-            aria-label={isFav ? "Убрать из избранного" : "В избранное"}
+            aria-label={isFav ? "Убрать коронку" : "Отметить коронкой"}
             className="inline-flex items-center justify-center rounded-full border border-border p-2 transition hover:bg-muted"
             style={isFav ? { color: "var(--brand-gold-ink)" } : { color: "var(--color-muted-foreground)" }}
           >
-            <Star className="h-4 w-4" fill={isFav ? "var(--brand-gold-ink)" : "none"} />
+            <Crown className="h-4 w-4" fill={isFav ? "var(--brand-gold-ink)" : "none"} />
           </button>
           <button
             onClick={share}

@@ -145,7 +145,7 @@ function ProgressPage() {
                   ? "Изученные техники"
                   : openList === "in_progress"
                     ? "Техники в процессе"
-                    : "Избранные техники"}{" "}
+                    : "Твои коронки"}{" "}
                 <span className="text-muted-foreground">({listTechniques.length})</span>
               </h2>
               <Button variant="ghost" size="sm" onClick={() => setOpenList(null)}>
@@ -158,7 +158,7 @@ function ProgressPage() {
                   ? "Пока нет изученных техник. Отмечайте их в библиотеке."
                   : openList === "in_progress"
                     ? "Пока нет техник в процессе. Отметьте технику «в процессе» — она появится здесь."
-                    : "Пока пусто. Отмечай техники звездой на карточке — они появятся здесь."}
+                    : "Пока пусто. Отмечай коронкой (корона в шапке техники) те приёмы, на которые ставишь."}
               </p>
             ) : (
               <ul className="space-y-1.5">
