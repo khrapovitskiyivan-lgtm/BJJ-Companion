@@ -340,7 +340,7 @@ function WorkoutGenerator({
           {workout.drills.length > 0 && (
             <Section
               title="Основная часть"
-              subtitle={`${workout.drills.length} техник × ${workout.drills[0].minutes} мин`}
+              subtitle={`${workout.drills.length} техник · ${workout.mainMinutes} мин`}
               icon={<Sparkles className="h-4 w-4" style={{ color: "var(--color-primary)" }} />}
             >
               <ul className="space-y-2">
