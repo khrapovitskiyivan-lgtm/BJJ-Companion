@@ -238,7 +238,7 @@ function Diary() {
           !adding && (
             <Button variant="primary" onClick={startAdd}>
               <Plus className="h-4 w-4" />
-              Тренировка
+              Записать тренировку
             </Button>
           )
         }
@@ -359,7 +359,7 @@ function Diary() {
             <input
               value={caughtQuery}
               onChange={(e) => setCaughtQuery(e.target.value)}
-              placeholder="Чем поймали? Добавить сабмишен…"
+              placeholder="Чем тебя поймали? Добавить сабмишен…"
               className="w-full rounded-xl border border-input bg-background py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
             {caughtResults.length > 0 && (
@@ -555,7 +555,7 @@ function Diary() {
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                   <ShieldAlert className="h-3.5 w-3.5 text-destructive/70" />
-                  Поймали:
+                  Поймали тебя:
                 </span>
                 {e.caughtBy.map((id) => {
                   const t = TECH_BY_ID[id];

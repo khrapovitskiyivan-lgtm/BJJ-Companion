@@ -97,7 +97,7 @@ export function GapCard({
     <section className="rounded-2xl border border-ring/50 bg-primary/5 p-4">
       <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">
         <Compass className="h-4 w-4 text-primary" />
-        Хочу и тренирую
+        Хочешь и тренируешь
       </h2>
       {onTrack ? (
         <p className="text-xs text-muted-foreground">
@@ -113,7 +113,7 @@ export function GapCard({
           {next.length > 0 && (
             <>
               <p className="mt-3 mb-1.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                Сдвинут в нужную сторону
+                Ближе к цели
               </p>
               <ul className="space-y-1.5">
                 {next.map((t) => (

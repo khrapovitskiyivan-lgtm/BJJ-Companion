@@ -40,7 +40,7 @@ const DURATIONS: WorkoutConfig["duration"][] = [15, 30, 45, 60];
 const INTENSITIES: { value: Intensity; label: string }[] = [
   { value: "light", label: "Лёгкая" },
   { value: "medium", label: "Средняя" },
-  { value: "hard", label: "Тяжёлая" },
+  { value: "hard", label: "Жёсткая" },
 ];
 const SAFETY: { value: SafetyMode; label: string; desc: string }[] = [
   { value: "smart", label: "Умный", desc: "Ограничения по поясу" },

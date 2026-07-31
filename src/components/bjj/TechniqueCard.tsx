@@ -20,7 +20,7 @@ const STATUS_COLOR: Record<ProgressStatus, string> = {
 const STATUS_LABEL: Record<ProgressStatus, string> = {
   not_started: "Не начато",
   in_progress: "В процессе",
-  done: "Готово",
+  done: "Изучено",
 };
 
 // Строка-ссылка на технику: единый вид списков во всех разделах

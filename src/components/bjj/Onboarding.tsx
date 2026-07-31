@@ -336,7 +336,7 @@ function GoalStep({
       <div>
         <h2 className="text-xl font-bold">Твоя цель</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Это повлияет на рекомендации в тренировках.
+          Это повлияет на рекомендации в отработке.
         </p>
       </div>
 
