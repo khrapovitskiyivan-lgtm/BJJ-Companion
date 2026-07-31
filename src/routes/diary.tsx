@@ -13,7 +13,8 @@ import { useDiary, useProfile, useProgress, useReviewed } from "@/lib/bjj/store"
 import { hapticSuccess } from "@/lib/telegram";
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import { BELT_ORDER, GROUP_LABEL } from "@/lib/bjj/constants";
-import type { Group, Intensity, Technique } from "@/lib/bjj/types";
+import type { Group, Intensity, StruggleTag, Technique } from "@/lib/bjj/types";
+import { STRUGGLE_TAGS, STRUGGLE_LABEL, showStruggle } from "@/lib/bjj/struggle";
 import { Plus, Search, CalendarDays, ChevronDown, Trash2, NotebookPen, HeartPulse, Pencil, Minus, ShieldAlert } from "lucide-react";
 
 const MAX_ROUNDS = 20;
@@ -63,6 +64,7 @@ function Diary() {
   const [wellbeing, setWellbeing] = useState<number | null>(null);
   const [rounds, setRounds] = useState(0);
   const [injury, setInjury] = useState("");
+  const [struggle, setStruggle] = useState<StruggleTag | null>(null);
   // Выбор техник из групп: раскрытая группа под рядом чипов
   const [openGroup, setOpenGroup] = useState<Group | null>(null);
   // Вторичные поля (интенсивность/раунды/самочувствие/травма) под «Подробнее»
@@ -78,6 +80,7 @@ function Diary() {
     setWellbeing(null);
     setRounds(0);
     setInjury("");
+    setStruggle(null);
     setOpenGroup(null);
     setDetailsOpen(false);
     setAdding(false);
@@ -96,6 +99,7 @@ function Diary() {
     setWellbeing(null);
     setRounds(0);
     setInjury("");
+    setStruggle(null);
     setOpenGroup(null);
     setDetailsOpen(false);
     setDate(new Date().toISOString().slice(0, 10));
@@ -127,6 +131,7 @@ function Diary() {
     setWellbeing(e.wellbeing ?? null);
     setRounds(e.rounds ?? 0);
     setInjury(e.injury ?? "");
+    setStruggle(e.struggle ?? null);
     setOpenGroup(null);
     // При редактировании с заполненными вторичными полями раскрываем сразу, иначе они «пропали»
     setDetailsOpen(Boolean(e.intensity || e.wellbeing || e.rounds || e.injury));
@@ -182,6 +187,8 @@ function Diary() {
 
   const save = () => {
     if (!date || picked.length === 0) return;
+    // гейт защищает от «осиротевшего» struggle, если сигнал сопротивления убрали
+    const struggleOut = showStruggle({ caught, intensity, rounds }) ? struggle ?? undefined : undefined;
     const payload = {
       date,
       techniqueIds: picked,
@@ -191,6 +198,7 @@ function Diary() {
       rounds: rounds > 0 ? rounds : undefined,
       injury: injury.trim() || undefined,
       caughtBy: caught.length > 0 ? caught : undefined,
+      struggle: struggleOut,
     };
     if (editingId) {
       updateEntry(editingId, payload);
@@ -220,6 +228,7 @@ function Diary() {
       addEntry(payload);
       track("entry_saved");
       if (caught.length > 0) track("caught_logged");
+      if (struggleOut) track("struggle_logged", struggleOut);
     }
     // ежедневный цикл: отмеченные техники минимум «в процессе»
     for (const id of picked) {
@@ -378,6 +387,28 @@ function Diary() {
               </div>
             )}
           </div>
+
+          {/* Диагностика: показывается только при сигнале сопротивления (был спарринг) */}
+          {showStruggle({ caught, intensity, rounds }) && (
+            <div className="space-y-1.5">
+              <span className="text-xs text-muted-foreground">Что не получилось?</span>
+              <div className="flex flex-wrap gap-1.5">
+                {STRUGGLE_TAGS.map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => setStruggle((v) => (v === tag ? null : tag))}
+                    className="rounded-full border-2 px-3 py-1 text-xs font-medium transition-all"
+                    style={{
+                      borderColor: struggle === tag ? "var(--color-primary)" : "var(--color-border)",
+                      background: struggle === tag ? "color-mix(in oklch, var(--color-primary) 10%, transparent)" : "transparent",
+                    }}
+                  >
+                    {STRUGGLE_LABEL[tag]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <textarea
             value={note}

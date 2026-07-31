@@ -7,7 +7,8 @@ import { TECH_BY_ID } from "@/lib/bjj/data";
 import { track } from "@/lib/bjj/telemetry";
 import type { EntryReward } from "@/lib/bjj/reward";
 import type { EntryXpReward } from "@/lib/bjj/xp";
-import { CalendarDays, Dumbbell, Flame, ShieldCheck, Sparkles, TrendingUp } from "lucide-react";
+import { STRUGGLE_LABEL } from "@/lib/bjj/struggle";
+import { CalendarDays, Dumbbell, Flame, ShieldCheck, Sparkles, Target, TrendingUp } from "lucide-react";
 
 // Экран награды после сохранения записи дневника: 2-3 дельты каскадом.
 // Золото строго у достижений (квота недели, сверх плана, серия дней) —
@@ -208,6 +209,18 @@ export function EntryRewardSheet({
                   {defense.defense.nameRu}: ответ на «{defense.catcher.nameRu}» (ловили{" "}
                   {defense.timesCaught} {razWord(defense.timesCaught)})
                 </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {reward.struggle && (
+          <div className={CARD} style={cardDelay(idx++)}>
+            <div className="flex items-start gap-2.5">
+              <Target className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">В следующий раз акцент</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{STRUGGLE_LABEL[reward.struggle]}</p>
               </div>
             </div>
           </div>
