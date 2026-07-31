@@ -31,6 +31,8 @@ export type Style =
 
 export type SafetyMode = "smart" | "safe" | "all";
 export type Intensity = "light" | "medium" | "hard";
+// Диагностика дневника «Что не получилось?» (single-select, необязательно)
+export type StruggleTag = "grip" | "base" | "timing" | "reaction" | "unsure";
 export type ProgressStatus = "not_started" | "in_progress" | "done";
 export type EnergyCost = "Low" | "Med" | "High";
 
@@ -127,6 +129,7 @@ export interface DiaryEntry {
   rounds?: number;           // раундов спарринга
   injury?: string;           // заметка о травме / дискомфорте
   caughtBy?: number[];       // «Чем поймали»: сабмишены соперника (id техник)
+  struggle?: StruggleTag;    // «Что не получилось?»: single-select диагностика (необязательно)
 }
 
 export interface WarmupItem {
