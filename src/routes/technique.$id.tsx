@@ -3,13 +3,16 @@ import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-rout
 import { AppShell } from "@/components/bjj/AppShell";
 import { TECH_BY_ID, TECHNIQUES, contentFor } from "@/lib/bjj/data";
 import { BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
-import { useProgress, useProfile, useReviewed, useFavorites } from "@/lib/bjj/store";
+import { useProgress, useProfile, useReviewed, useFavorites, useDiary } from "@/lib/bjj/store";
 import { track } from "@/lib/bjj/telemetry";
+import { effectiveStyleSet } from "@/lib/bjj/workoutCluster";
+import { knownCount, nextStep, cardReason } from "@/lib/bjj/coachCard";
 import { haptic } from "@/lib/telegram";
 import { legalStatus, legalLabel, type LegalValue } from "@/lib/bjj/legal";
 import type { Belt, ProgressStatus, Technique } from "@/lib/bjj/types";
 import {
   ArrowLeft,
+  ArrowRight,
   Check,
   Circle,
   CircleDot,
@@ -17,12 +20,10 @@ import {
   ShieldAlert,
   Sparkles,
   History,
-  Link2,
   Crown,
 } from "lucide-react";
 
 // Новые компоненты
-import { TechniqueRow } from "@/components/bjj/TechniqueCard";
 import { Breadcrumbs } from "@/components/bjj/technique/Breadcrumbs";
 import { VideoBlock } from "@/components/bjj/technique/VideoBlock";
 import { VideoInterestPrompt } from "@/components/bjj/technique/VideoInterestPrompt";
@@ -87,8 +88,10 @@ function TechniquePage() {
 }
 
 function TechniqueDetail({ tech }: { tech: Technique }) {
-  const { progress, cycleStatus } = useProgress();
-  const { profile } = useProfile();
+  const { progress, cycleStatus, hydrated: progressHydrated } = useProgress();
+  const { profile, hydrated: profileHydrated } = useProfile();
+  const { entries, practiceCount, hydrated: diaryHydrated } = useDiary();
+  const personalReady = progressHydrated && profileHydrated && diaryHydrated;
   const router = useRouter();
   const [shared, setShared] = useState(false);
   const status = progress[tech.id] ?? "not_started";
@@ -126,11 +129,33 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
     return history.slice(-5).reverse();
   }, [tech.id]);
 
-  const similar = useMemo(() => {
-    return TECHNIQUES.filter(
-      (t) => t.id !== tech.id && t.group === tech.group && t.belt === tech.belt,
-    ).slice(0, 6);
-  }, [tech]);
+  // Персональные сигналы карточки-тренера (за гейтом гидратации)
+  const byId = useMemo(() => new Map(TECHNIQUES.map((t) => [t.id, t])), []);
+  const styleSet = useMemo(
+    () => effectiveStyleSet(profile, progress, practiceCount()),
+    [profile, progress, practiceCount],
+  );
+  const reason = useMemo(
+    () =>
+      personalReady
+        ? cardReason({ tech, entries, styleSet, goal: profile.goal, gi: profile.gi, noGi: profile.noGi, byId })
+        : null,
+    [personalReady, tech, entries, styleSet, profile, byId],
+  );
+  const step = useMemo(
+    () =>
+      personalReady
+        ? nextStep({ tech, byId, progress, styleSet, goal: profile.goal, gi: profile.gi, noGi: profile.noGi })
+        : null,
+    [personalReady, tech, byId, progress, styleSet, profile],
+  );
+  const prereqKnown = knownCount(tech.prerequisites, progress);
+  const setupKnown = knownCount(tech.setup_from, progress);
+
+  // Телеметрия показа тренера (раз в сутки на вид причины)
+  useEffect(() => {
+    if (personalReady && (reason || step)) track("coach_shown", reason?.kind ?? "next", { dailyDedup: true });
+  }, [personalReady, reason, step]);
 
   const resolve = (ids: number[]) =>
     ids.map((i) => TECH_BY_ID[i]).filter((x): x is Technique => Boolean(x));
@@ -242,7 +267,27 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
             <GlossaryText text={content.concept} excludeTechId={tech.id} />
           </p>
         )}
+        {personalReady && reason && (
+          <p className="mt-3 flex items-center gap-1.5 rounded-lg bg-primary/5 px-2.5 py-1.5 text-xs font-medium text-primary">
+            <Sparkles className="h-3.5 w-3.5 shrink-0" />
+            {reason.text}
+          </p>
+        )}
       </header>
+
+      {personalReady && step && (
+        <Link
+          to="/technique/$id"
+          params={{ id: String(step.id) }}
+          onClick={() => track("reco_click", "next_step")}
+          className="flex items-center justify-between gap-2 rounded-xl border border-ring/50 bg-primary/5 px-4 py-2.5 text-sm"
+        >
+          <span className="text-muted-foreground">
+            Дальше: <span className="font-medium text-foreground">{step.nameRu}</span>
+          </span>
+          <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
+        </Link>
+      )}
 
       {/* Под описанием: курированное видео (если есть) или тихий крючок «нужен видео-разбор» */}
       {videoUrl ? (
@@ -335,34 +380,20 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
         </>
       )}
 
-      {similar.length > 0 && (
-        <section className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Похожие техники
-          </h2>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {similar.map((t) => (
-              <TechniqueRow
-                key={t.id}
-                technique={t}
-                inset
-                right={<Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
       <RelatedList
         title="Что изучить сначала"
         items={resolve(tech.prerequisites)}
         empty="Нет требований — можно изучать сразу."
         defaultOpen
+        badge={personalReady && prereqKnown.total > 0 ? `${prereqKnown.done}/${prereqKnown.total}` : undefined}
       />
-      <RelatedList title="Заходы из" items={resolve(tech.setup_from)} />
+      <RelatedList
+        title="Заходы из"
+        items={resolve(tech.setup_from)}
+        badge={personalReady && setupKnown.total > 0 ? `${setupKnown.done}/${setupKnown.total}` : undefined}
+      />
       <RelatedList title="Типичные сетапы" items={resolve(tech.common_setups)} />
-      <RelatedList title="Продолжения" items={resolve(tech.chain_to)} />
+      <RelatedList title="Продолжения" items={resolve(tech.chain_to)} highlightId={step?.id} />
       <RelatedList title="Используется в" items={usedBy} />
     </GlossaryProvider>
   );
