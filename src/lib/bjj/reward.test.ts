@@ -142,3 +142,20 @@ describe("computeEntryReward: защита", () => {
     expect(r.defense).toBeUndefined();
   });
 });
+
+describe("computeEntryReward: акцент диагностики", () => {
+  it("struggle (не unsure) прокидывается в награду", () => {
+    const r = reward({ entry: { date: "2026-07-15", techniqueIds: [1], struggle: "grip" } });
+    expect(r.struggle).toBe("grip");
+  });
+
+  it("unsure не даёт акцента", () => {
+    const r = reward({ entry: { date: "2026-07-15", techniqueIds: [1], struggle: "unsure" } });
+    expect(r.struggle).toBeUndefined();
+  });
+
+  it("без диагностики — undefined", () => {
+    const r = reward();
+    expect(r.struggle).toBeUndefined();
+  });
+});

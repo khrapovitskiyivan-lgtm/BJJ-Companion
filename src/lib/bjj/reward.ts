@@ -2,7 +2,7 @@ import { dayStreak, planStreak, trainedByDate, weekDays, weekStatus } from "./pl
 import { topCatchers } from "./caught";
 import { computeStatsFor, hasStat, type StatKey } from "./stats";
 import type { ProgressMap } from "./store";
-import type { DiaryEntry, Frequency, Technique } from "./types";
+import type { DiaryEntry, Frequency, StruggleTag, Technique } from "./types";
 
 // Экран награды после сохранения записи дневника: 2-3 дельты «до/после записи»,
 // посчитанные теми же формулами, что и остальное приложение (plan/stats/caught).
@@ -39,6 +39,7 @@ export interface EntryReward {
   week: PlanSlot | DaysSlot;
   stat?: StatSlot;
   defense?: DefenseSlot;
+  struggle?: StruggleTag; // акцент диагностики «Что не получилось?» (не unsure)
 }
 
 export function computeEntryReward(input: {
@@ -124,5 +125,9 @@ export function computeEntryReward(input: {
     }
   }
 
-  return { week, stat, defense };
+  // Акцент: эхо диагностики «Что не получилось?» на экране награды. «Не уверен» акцента не даёт.
+  const struggle: StruggleTag | undefined =
+    entry.struggle && entry.struggle !== "unsure" ? entry.struggle : undefined;
+
+  return { week, stat, defense, struggle };
 }
