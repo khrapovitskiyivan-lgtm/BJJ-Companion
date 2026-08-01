@@ -47,6 +47,10 @@ const videoUrls = JSON.parse(
 const aliasMap = JSON.parse(
   readFileSync(join(ROOT, 'data', 'aliases.json'), 'utf8'),
 );
+// Стартовый набор новичка (курируется вручную): массив бакетов { title, ids }
+const starterSet = JSON.parse(
+  readFileSync(join(ROOT, 'data', 'starter-set.json'), 'utf8'),
+);
 const rows = parseCSV(csv);
 const header = rows[0];
 const recs = rows.slice(1).filter((r) => r.length > 1 && r[0].trim())
@@ -123,6 +127,24 @@ for (const t of techniques) {
   }
 }
 
+// --- валидация стартового набора: id существуют, нет дублей, предупреждение о не-белых ---
+const starterSeen = new Set();
+for (const bucket of starterSet) {
+  if (!bucket.title || !Array.isArray(bucket.ids)) {
+    errs.push(`starter-set: бакет без title/ids`);
+    continue;
+  }
+  for (const ref of bucket.ids) {
+    if (!validIds.has(ref)) errs.push(`starter-set «${bucket.title}»: битый id ${ref}`);
+    if (starterSeen.has(ref)) errs.push(`starter-set: дубль id ${ref}`);
+    starterSeen.add(ref);
+    const tech = techniques.find((t) => t.id === ref);
+    if (tech && tech.belt !== 'white') {
+      console.warn(`⚠️  starter-set: id ${ref} (${tech.nameRu}) не белый пояс (${tech.belt})`);
+    }
+  }
+}
+
 // --- Проверка циклических зависимостей (в prerequisites) ---
 function detectCycles(techniques) {
   const graph = new Map();
@@ -169,3 +191,6 @@ if (cycles.length > 0) {
 
 writeFileSync(join(ROOT, 'src', 'lib', 'bjj', 'generated', 'techniques.json'), JSON.stringify(techniques), 'utf8');
 console.log(`OK: ${techniques.length} техник → src/lib/bjj/generated/techniques.json`);
+
+writeFileSync(join(ROOT, 'src', 'lib', 'bjj', 'generated', 'starter-set.json'), JSON.stringify(starterSet), 'utf8');
+console.log(`OK: стартовый набор ${starterSeen.size} техник → generated/starter-set.json`);
