@@ -119,7 +119,7 @@ function ProgressPage() {
     <AppShell>
       <div className="space-y-6 pb-20">
         {/* Шапка — единая форма с остальными разделами: кикер сверху, название ниже */}
-        <PageHeader kicker="Статистика и путь до чёрного пояса" title="Моя игра" className="px-1" />
+        <PageHeader kicker="Статистика и путь до коричневого пояса" title="Моя игра" className="px-1" />
 
         <ProgressTop
           profile={profile}
