@@ -4,6 +4,7 @@ import { topCatchers, defensesFor } from "./caught";
 import { pendingReview } from "./reviewQueue";
 import { todayCardModel } from "./todayCard";
 import { nextToLearn } from "./recommend";
+import { starterProgress } from "./starterSet";
 
 // Локальная полночь 'yyyy-mm-dd' в ms
 function dayMs(date: string): number {
@@ -41,7 +42,7 @@ export function staleToRepeat(
   return out.slice(0, cap).map((x) => x.id);
 }
 
-export type InsightKind = "return-after-pause" | "cold-start" | "catcher-defense" | "review-shown" | "repeat-stale" | "plan" | "learn-next";
+export type InsightKind = "starter-set" | "return-after-pause" | "cold-start" | "catcher-defense" | "review-shown" | "repeat-stale" | "plan" | "learn-next";
 export interface Insight { kind: InsightKind; weight: number; techniqueIds: number[]; reason: string; route: string }
 export interface InsightsInput {
   entries: DiaryEntry[];
@@ -88,6 +89,19 @@ export function computeInsights(input: InsightsInput): Insight[] {
   const recent = entries.some((e) => dayMs(e.date) >= nowMs - 6 * DAY);
   if (!recent && !returnPause) {
     out.push({ kind: "cold-start", weight: 200, techniqueIds: [], reason: "Запиши тренировку за 30 секунд", route: "/diary?add" });
+  }
+
+  // starter-set: белый пояс, пока базовый набор не пройден целиком -> «с чего начать».
+  // Вес выше return-after-pause/cold-start: для нового белого это герой дня.
+  // Когда набор пройден (done === total) — инсайт гаснет (хендофф на дневник).
+  if (belt === "white") {
+    const sp = starterProgress(progress);
+    if (sp.total > 0 && sp.done < sp.total) {
+      out.push({
+        kind: "starter-set", weight: 240, techniqueIds: [],
+        reason: "С чего начать: собери базу белого пояса", route: "/starter",
+      });
+    }
   }
 
   // catcher-defense: 2+ ловли в окне 30 дней, есть невыученная защита

@@ -11,6 +11,7 @@ import type { Insight, InsightKind } from "@/lib/bjj/insights";
 // Консолидирует прежние реко-блоки в одно ранжированное действие.
 
 const CTA: Record<InsightKind, string> = {
+  "starter-set": "Открыть набор",
   "return-after-pause": "Повторить за 3 минуты",
   "cold-start": "Записать тренировку",
   "catcher-defense": "Разобрать защиту",
@@ -22,6 +23,7 @@ const CTA: Record<InsightKind, string> = {
 
 // Навигация инсайта: есть техника -> её карточка; иначе -> запись в дневник.
 function linkProps(ins: Insight) {
+  if (ins.kind === "starter-set") return { to: "/starter" as const };
   const id = ins.techniqueIds[0];
   if (id != null) return { to: "/technique/$id" as const, params: { id: String(id) } };
   return { to: "/diary" as const, search: { add: true } };

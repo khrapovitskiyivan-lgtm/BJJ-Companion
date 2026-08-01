@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { staleToRepeat, computeInsights, primaryAction } from "./insights";
 import type { DiaryEntry, Technique, Belt } from "./types";
 import type { ProgressMap } from "./store";
+import { STARTER_SET } from "./starterSet";
 
 function tech(id: number, over: Partial<Technique> = {}): Technique {
   return {
@@ -42,6 +43,26 @@ describe("computeInsights / primaryAction", () => {
     const pa = primaryAction(ins);
     expect(pa?.kind).toBe("cold-start");
     expect(pa?.weight).toBe(200);
+  });
+
+  it("белый пояс с непройденным набором -> primary starter-set (вес 240)", () => {
+    const ins = computeInsights({ ...base, belt: "white", entries: [], progress: {}, reviewed: {}, frequency: 3 });
+    const pa = primaryAction(ins);
+    expect(pa?.kind).toBe("starter-set");
+    expect(pa?.weight).toBe(240);
+    expect(pa?.route).toBe("/starter");
+  });
+
+  it("не-белый пояс -> нет starter-set", () => {
+    const ins = computeInsights({ ...base, belt: "blue", entries: [], progress: {}, reviewed: {}, frequency: 3 });
+    expect(ins.some((i) => i.kind === "starter-set")).toBe(false);
+  });
+
+  it("весь набор изучен -> starter-set гаснет", () => {
+    const progress: ProgressMap = {};
+    for (const b of STARTER_SET) for (const id of b.ids) progress[id] = "done";
+    const ins = computeInsights({ ...base, belt: "white", entries: [], progress, reviewed: {}, frequency: 3 });
+    expect(ins.some((i) => i.kind === "starter-set")).toBe(false);
   });
 
   it("был активен, последняя запись 3 недели назад -> primary return-after-pause (вес 220), повтор из последней записи", () => {
