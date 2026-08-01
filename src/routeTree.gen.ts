@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkoutRouteImport } from './routes/workout'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as StarterRouteImport } from './routes/starter'
 import { Route as SituationsRouteImport } from './routes/situations'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as PrivacyRouteImport } from './routes/privacy'
@@ -34,6 +35,11 @@ const WorkoutRoute = WorkoutRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StarterRoute = StarterRouteImport.update({
+  id: '/starter',
+  path: '/starter',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SituationsRoute = SituationsRouteImport.update({
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/progress': typeof ProgressRoute
   '/situations': typeof SituationsRoute
+  '/starter': typeof StarterRoute
   '/terms': typeof TermsRoute
   '/workout': typeof WorkoutRoute
   '/api/partners': typeof ApiPartnersRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/progress': typeof ProgressRoute
   '/situations': typeof SituationsRoute
+  '/starter': typeof StarterRoute
   '/terms': typeof TermsRoute
   '/workout': typeof WorkoutRoute
   '/api/partners': typeof ApiPartnersRoute
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/progress': typeof ProgressRoute
   '/situations': typeof SituationsRoute
+  '/starter': typeof StarterRoute
   '/terms': typeof TermsRoute
   '/workout': typeof WorkoutRoute
   '/api/partners': typeof ApiPartnersRoute
@@ -175,6 +184,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/progress'
     | '/situations'
+    | '/starter'
     | '/terms'
     | '/workout'
     | '/api/partners'
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/progress'
     | '/situations'
+    | '/starter'
     | '/terms'
     | '/workout'
     | '/api/partners'
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/progress'
     | '/situations'
+    | '/starter'
     | '/terms'
     | '/workout'
     | '/api/partners'
@@ -230,6 +242,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ProgressRoute: typeof ProgressRoute
   SituationsRoute: typeof SituationsRoute
+  StarterRoute: typeof StarterRoute
   TermsRoute: typeof TermsRoute
   WorkoutRoute: typeof WorkoutRoute
   ApiPartnersRoute: typeof ApiPartnersRoute
@@ -252,6 +265,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/starter': {
+      id: '/starter'
+      path: '/starter'
+      fullPath: '/starter'
+      preLoaderRoute: typeof StarterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/situations': {
@@ -366,6 +386,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ProgressRoute: ProgressRoute,
   SituationsRoute: SituationsRoute,
+  StarterRoute: StarterRoute,
   TermsRoute: TermsRoute,
   WorkoutRoute: WorkoutRoute,
   ApiPartnersRoute: ApiPartnersRoute,
