@@ -41,7 +41,7 @@ export function buttonClass(
   className?: string,
 ) {
   return cn(
-    "inline-flex items-center justify-center rounded-xl font-medium transition disabled:pointer-events-none disabled:opacity-50",
+    "inline-flex items-center justify-center rounded-xl font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50",
     BUTTON_VARIANT[variant],
     BUTTON_SIZE[size],
     className,
@@ -88,8 +88,8 @@ export function IconButton({
       type="button"
       aria-label={label}
       className={cn(
-        "grid shrink-0 place-items-center rounded-xl text-muted-foreground transition hover:bg-muted disabled:pointer-events-none disabled:opacity-30",
-        size === "sm" ? "h-7 w-7" : "h-9 w-9",
+        "grid shrink-0 place-items-center rounded-xl text-muted-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-30",
+        size === "sm" ? "h-9 w-9" : "h-11 w-11",
         variant === "outline" && "border border-border",
         className,
       )}
@@ -138,12 +138,20 @@ export function Sheet({
         <div className="flex items-center gap-4 border-b border-border p-4">
           <div className="min-w-0 flex-1">
             {kicker && (
-              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">{kicker}</p>
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                {kicker}
+              </p>
             )}
             <p className="text-base font-bold tracking-tight">{title}</p>
             {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
           </div>
-          <IconButton label="Закрыть" size="sm" variant="outline" onClick={onClose} className="h-8 w-8 rounded-full">
+          <IconButton
+            label="Закрыть"
+            size="sm"
+            variant="outline"
+            onClick={onClose}
+            className="h-8 w-8 rounded-full"
+          >
             <X className="h-4 w-4" />
           </IconButton>
         </div>
@@ -216,7 +224,7 @@ export function Chip({
       type="button"
       onClick={onClick}
       title={title}
-      className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors"
+      className="inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
       style={{
         borderColor: active ? "var(--color-primary)" : "var(--color-border)",
         background: active
@@ -306,7 +314,7 @@ export function Toggle({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-xl border-2 p-2.5 text-sm font-medium transition-all"
+      className="rounded-xl border-2 p-2.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       style={{
         borderColor: active ? "var(--color-primary)" : "var(--color-border)",
         background: active

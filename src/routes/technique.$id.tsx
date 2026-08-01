@@ -138,14 +138,30 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
   const reason = useMemo(
     () =>
       personalReady
-        ? cardReason({ tech, entries, styleSet, goal: profile.goal, gi: profile.gi, noGi: profile.noGi, byId })
+        ? cardReason({
+            tech,
+            entries,
+            styleSet,
+            goal: profile.goal,
+            gi: profile.gi,
+            noGi: profile.noGi,
+            byId,
+          })
         : null,
     [personalReady, tech, entries, styleSet, profile, byId],
   );
   const step = useMemo(
     () =>
       personalReady
-        ? nextStep({ tech, byId, progress, styleSet, goal: profile.goal, gi: profile.gi, noGi: profile.noGi })
+        ? nextStep({
+            tech,
+            byId,
+            progress,
+            styleSet,
+            goal: profile.goal,
+            gi: profile.gi,
+            noGi: profile.noGi,
+          })
         : null,
     [personalReady, tech, byId, progress, styleSet, profile],
   );
@@ -154,7 +170,8 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
 
   // Телеметрия показа тренера (раз в сутки на вид причины)
   useEffect(() => {
-    if (personalReady && (reason || step)) track("coach_shown", reason?.kind ?? "next", { dailyDedup: true });
+    if (personalReady && (reason || step))
+      track("coach_shown", reason?.kind ?? "next", { dailyDedup: true });
   }, [personalReady, reason, step]);
 
   const resolve = (ids: number[]) =>
@@ -205,14 +222,18 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
               track("favorite_toggle", String(tech.id));
             }}
             aria-label={isFav ? "Убрать из избранного" : "В избранное"}
-            className="inline-flex items-center justify-center rounded-full border border-border p-2 transition hover:bg-muted"
-            style={isFav ? { color: "var(--brand-gold-ink)" } : { color: "var(--color-muted-foreground)" }}
+            className="grid h-10 w-10 place-items-center rounded-full border border-border transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            style={
+              isFav
+                ? { color: "var(--brand-gold-ink)" }
+                : { color: "var(--color-muted-foreground)" }
+            }
           >
             <Crown className="h-4 w-4" fill={isFav ? "var(--brand-gold-ink)" : "none"} />
           </button>
           <button
             onClick={share}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Share2 className="h-3.5 w-3.5" />
             {shared ? "Ссылка скопирована!" : "Поделиться"}
@@ -385,12 +406,20 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
         items={resolve(tech.prerequisites)}
         empty="Нет требований — можно изучать сразу."
         defaultOpen
-        badge={personalReady && prereqKnown.total > 0 ? `${prereqKnown.done}/${prereqKnown.total}` : undefined}
+        badge={
+          personalReady && prereqKnown.total > 0
+            ? `${prereqKnown.done}/${prereqKnown.total}`
+            : undefined
+        }
       />
       <RelatedList
         title="Заходы из"
         items={resolve(tech.setup_from)}
-        badge={personalReady && setupKnown.total > 0 ? `${setupKnown.done}/${setupKnown.total}` : undefined}
+        badge={
+          personalReady && setupKnown.total > 0
+            ? `${setupKnown.done}/${setupKnown.total}`
+            : undefined
+        }
       />
       <RelatedList title="Типичные сетапы" items={resolve(tech.common_setups)} />
       <RelatedList title="Продолжения" items={resolve(tech.chain_to)} highlightId={step?.id} />

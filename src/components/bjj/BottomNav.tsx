@@ -8,7 +8,12 @@ import { haptic } from "@/lib/telegram";
 const items = [
   { to: "/progress", label: "Моя игра", icon: ShakaIcon, match: ["/progress"] },
   { to: "/diary", label: "Дневник", icon: NotebookPen, match: ["/diary"] },
-  { to: "/map", label: "Техники", icon: Layers, match: ["/map", "/library", "/technique", "/situations"] },
+  {
+    to: "/map",
+    label: "Техники",
+    icon: Layers,
+    match: ["/map", "/library", "/technique", "/situations"],
+  },
   { to: "/workout", label: "Отработка", icon: Dumbbell, match: ["/workout"] },
 ] as const;
 
@@ -28,7 +33,7 @@ export function BottomNav() {
               <Link
                 to={it.to}
                 onClick={() => haptic("light")}
-                className="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors"
+                className="flex flex-col items-center gap-1 rounded-lg py-2.5 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                 style={{ color: active ? "var(--color-primary)" : "var(--color-muted-foreground)" }}
               >
                 <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 1.8} />

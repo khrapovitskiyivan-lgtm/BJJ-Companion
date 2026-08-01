@@ -211,7 +211,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
                 update({ theme: profile.theme === "dark" ? "light" : "dark" });
               }}
               style={{ marginTop: "var(--tg-content-safe-area-inset-top, 0px)" }}
-              className="rounded-full p-2 text-muted-foreground transition hover:bg-muted"
+              className="grid h-10 w-10 place-items-center rounded-full text-muted-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label="Переключить тему"
             >
               {profile.theme === "dark" ? (
@@ -235,7 +235,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
             }}
             aria-label="Настройки и информация"
             style={{ marginTop: "var(--tg-content-safe-area-inset-top, 0px)" }}
-            className="justify-self-end rounded-full p-2 text-muted-foreground transition hover:bg-muted"
+            className="grid h-10 w-10 place-items-center justify-self-end rounded-full text-muted-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Settings className="h-4 w-4" />
           </button>

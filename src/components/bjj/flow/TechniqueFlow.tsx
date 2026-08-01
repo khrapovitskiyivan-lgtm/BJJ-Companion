@@ -46,7 +46,12 @@ export function TechniqueFlow() {
 
   // Стартовая техника фокуса: рекомендация → текущий фокус → первая по поясу
   const startId = useMemo(() => {
-    const rec = nextToLearn(TECHNIQUES, progress, profile.belt, 1, { goal: profile.goal, gi: profile.gi, noGi: profile.noGi })[0] ?? currentFocus(TECHNIQUES, progress);
+    const rec =
+      nextToLearn(TECHNIQUES, progress, profile.belt, 1, {
+        goal: profile.goal,
+        gi: profile.gi,
+        noGi: profile.noGi,
+      })[0] ?? currentFocus(TECHNIQUES, progress);
     if (rec) return rec.id;
     const belt = TECHNIQUES.find((t) => t.belt === profile.belt);
     return (belt ?? TECHNIQUES[0]).id;
@@ -57,8 +62,11 @@ export function TechniqueFlow() {
   // но пересчитывается при смене прогресса (метка съезжает, когда рекомендованное освоил).
   const recommendedId = useMemo(() => {
     const rec =
-      nextToLearn(TECHNIQUES, progress, profile.belt, 1, { goal: profile.goal, gi: profile.gi, noGi: profile.noGi })[0] ??
-      currentFocus(TECHNIQUES, progress);
+      nextToLearn(TECHNIQUES, progress, profile.belt, 1, {
+        goal: profile.goal,
+        gi: profile.gi,
+        noGi: profile.noGi,
+      })[0] ?? currentFocus(TECHNIQUES, progress);
     return rec?.id ?? null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.belt, profile.goal, profile.gi, profile.noGi, progress]);
@@ -69,10 +77,7 @@ export function TechniqueFlow() {
   const focus = TECH_BY_ID[activeId];
 
   // Зональная раскладка: синхронно, без ELK
-  const layoutData = useMemo(
-    () => (focus ? layoutFlow(focus) : { nodes: [], edges: [] }),
-    [focus],
-  );
+  const layoutData = useMemo(() => (focus ? layoutFlow(focus) : { nodes: [], edges: [] }), [focus]);
 
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState<Node>([]);
 
@@ -149,7 +154,14 @@ export function TechniqueFlow() {
       {/* Панель: назад + поиск техники */}
       <div className="mb-2 flex items-center gap-2">
         {/* Круглая, а не rounded-xl: парная кнопка к полю поиска справа */}
-        <IconButton label="Назад" size="md" variant="outline" onClick={goBack} disabled={history.length === 0} className="rounded-full">
+        <IconButton
+          label="Назад"
+          size="md"
+          variant="outline"
+          onClick={goBack}
+          disabled={history.length === 0}
+          className="rounded-full"
+        >
           <ArrowLeft className="h-4 w-4" />
         </IconButton>
         <div className="relative min-w-0 flex-1">
@@ -158,7 +170,7 @@ export function TechniqueFlow() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Найти технику на карте…"
-            className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-9 text-sm outline-none focus:ring-1 focus:ring-ring"
+            className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-9 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
           {query && (
             <button
@@ -175,12 +187,17 @@ export function TechniqueFlow() {
               {searchResults.map((t) => (
                 <button
                   key={t.id}
-                  onClick={() => { goTo(t.id); setQuery(""); }}
+                  onClick={() => {
+                    goTo(t.id);
+                    setQuery("");
+                  }}
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted"
                   style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
                 >
                   <span className="min-w-0 flex-1 truncate">{t.nameRu}</span>
-                  <span className="shrink-0 text-[10px] text-muted-foreground">{GROUP_LABEL[t.group]}</span>
+                  <span className="shrink-0 text-[10px] text-muted-foreground">
+                    {GROUP_LABEL[t.group]}
+                  </span>
                 </button>
               ))}
             </div>
@@ -211,7 +228,12 @@ export function TechniqueFlow() {
             onNodeClick={(_, n) => n.type === "tech" && goTo(Number(n.id))}
           >
             <FlowEdges edges={layoutData.edges} focusId={String(activeId)} />
-            <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="var(--color-border)" />
+            <Background
+              variant={BackgroundVariant.Dots}
+              gap={16}
+              size={1}
+              color="var(--color-border)"
+            />
             <FitButton />
           </ReactFlow>
         )}

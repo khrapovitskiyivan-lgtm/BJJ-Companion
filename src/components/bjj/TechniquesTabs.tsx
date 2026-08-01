@@ -58,7 +58,7 @@ function Tab({
   return (
     <Link
       to={to}
-      className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-xs font-medium transition ${
+      className={`flex flex-1 items-center justify-center gap-1.5 rounded-full px-2 py-2.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
         active
           ? "bg-primary text-primary-foreground"
           : "text-muted-foreground hover:text-foreground"

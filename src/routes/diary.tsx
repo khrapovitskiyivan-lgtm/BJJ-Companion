@@ -15,7 +15,18 @@ import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
 import { BELT_ORDER, GROUP_LABEL } from "@/lib/bjj/constants";
 import type { Group, Intensity, StruggleTag, Technique } from "@/lib/bjj/types";
 import { STRUGGLE_TAGS, STRUGGLE_LABEL, showStruggle } from "@/lib/bjj/struggle";
-import { Plus, Search, CalendarDays, ChevronDown, Trash2, NotebookPen, HeartPulse, Pencil, Minus, ShieldAlert } from "lucide-react";
+import {
+  Plus,
+  Search,
+  CalendarDays,
+  ChevronDown,
+  Trash2,
+  NotebookPen,
+  HeartPulse,
+  Pencil,
+  Minus,
+  ShieldAlert,
+} from "lucide-react";
 
 const MAX_ROUNDS = 20;
 
@@ -50,7 +61,11 @@ function Diary() {
   const { reviewed } = useReviewed();
 
   const [adding, setAdding] = useState(false);
-  const [reward, setReward] = useState<{ reward: EntryReward; techniqueIds: number[]; xp: EntryXpReward } | null>(null);
+  const [reward, setReward] = useState<{
+    reward: EntryReward;
+    techniqueIds: number[];
+    xp: EntryXpReward;
+  } | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -188,7 +203,9 @@ function Diary() {
   const save = () => {
     if (!date || picked.length === 0) return;
     // гейт защищает от «осиротевшего» struggle, если сигнал сопротивления убрали
-    const struggleOut = showStruggle({ caught, intensity, rounds }) ? struggle ?? undefined : undefined;
+    const struggleOut = showStruggle({ caught, intensity, rounds })
+      ? (struggle ?? undefined)
+      : undefined;
     const payload = {
       date,
       techniqueIds: picked,
@@ -255,7 +272,11 @@ function Diary() {
 
       {/* Календарь месяца: записи дневника + план от частоты из профиля */}
       {hydrated && entries.length > 0 && (
-        <ActivityHeatmap entries={entries} frequency={profile.frequency} onSetFrequency={() => setSheetOpen(true)} />
+        <ActivityHeatmap
+          entries={entries}
+          frequency={profile.frequency}
+          onSetFrequency={() => setSheetOpen(true)}
+        />
       )}
       {sheetOpen && <CharacterSheet onClose={() => setSheetOpen(false)} />}
       {reward && (
@@ -310,12 +331,17 @@ function Diary() {
                 {searchResults.map((t) => (
                   <button
                     key={t.id}
-                    onClick={() => { setPicked((p) => [...p, t.id]); setQuery(""); }}
+                    onClick={() => {
+                      setPicked((p) => [...p, t.id]);
+                      setQuery("");
+                    }}
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted"
                     style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
                   >
                     <span className="min-w-0 flex-1 truncate">{t.nameRu}</span>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">{GROUP_LABEL[t.group]}</span>
+                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                      {GROUP_LABEL[t.group]}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -326,7 +352,10 @@ function Diary() {
           <div className="flex gap-1.5 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
             {(Object.keys(GROUP_LABEL) as Group[]).map((g) => (
               <span key={g} className="shrink-0">
-                <Chip active={openGroup === g} onClick={() => setOpenGroup((v) => (v === g ? null : g))}>
+                <Chip
+                  active={openGroup === g}
+                  onClick={() => setOpenGroup((v) => (v === g ? null : g))}
+                >
                   {GROUP_LABEL[g]}
                 </Chip>
               </span>
@@ -346,7 +375,9 @@ function Diary() {
                 </button>
               ))}
               {groupList.length === 0 && (
-                <p className="px-3 py-2 text-xs text-muted-foreground">Все техники группы уже в записи</p>
+                <p className="px-3 py-2 text-xs text-muted-foreground">
+                  Все техники группы уже в записи
+                </p>
               )}
             </div>
           )}
@@ -376,12 +407,17 @@ function Diary() {
                 {caughtResults.map((t) => (
                   <button
                     key={t.id}
-                    onClick={() => { setCaught((p) => [...p, t.id]); setCaughtQuery(""); }}
+                    onClick={() => {
+                      setCaught((p) => [...p, t.id]);
+                      setCaughtQuery("");
+                    }}
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-muted"
                     style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
                   >
                     <span className="min-w-0 flex-1 truncate">{t.nameRu}</span>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">{GROUP_LABEL[t.group]}</span>
+                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                      {GROUP_LABEL[t.group]}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -399,8 +435,12 @@ function Diary() {
                     onClick={() => setStruggle((v) => (v === tag ? null : tag))}
                     className="rounded-full border-2 px-3 py-1 text-xs font-medium transition-all"
                     style={{
-                      borderColor: struggle === tag ? "var(--color-primary)" : "var(--color-border)",
-                      background: struggle === tag ? "color-mix(in oklch, var(--color-primary) 10%, transparent)" : "transparent",
+                      borderColor:
+                        struggle === tag ? "var(--color-primary)" : "var(--color-border)",
+                      background:
+                        struggle === tag
+                          ? "color-mix(in oklch, var(--color-primary) 10%, transparent)"
+                          : "transparent",
                     }}
                   >
                     {STRUGGLE_LABEL[tag]}
@@ -425,94 +465,116 @@ function Diary() {
             aria-expanded={detailsOpen}
             className="flex w-full items-center gap-1.5 rounded-xl px-1 py-1 text-xs font-medium text-muted-foreground transition hover:text-foreground"
           >
-            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${detailsOpen ? "rotate-180" : ""}`} />
+            <ChevronDown
+              className={`h-3.5 w-3.5 transition-transform ${detailsOpen ? "rotate-180" : ""}`}
+            />
             Подробнее: интенсивность, раунды, самочувствие
           </button>
 
           {detailsOpen && (
-          <>
-          {/* Интенсивность + раунды */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">Интенсивность</span>
-            {INTENSITY.map((it) => (
-              <button
-                key={it.key}
-                onClick={() => setIntensity((v) => (v === it.key ? null : it.key))}
-                className="rounded-full border-2 px-3 py-1 text-xs font-medium transition-all"
-                style={{
-                  borderColor: intensity === it.key ? "var(--color-primary)" : "var(--color-border)",
-                  background: intensity === it.key ? "color-mix(in oklch, var(--color-primary) 10%, transparent)" : "transparent",
-                }}
-              >
-                {it.label}
-              </button>
-            ))}
-            <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
-              Раунды
-              <span className="inline-flex items-center rounded-lg border border-border bg-background">
-                <button
-                  type="button"
-                  onClick={() => setRounds((r) => Math.max(0, r - 1))}
-                  disabled={rounds <= 0}
-                  className="grid h-8 w-8 place-items-center rounded-l-lg text-muted-foreground transition hover:bg-muted disabled:opacity-40"
-                  aria-label="Меньше раундов"
-                >
-                  <Minus className="h-3.5 w-3.5" />
-                </button>
-                <span className="w-8 text-center text-sm font-medium tabular-nums text-foreground">{rounds}</span>
-                <button
-                  type="button"
-                  onClick={() => setRounds((r) => Math.min(MAX_ROUNDS, r + 1))}
-                  disabled={rounds >= MAX_ROUNDS}
-                  className="grid h-8 w-8 place-items-center rounded-r-lg text-muted-foreground transition hover:bg-muted disabled:opacity-40"
-                  aria-label="Больше раундов"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-              </span>
-            </span>
-          </div>
+            <>
+              {/* Интенсивность + раунды */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground">Интенсивность</span>
+                {INTENSITY.map((it) => (
+                  <button
+                    key={it.key}
+                    onClick={() => setIntensity((v) => (v === it.key ? null : it.key))}
+                    className="min-h-9 rounded-full border-2 px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    style={{
+                      borderColor:
+                        intensity === it.key ? "var(--color-primary)" : "var(--color-border)",
+                      background:
+                        intensity === it.key
+                          ? "color-mix(in oklch, var(--color-primary) 10%, transparent)"
+                          : "transparent",
+                    }}
+                  >
+                    {it.label}
+                  </button>
+                ))}
+                <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+                  Раунды
+                  <span className="inline-flex items-center rounded-lg border border-border bg-background">
+                    <button
+                      type="button"
+                      onClick={() => setRounds((r) => Math.max(0, r - 1))}
+                      disabled={rounds <= 0}
+                      className="grid h-9 w-9 place-items-center rounded-l-lg text-muted-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-40"
+                      aria-label="Меньше раундов"
+                    >
+                      <Minus className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="w-8 text-center text-sm font-medium tabular-nums text-foreground">
+                      {rounds}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setRounds((r) => Math.min(MAX_ROUNDS, r + 1))}
+                      disabled={rounds >= MAX_ROUNDS}
+                      className="grid h-9 w-9 place-items-center rounded-r-lg text-muted-foreground transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-40"
+                      aria-label="Больше раундов"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                </span>
+              </div>
 
-          {/* Самочувствие */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Самочувствие</span>
-            <div className="flex gap-1">
-              {WELLBEING.map((face, i) => (
-                <button
-                  key={i}
-                  onClick={() => setWellbeing((v) => (v === i + 1 ? null : i + 1))}
-                  className="grid h-8 w-8 place-items-center rounded-full border-2 text-base transition-all"
-                  style={{
-                    borderColor: wellbeing === i + 1 ? "var(--color-primary)" : "var(--color-border)",
-                    background: wellbeing === i + 1 ? "color-mix(in oklch, var(--color-primary) 12%, transparent)" : "transparent",
-                    filter: wellbeing && wellbeing !== i + 1 ? "grayscale(1) opacity(0.5)" : "none",
-                  }}
-                  aria-label={`Самочувствие ${i + 1}`}
-                >
-                  {face}
-                </button>
-              ))}
-            </div>
-          </div>
+              {/* Самочувствие */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Самочувствие</span>
+                <div className="flex gap-1">
+                  {WELLBEING.map((face, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setWellbeing((v) => (v === i + 1 ? null : i + 1))}
+                      className="grid h-10 w-10 place-items-center rounded-full border-2 text-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      style={{
+                        borderColor:
+                          wellbeing === i + 1 ? "var(--color-primary)" : "var(--color-border)",
+                        background:
+                          wellbeing === i + 1
+                            ? "color-mix(in oklch, var(--color-primary) 12%, transparent)"
+                            : "transparent",
+                        filter:
+                          wellbeing && wellbeing !== i + 1 ? "grayscale(1) opacity(0.5)" : "none",
+                      }}
+                      aria-label={`Самочувствие ${i + 1}`}
+                    >
+                      {face}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          {/* Травма / дискомфорт */}
-          <div className="relative">
-            <HeartPulse className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={injury}
-              onChange={(e) => setInjury(e.target.value)}
-              placeholder="Травма / дискомфорт — зона (необязательно)"
-              className="w-full rounded-xl border border-input bg-background py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-          </>
+              {/* Травма / дискомфорт */}
+              <div className="relative">
+                <HeartPulse className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={injury}
+                  onChange={(e) => setInjury(e.target.value)}
+                  placeholder="Травма / дискомфорт — зона (необязательно)"
+                  className="w-full rounded-xl border border-input bg-background py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </>
           )}
 
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={resetForm} className="flex-1 text-muted-foreground">
+            <Button
+              variant="secondary"
+              onClick={resetForm}
+              className="flex-1 text-muted-foreground"
+            >
               Отмена
             </Button>
-            <Button variant="primary" onClick={save} disabled={picked.length === 0} className="flex-1">
+            <Button
+              variant="primary"
+              onClick={save}
+              disabled={picked.length === 0}
+              className="flex-1"
+            >
               {editingId ? "Сохранить изменения" : "Сохранить"}
             </Button>
           </div>
@@ -536,20 +598,25 @@ function Diary() {
               <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                 {e.intensity && <span>{INTENSITY.find((i) => i.key === e.intensity)?.label}</span>}
                 {e.rounds ? <span>{e.rounds} р.</span> : null}
-                {e.wellbeing ? <span className="text-sm leading-none">{WELLBEING[e.wellbeing - 1]}</span> : null}
+                {e.wellbeing ? (
+                  <span className="text-sm leading-none">{WELLBEING[e.wellbeing - 1]}</span>
+                ) : null}
                 <span>{e.techniqueIds.length} техн.</span>
                 {confirmDelete === e.id ? (
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex items-center gap-2">
                     <span className="text-destructive">Удалить?</span>
                     <button
-                      onClick={() => { deleteEntry(e.id); setConfirmDelete(null); }}
-                      className="rounded px-1.5 py-0.5 font-medium text-destructive hover:bg-destructive/10"
+                      onClick={() => {
+                        deleteEntry(e.id);
+                        setConfirmDelete(null);
+                      }}
+                      className="min-h-8 rounded-lg border border-destructive/30 px-2.5 py-1 font-medium text-destructive hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       Да
                     </button>
                     <button
                       onClick={() => setConfirmDelete(null)}
-                      className="rounded px-1.5 py-0.5 font-medium hover:bg-muted"
+                      className="min-h-8 rounded-lg border border-border px-2.5 py-1 font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       Нет
                     </button>
@@ -560,14 +627,14 @@ function Diary() {
                     <button
                       onClick={() => startEdit(e)}
                       aria-label="Редактировать"
-                      className="grid h-8 w-8 place-items-center rounded-lg transition hover:bg-muted hover:text-foreground"
+                      className="grid h-10 w-10 place-items-center rounded-lg transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => setConfirmDelete(e.id)}
                       aria-label="Удалить"
-                      className="ml-1.5 grid h-8 w-8 place-items-center rounded-lg transition hover:bg-muted hover:text-destructive"
+                      className="ml-2 grid h-10 w-10 place-items-center rounded-lg transition hover:bg-muted hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -611,6 +678,19 @@ function Diary() {
 
 function formatDate(iso: string): string {
   const [y, m, d] = iso.split("-");
-  const months = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+  const months = [
+    "янв",
+    "фев",
+    "мар",
+    "апр",
+    "мая",
+    "июн",
+    "июл",
+    "авг",
+    "сен",
+    "окт",
+    "ноя",
+    "дек",
+  ];
   return `${parseInt(d, 10)} ${months[parseInt(m, 10) - 1] ?? m} ${y}`;
 }

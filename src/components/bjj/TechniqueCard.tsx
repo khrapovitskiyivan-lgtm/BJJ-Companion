@@ -39,7 +39,7 @@ export function TechniqueRow({
     <Link
       to="/technique/$id"
       params={{ id: String(technique.id) }}
-      className={`flex items-center justify-between gap-2 rounded-xl border border-border p-2.5 transition hover:bg-muted ${
+      className={`flex items-center justify-between gap-2 rounded-xl border border-border p-2.5 transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
         inset ? "bg-background" : "bg-card"
       }`}
       style={{ borderLeft: `3px solid var(--belt-${technique.belt})` }}
@@ -47,7 +47,8 @@ export function TechniqueRow({
       <span className="min-w-0">
         <span className="block truncate text-sm font-medium">{technique.nameRu}</span>
         <span className="block truncate text-[11px] text-muted-foreground">
-          {GROUP_LABEL[technique.group]} · {BELT_LABEL[technique.belt]} · сложность {technique.difficulty}/5
+          {GROUP_LABEL[technique.group]} · {BELT_LABEL[technique.belt]} · сложность{" "}
+          {technique.difficulty}/5
         </span>
       </span>
       {right}
@@ -57,16 +58,28 @@ export function TechniqueRow({
 
 // Чип техники: компактная ссылка с маркером пояса (дневник, сценарии, «Разрыв»).
 // С onRemove — не ссылка, а элемент формы с крестиком (выбранные в дневнике).
-const CHIP_CLS = "inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-xs transition";
+const CHIP_CLS =
+  "inline-flex min-h-8 items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1.5 text-xs transition";
 
-export function TechniqueChip({ technique, onRemove }: { technique: Technique; onRemove?: () => void }) {
+export function TechniqueChip({
+  technique,
+  onRemove,
+}: {
+  technique: Technique;
+  onRemove?: () => void;
+}) {
   const marker = { borderLeft: `3px solid var(--belt-${technique.belt})` };
   if (onRemove) {
     return (
       <span className={CHIP_CLS} style={marker}>
         {technique.nameRu}
-        <button type="button" onClick={onRemove} aria-label="Убрать">
-          <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label="Убрать"
+          className="-mr-1.5 grid h-8 w-8 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
         </button>
       </span>
     );
@@ -114,7 +127,7 @@ export function TechniqueCard({
               e.stopPropagation();
               onCycleStatus(technique.id);
             }}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-full border-2"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             style={{ borderColor: STATUS_COLOR[status], color: STATUS_COLOR[status] }}
           >
             <Icon className="h-4 w-4" strokeWidth={2.4} />
@@ -131,4 +144,3 @@ export function TechniqueCard({
     </article>
   );
 }
-
