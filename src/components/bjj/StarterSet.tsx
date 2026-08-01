@@ -14,7 +14,9 @@ const STATUS_COLOR: Record<ProgressStatus, string> = {
 };
 function StatusMark({ status }: { status: ProgressStatus }) {
   const Icon = STATUS_ICON[status];
-  return <Icon className="h-5 w-5 shrink-0" style={{ color: STATUS_COLOR[status] }} strokeWidth={2.2} />;
+  return (
+    <Icon className="h-5 w-5 shrink-0" style={{ color: STATUS_COLOR[status] }} strokeWidth={2.2} />
+  );
 }
 
 // Сколько бакетов раскрыто по умолчанию (остальные аккордеоном). Финализируется рантаймом.
@@ -39,7 +41,10 @@ export function StarterSet() {
         </p>
         <div className="mt-3 flex items-center gap-3">
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${pct}%` }}
+            />
           </div>
           <span className="whitespace-nowrap text-xs text-muted-foreground">
             {sp.done} из {sp.total}
@@ -69,7 +74,9 @@ export function StarterSet() {
               </span>
               <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 {b.done}/{b.total}
-                <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
+                />
               </span>
             </button>
             {open && (
