@@ -43,7 +43,10 @@ function ProgressPage() {
 
   // Уровень игрока: выводится из дневника/прогресса/пояса + разбор (reviewed)
   const level = useMemo(
-    () => levelForXp(computeTotalXp({ entries, progress, belt: profile.belt, techniques: TECHNIQUES, reviewed })),
+    () =>
+      levelForXp(
+        computeTotalXp({ entries, progress, belt: profile.belt, techniques: TECHNIQUES, reviewed }),
+      ),
     [entries, progress, profile.belt, reviewed],
   );
 
@@ -107,19 +110,37 @@ function ProgressPage() {
     () =>
       profileHydrated && diaryHydrated
         ? computeInsights({
-            entries, progress, reviewed, belt: profile.belt, goal: profile.goal,
-            gi: profile.gi, noGi: profile.noGi, frequency: profile.frequency,
-            techniques: TECHNIQUES, today: new Date(),
+            entries,
+            progress,
+            reviewed,
+            belt: profile.belt,
+            goal: profile.goal,
+            gi: profile.gi,
+            noGi: profile.noGi,
+            frequency: profile.frequency,
+            techniques: TECHNIQUES,
+            today: new Date(),
           })
         : [],
-    [entries, progress, reviewed, profile.belt, profile.goal, profile.gi, profile.noGi, profile.frequency, profileHydrated, diaryHydrated],
+    [
+      entries,
+      progress,
+      reviewed,
+      profile.belt,
+      profile.goal,
+      profile.gi,
+      profile.noGi,
+      profile.frequency,
+      profileHydrated,
+      diaryHydrated,
+    ],
   );
 
   return (
     <AppShell>
       <div className="space-y-6 pb-20">
         {/* Шапка — единая форма с остальными разделами: кикер сверху, название ниже */}
-        <PageHeader kicker="Статистика и путь до коричневого пояса" title="Моя игра" className="px-1" />
+        <PageHeader kicker="Статистика и путь до чёрного пояса" title="Моя игра" className="px-1" />
 
         <ProgressTop
           profile={profile}
@@ -353,4 +374,3 @@ function YourStyle({ scores, doneCount }: { scores: StyleScore[]; doneCount: num
     </section>
   );
 }
-

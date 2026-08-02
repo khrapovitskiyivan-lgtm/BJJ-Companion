@@ -47,7 +47,7 @@ export function TodayAction({ insights }: { insights: Insight[] }) {
         <p className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-primary">
           <Clock className="h-3.5 w-3.5" /> Сегодня · 3 минуты
         </p>
-        <p className="mb-3 text-[15px] font-semibold">{primary.reason}</p>
+        <p className="mb-3 text-[15px] font-semibold">{primary.heroReason ?? primary.reason}</p>
         {heroTech && (
           <div className="mb-3">
             <TechniqueRow technique={heroTech} inset />

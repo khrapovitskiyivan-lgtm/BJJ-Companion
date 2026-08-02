@@ -36,6 +36,11 @@ function FitButton() {
   );
 }
 
+// Последняя техника в фокусе карты — module-cache, чтобы уход на карточку техники
+// и возврат (history.back) вернули на ту же технику, а не на рекомендацию по умолчанию.
+// AppShell перемонтирует граф на навигации, локальный useState focusId теряется.
+let flowFocusCache: number | null = null;
+
 export function TechniqueFlow() {
   const { profile } = useProfile();
   const { progress } = useProgress();
@@ -71,7 +76,7 @@ export function TechniqueFlow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.belt, profile.goal, profile.gi, profile.noGi, progress]);
 
-  const [focusId, setFocusId] = useState<number | null>(null);
+  const [focusId, setFocusId] = useState<number | null>(flowFocusCache);
   const [history, setHistory] = useState<number[]>([]);
   const activeId = focusId ?? startId;
   const focus = TECH_BY_ID[activeId];
@@ -133,18 +138,23 @@ export function TechniqueFlow() {
     );
   }, [layoutData.nodes, progress, favorites, recommendedId, activeId, setRfNodes]);
 
+  // Пишем и в state, и в module-cache: возврат с карточки техники восстановит фокус.
+  const applyFocus = (id: number) => {
+    flowFocusCache = id;
+    setFocusId(id);
+  };
   const goTo = (id: number) => {
     if (id === activeId || !TECH_BY_ID[id]) return;
     haptic("light");
     setHistory((h) => [...h, activeId]);
-    setFocusId(id);
+    applyFocus(id);
   };
   const goBack = () => {
     haptic("light");
     setHistory((h) => {
       const prev = h[h.length - 1];
       if (prev == null) return h;
-      setFocusId(prev);
+      applyFocus(prev);
       return h.slice(0, -1);
     });
   };

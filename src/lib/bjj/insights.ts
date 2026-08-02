@@ -42,8 +42,26 @@ export function staleToRepeat(
   return out.slice(0, cap).map((x) => x.id);
 }
 
-export type InsightKind = "starter-set" | "return-after-pause" | "cold-start" | "catcher-defense" | "review-shown" | "repeat-stale" | "plan" | "learn-next";
-export interface Insight { kind: InsightKind; weight: number; techniqueIds: number[]; reason: string; route: string }
+export type InsightKind =
+  | "starter-set"
+  | "return-after-pause"
+  | "cold-start"
+  | "catcher-defense"
+  | "review-shown"
+  | "repeat-stale"
+  | "plan"
+  | "learn-next";
+// reason — полный текст с названием (для свёрнутого списка «Что ещё», где карточки нет).
+// heroReason — короткая форма без названия для героя, под которым карточка уже показывает
+// название техники (иначе название дублируется: «Пора повторить: X» + карточка X).
+export interface Insight {
+  kind: InsightKind;
+  weight: number;
+  techniqueIds: number[];
+  reason: string;
+  heroReason?: string;
+  route: string;
+}
 export interface InsightsInput {
   entries: DiaryEntry[];
   progress: ProgressMap;
@@ -58,7 +76,8 @@ export interface InsightsInput {
 }
 
 const DAY = 86_400_000;
-const nameOf = (techs: Technique[], id: number) => techs.find((t) => t.id === id)?.nameRu ?? `#${id}`;
+const nameOf = (techs: Technique[], id: number) =>
+  techs.find((t) => t.id === id)?.nameRu ?? `#${id}`;
 
 // Композитор «что сделать сегодня»: собирает инсайты из существующих чистых функций,
 // ранжирует по весу (калибровка спайка). Живёт на клиенте — сервер дневник не видит.
@@ -77,10 +96,13 @@ export function computeInsights(input: InsightsInput): Insight[] {
     const last = entries.reduce((a, b) => (dayMs(b.date) > dayMs(a.date) ? b : a));
     const ids = last.techniqueIds.slice(0, 2);
     out.push({
-      kind: "return-after-pause", weight: 220, techniqueIds: ids,
+      kind: "return-after-pause",
+      weight: 220,
+      techniqueIds: ids,
       reason: ids.length
         ? `Давно не тренировался - вернись мягко: повтори «${nameOf(techniques, ids[0])}»`
         : "Давно не тренировался - вернись мягко, запиши тренировку",
+      heroReason: ids.length ? "Давно не тренировался - вернись мягко" : undefined,
       route: ids.length ? `/technique/${ids[0]}` : "/diary?add",
     });
   }
@@ -88,7 +110,13 @@ export function computeInsights(input: InsightsInput): Insight[] {
   // cold-start: нет записей за последние 7 дней -> вернуть к записи (перебивает контент)
   const recent = entries.some((e) => dayMs(e.date) >= nowMs - 6 * DAY);
   if (!recent && !returnPause) {
-    out.push({ kind: "cold-start", weight: 200, techniqueIds: [], reason: "Запиши тренировку за 30 секунд", route: "/diary?add" });
+    out.push({
+      kind: "cold-start",
+      weight: 200,
+      techniqueIds: [],
+      reason: "Запиши тренировку за 30 секунд",
+      route: "/diary?add",
+    });
   }
 
   // starter-set: белый пояс, пока базовый набор не пройден целиком -> «с чего начать».
@@ -98,8 +126,11 @@ export function computeInsights(input: InsightsInput): Insight[] {
     const sp = starterProgress(progress);
     if (sp.total > 0 && sp.done < sp.total) {
       out.push({
-        kind: "starter-set", weight: 240, techniqueIds: [],
-        reason: "С чего начать: собери базу белого пояса", route: "/starter",
+        kind: "starter-set",
+        weight: 240,
+        techniqueIds: [],
+        reason: "С чего начать: собери базу белого пояса",
+        route: "/starter",
       });
     }
   }
@@ -109,8 +140,11 @@ export function computeInsights(input: InsightsInput): Insight[] {
     const defs = defensesFor(c.id, techniques, 3).filter((t) => progress[t.id] !== "done");
     if (defs.length) {
       out.push({
-        kind: "catcher-defense", weight: 100 + c.count * 10, techniqueIds: defs.map((d) => d.id),
-        reason: `Тебя ${c.count} раза поймали на «${nameOf(techniques, c.id)}»`, route: `/technique/${defs[0].id}`,
+        kind: "catcher-defense",
+        weight: 100 + c.count * 10,
+        techniqueIds: defs.map((d) => d.id),
+        reason: `Тебя ${c.count} раза поймали на «${nameOf(techniques, c.id)}»`,
+        route: `/technique/${defs[0].id}`,
       });
     }
   }
@@ -118,25 +152,51 @@ export function computeInsights(input: InsightsInput): Insight[] {
   // review-shown: показанное на тренировке за 7 дней, не открытое после лога
   const rev = pendingReview(entries, reviewed, progress, today, 7, 6);
   if (rev.length) {
-    out.push({ kind: "review-shown", weight: 80, techniqueIds: rev, reason: `Разбери показанное (${rev.length})`, route: `/technique/${rev[0]}` });
+    out.push({
+      kind: "review-shown",
+      weight: 80,
+      techniqueIds: rev,
+      reason: `Разбери показанное (${rev.length})`,
+      route: `/technique/${rev[0]}`,
+    });
   }
 
   // repeat-stale
   const stale = staleToRepeat(entries, progress, today, 21, 5);
   if (stale.length) {
-    out.push({ kind: "repeat-stale", weight: 70, techniqueIds: stale, reason: `Пора повторить: «${nameOf(techniques, stale[0])}»`, route: `/technique/${stale[0]}` });
+    out.push({
+      kind: "repeat-stale",
+      weight: 70,
+      techniqueIds: stale,
+      reason: `Пора повторить: «${nameOf(techniques, stale[0])}»`,
+      heroReason: "Пора повторить",
+      route: `/technique/${stale[0]}`,
+    });
   }
 
   // plan: недобор недели
   const tc = todayCardModel(entries, frequency, today);
   if (tc.week && tc.week.done < tc.week.quota && tc.week.daysLeft > 0) {
-    out.push({ kind: "plan", weight: 60, techniqueIds: [], reason: `До плана недели ${tc.week.quota - tc.week.done}`, route: "/diary?add" });
+    out.push({
+      kind: "plan",
+      weight: 60,
+      techniqueIds: [],
+      reason: `До плана недели ${tc.week.quota - tc.week.done}`,
+      route: "/diary?add",
+    });
   }
 
   // learn-next: фолбэк (goal-aware)
   const nl = nextToLearn(techniques, progress, belt, 1, { goal, gi, noGi });
   if (nl.length) {
-    out.push({ kind: "learn-next", weight: 40, techniqueIds: [nl[0].id], reason: `Следующая цель: «${nl[0].nameRu}»`, route: `/technique/${nl[0].id}` });
+    out.push({
+      kind: "learn-next",
+      weight: 40,
+      techniqueIds: [nl[0].id],
+      reason: `Следующая цель: «${nl[0].nameRu}»`,
+      heroReason: "Следующая цель",
+      route: `/technique/${nl[0].id}`,
+    });
   }
 
   out.sort((a, b) => b.weight - a.weight || (a.techniqueIds[0] ?? 0) - (b.techniqueIds[0] ?? 0));
