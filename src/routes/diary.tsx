@@ -339,7 +339,7 @@ function Diary() {
                     style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
                   >
                     <span className="min-w-0 flex-1 truncate">{t.nameRu}</span>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
                       {GROUP_LABEL[t.group]}
                     </span>
                   </button>
@@ -415,7 +415,7 @@ function Diary() {
                     style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
                   >
                     <span className="min-w-0 flex-1 truncate">{t.nameRu}</span>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
                       {GROUP_LABEL[t.group]}
                     </span>
                   </button>
