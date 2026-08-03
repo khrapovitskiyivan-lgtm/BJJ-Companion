@@ -19,6 +19,7 @@ function row(patch: Partial<TgChatRow> = {}): TgChatRow {
     last_ping: null,
     soft_ping_week: null,
     soft_ping_count: 0,
+    paused_until: null,
     updated_at: "2026-07-16T10:00:00+00:00",
     ...patch,
   };
@@ -26,6 +27,16 @@ function row(patch: Partial<TgChatRow> = {}): TgChatRow {
 
 // Неделя 13-19 июля 2026 (Пн-Вс)
 const MONDAY = "2026-07-13";
+
+describe("decide: пауза", () => {
+  it("на паузе (paused_until в будущем) — молчит даже когда план горит", () => {
+    // среда 15.07, план горит (0 из 3), но пауза до 30.07
+    expect(decide(row({ paused_until: "2026-07-30" }), "2026-07-15", 3, MONDAY)).toEqual({ kind: "none" });
+  });
+  it("пауза истекла (paused_until в прошлом) — обычная логика (горит)", () => {
+    expect(decide(row({ paused_until: "2026-07-14" }), "2026-07-15", 3, MONDAY).kind).toBe("remind");
+  });
+});
 
 describe("weekMonday / weekReport", () => {
   it("понедельник недели и счётчик тренировочных дней", () => {
