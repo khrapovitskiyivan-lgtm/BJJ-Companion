@@ -6,7 +6,8 @@ import { computeStats } from "./stats";
 import { computeTotalXp, levelForXp } from "./xp";
 import { TECHNIQUES } from "./data";
 import { weekReport } from "./tgRemind";
-import { trainedByDate, planStreak } from "./plan";
+import { trainedByDate, planStreak, dayKey } from "./plan";
+import { activePause } from "./pause";
 
 // Собирает публичный профиль для партнёров из состояния приложения. Чистая
 // функция (device_id передаётся аргументом — не тянем store, чтобы тестировалось).
@@ -33,7 +34,8 @@ export function buildPublishInput(args: {
 
   const wr = weekReport(entries, today);
   const quota = profile.frequency ?? null;
-  const streak = quota ? planStreak(trainedByDate(entries), quota, today) : 0;
+  const paused = activePause(profile.pauses, dayKey(today)) != null;
+  const streak = quota ? planStreak(trainedByDate(entries), quota, today, profile.pauses) : 0;
 
   const level = levelForXp(
     computeTotalXp({ entries, progress, belt: profile.belt, techniques: TECHNIQUES, reviewed }),
@@ -51,5 +53,6 @@ export function buildPublishInput(args: {
     quota,
     streak,
     level,
+    paused,
   };
 }

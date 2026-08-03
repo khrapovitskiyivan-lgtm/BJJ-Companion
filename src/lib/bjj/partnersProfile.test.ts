@@ -26,6 +26,19 @@ describe("buildPublishInput: уровень игрока в публикации
     expect(out.level).toBeGreaterThanOrEqual(1);
   });
 
+  it("активная пауза -> paused:true", () => {
+    const out = buildPublishInput({
+      device: "dev1",
+      profile: { ...profile, frequency: 3, pauses: [{ from: "2020-01-01" }] },
+      progress: {},
+      practiceCount: {},
+      entries: [{ id: "a", date: "2026-07-10", techniqueIds: [1] }],
+      reviewed: {},
+      today: new Date(2026, 6, 15),
+    });
+    expect(out.paused).toBe(true);
+  });
+
   it("больше записей — уровень не ниже", () => {
     const base = { device: "dev1", profile, progress: {}, practiceCount: {}, reviewed: {}, today: new Date(2026, 6, 15) };
     const few = buildPublishInput({ ...base, entries: [{ id: "a", date: "2026-07-10", techniqueIds: [1] }] });
