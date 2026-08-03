@@ -113,23 +113,27 @@ function PartnerRow({ p, onOpen }: { p: PartnerProfile; onOpen: () => void }) {
       )}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{name}</p>
-        <p
-          className="mt-0.5 inline-flex items-center gap-1.5 text-xs"
-          style={{ color: met ? "var(--status-done)" : "var(--color-muted-foreground)" }}
-        >
-          {quota != null ? `${done} из ${quota}` : `${done} трен.`}
-          {p.week_streak >= 2 && (
-            <span
-              className="inline-flex items-center gap-0.5"
-              style={{ color: "var(--brand-gold-ink)" }}
-            >
-              <Flame className="h-3 w-3" />
-              {p.week_streak} нед
-            </span>
-          )}
-        </p>
+        {p.paused ? (
+          <p className="mt-0.5 text-xs text-muted-foreground">на паузе</p>
+        ) : (
+          <p
+            className="mt-0.5 inline-flex items-center gap-1.5 text-xs"
+            style={{ color: met ? "var(--status-done)" : "var(--color-muted-foreground)" }}
+          >
+            {quota != null ? `${done} из ${quota}` : `${done} трен.`}
+            {p.week_streak >= 2 && (
+              <span
+                className="inline-flex items-center gap-0.5"
+                style={{ color: "var(--brand-gold-ink)" }}
+              >
+                <Flame className="h-3 w-3" />
+                {p.week_streak} нед
+              </span>
+            )}
+          </p>
+        )}
       </div>
-      {quota != null && <WeekSegments done={done} quota={quota} />}
+      {!p.paused && quota != null && <WeekSegments done={done} quota={quota} />}
     </button>
   );
 }
@@ -165,27 +169,34 @@ function PartnerDetail({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 rounded-xl bg-muted p-3">
-        <Users className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">
-          Эта неделя:{" "}
-          <span
-            className="font-medium"
-            style={{ color: met ? "var(--status-done)" : "var(--color-foreground)" }}
-          >
-            {p.quota != null ? `${p.week_done} из ${p.quota}` : `${p.week_done} трен.`}
+      {p.paused ? (
+        <div className="flex items-center gap-2 rounded-xl bg-muted p-3">
+          <Users className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">На паузе — план и серия заморожены</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 rounded-xl bg-muted p-3">
+          <Users className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">
+            Эта неделя:{" "}
+            <span
+              className="font-medium"
+              style={{ color: met ? "var(--status-done)" : "var(--color-foreground)" }}
+            >
+              {p.quota != null ? `${p.week_done} из ${p.quota}` : `${p.week_done} трен.`}
+            </span>
           </span>
-        </span>
-        {p.week_streak >= 2 && (
-          <span
-            className="ml-auto inline-flex items-center gap-1 text-xs"
-            style={{ color: "var(--brand-gold-ink)" }}
-          >
-            <Flame className="h-3.5 w-3.5" />
-            серия {p.week_streak} нед
-          </span>
-        )}
-      </div>
+          {p.week_streak >= 2 && (
+            <span
+              className="ml-auto inline-flex items-center gap-1 text-xs"
+              style={{ color: "var(--brand-gold-ink)" }}
+            >
+              <Flame className="h-3.5 w-3.5" />
+              серия {p.week_streak} нед
+            </span>
+          )}
+        </div>
+      )}
 
       {p.style && (
         <div>
@@ -281,10 +292,11 @@ export function PartnersBlock() {
   const hasPartners = (partners?.length ?? 0) > 0;
 
   // Порядок: отстающие по недельному плану — сверху (кого подтолкнуть видно сразу),
-  // внутри — по величине недобора, затем по имени.
+  // внутри — по величине недобора, затем по имени. Паузные считаются «не отстающими»
+  // (уходят вниз, не выставляем неудачником).
   const sortedPartners = partners
     ? [...partners].sort((a, b) => {
-        const met = (p: PartnerProfile) => (p.quota != null && p.week_done >= p.quota ? 1 : 0);
+        const met = (p: PartnerProfile) => (p.paused || (p.quota != null && p.week_done >= p.quota) ? 1 : 0);
         if (met(a) !== met(b)) return met(a) - met(b);
         const deficit = (p: PartnerProfile) => (p.quota ?? 0) - p.week_done;
         if (deficit(b) !== deficit(a)) return deficit(b) - deficit(a);
