@@ -78,6 +78,10 @@ export interface Technique {
   // Монетизация (появится с платной версией)
   videoUrl?: string;
   isPremium?: boolean;
+  // Bunny Stream: guid видео и уровень доступа. Заполняются build-data.
+  // videoAccess: "demo" (бесплатно, выводится из стартового набора) | "pro".
+  videoId?: string;
+  videoAccess?: "demo" | "pro";
 }
 
 // Цель тренировок и частота — из онбординга, влияют на рекомендации.
