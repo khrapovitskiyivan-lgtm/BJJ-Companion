@@ -18,6 +18,7 @@ export interface PartnerProfile {
   quota: number | null;
   week_streak: number;
   level?: number; // уровень игрока (может отсутствовать до применения SQL-миграции)
+  paused?: boolean; // партнёр на паузе (может отсутствовать до применения SQL)
 }
 
 export interface PublishInput {
@@ -32,6 +33,7 @@ export interface PublishInput {
   quota: number | null;
   streak: number;
   level: number;
+  paused: boolean;
 }
 
 export type AcceptStatus = "ok" | "self" | "not_found" | "exists" | "limit" | "bad";
