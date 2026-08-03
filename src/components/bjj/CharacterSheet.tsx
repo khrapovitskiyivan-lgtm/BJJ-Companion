@@ -1,5 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useProfile, useProgress, useDiary, useReviewed } from "@/lib/bjj/store";
+import { activePause } from "@/lib/bjj/pause";
+import { dayKey } from "@/lib/bjj/plan";
 import { BELT_LABEL, BELT_ORDER, STYLE_ORDER, STYLE_META, WEEKDAY_SHORT, DEFAULT_TRAINING_DAYS } from "@/lib/bjj/constants";
 import { computeTotalXp, levelForXp } from "@/lib/bjj/xp";
 import { TECHNIQUES } from "@/lib/bjj/data";
@@ -35,6 +37,23 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
     () => levelForXp(computeTotalXp({ entries, progress, belt: profile.belt, techniques: TECHNIQUES, reviewed })),
     [entries, progress, profile.belt, reviewed],
   );
+
+  // Пауза тренировок: активная = без `to` (и без прошедшей даты возврата)
+  const todayKey = dayKey(new Date());
+  const pause = activePause(profile.pauses, todayKey);
+  const [pauseUntil, setPauseUntil] = useState("");
+  // Ставит паузу: закрывает любую «застрявшую» активную (авто-снятую по дате),
+  // затем добавляет новую (открытую или с датой возврата until).
+  const startPause = (until?: string) => {
+    const prev = (profile.pauses ?? []).map((p) =>
+      !p.to && p !== pause ? { ...p, to: p.until ?? todayKey } : p,
+    );
+    update({ pauses: [...prev, until ? { from: todayKey, until } : { from: todayKey }] });
+  };
+  // Снимает активную паузу: проставляет фактическую дату снятия.
+  const endPause = () => {
+    update({ pauses: (profile.pauses ?? []).map((p) => (p === pause ? { ...p, to: todayKey } : p)) });
+  };
 
   return (
     <Sheet
@@ -165,6 +184,52 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
             );
           })}
         </div>
+      </Section>
+
+      <Section title="Пауза" hint="Травма, отпуск, перерыв? План и серия замрут, напоминания выключатся. Это не провал.">
+        {pause ? (
+          <div
+            className="rounded-xl border-2 p-3"
+            style={{ borderColor: "var(--color-primary)", background: "color-mix(in oklch, var(--color-primary) 6%, var(--color-card))" }}
+          >
+            <p className="text-sm font-semibold text-primary">
+              На паузе с {pause.from}
+              {pause.until ? ` · до ${pause.until}` : " · без срока"}
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">План и серия заморожены. Вернёшься — встретим.</p>
+            <button
+              onClick={endPause}
+              className="mt-3 rounded-xl border border-input bg-card px-3 py-2 text-sm font-medium transition hover:bg-muted"
+            >
+              Снять паузу
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <button
+              onClick={() => startPause()}
+              className="w-full rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground transition active:scale-[0.99]"
+            >
+              Поставить на паузу
+            </button>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={pauseUntil}
+                onChange={(e) => setPauseUntil(e.target.value)}
+                className="min-w-0 flex-1 rounded-xl border border-input bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                aria-label="Дата возврата"
+              />
+              <button
+                onClick={() => pauseUntil && startPause(pauseUntil)}
+                disabled={!pauseUntil}
+                className="rounded-xl border border-input bg-card px-3 py-2 text-sm font-medium transition hover:bg-muted disabled:opacity-40"
+              >
+                До даты
+              </button>
+            </div>
+          </div>
+        )}
       </Section>
 
       {/* Стиль игры (аспирация — влияет на «Разрыв» и рекомендации) */}
