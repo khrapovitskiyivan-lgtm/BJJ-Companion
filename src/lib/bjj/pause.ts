@@ -45,3 +45,15 @@ export function weekOverlapsPause(
   if (!pauses) return false;
   return weekKeys.some((k) => isPausedOn(k, pauses, todayKey));
 }
+
+// Дата паузы для сервера бота: until активной паузы; сентинел для без-срочной;
+// null если не на паузе. Бот молчит, пока today <= paused_until.
+const OPEN_PAUSE_SENTINEL = "2099-12-31";
+export function pausedUntilForBot(
+  pauses: PausePeriod[] | undefined,
+  todayKey: string,
+): string | null {
+  const p = activePause(pauses, todayKey);
+  if (!p) return null;
+  return p.until ?? OPEN_PAUSE_SENTINEL;
+}
