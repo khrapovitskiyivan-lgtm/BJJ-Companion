@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { dayKey, dayStreak, monthGrid, monthPlan, weekDays, weekStatus, monthSummary, trainedByDate, planStreak, daysLeftInWeek } from "./plan";
-import type { DiaryEntry } from "./types";
+import type { DiaryEntry, PausePeriod } from "./types";
 
 function entry(date: string, techs = 1): DiaryEntry {
   return { id: date + "-" + Math.random(), date, techniqueIds: Array.from({ length: techs }, (_, i) => i + 1) };
@@ -10,6 +10,44 @@ function entry(date: string, techs = 1): DiaryEntry {
 function d(y: number, m: number, day: number): Date {
   return new Date(y, m, day);
 }
+
+describe("planStreak с паузой", () => {
+  // Квота 3/нед. Неделя A (27.07-02.08) добита, неделя B (03-09.08) пропущена
+  // из-за паузы, неделя C (10-16.08) снова добита. Пауза не должна порвать серию.
+  const trained = trainedByDate([
+    { id: "1", date: "2026-07-27", techniqueIds: [1] },
+    { id: "2", date: "2026-07-29", techniqueIds: [1] },
+    { id: "3", date: "2026-07-31", techniqueIds: [1] },
+    { id: "4", date: "2026-08-10", techniqueIds: [1] },
+    { id: "5", date: "2026-08-12", techniqueIds: [1] },
+    { id: "6", date: "2026-08-14", techniqueIds: [1] },
+  ]);
+  const pauses: PausePeriod[] = [{ from: "2026-08-03", to: "2026-08-09" }];
+  const today = d(2026, 7, 14); // пт 14 авг, неделя C
+
+  it("без пауз паузная неделя рвёт серию -> 1", () => {
+    expect(planStreak(trained, 3, today)).toBe(1);
+  });
+  it("с паузой неделя B пропускается -> серия 2 (C + A)", () => {
+    expect(planStreak(trained, 3, today, pauses)).toBe(2);
+  });
+});
+
+describe("dayStreak с паузой", () => {
+  const trained = trainedByDate([
+    { id: "1", date: "2026-08-01", techniqueIds: [1] },
+    { id: "2", date: "2026-08-02", techniqueIds: [1] },
+    { id: "3", date: "2026-08-06", techniqueIds: [1] },
+  ]);
+  const pauses: PausePeriod[] = [{ from: "2026-08-03", to: "2026-08-05" }];
+  const today = d(2026, 7, 6); // 6 авг тренировался
+  it("паузные дни 03-05 не рвут дневную серию -> 3", () => {
+    expect(dayStreak(trained, today, pauses)).toBe(3);
+  });
+  it("без пауз серия рвётся на 03 -> 1", () => {
+    expect(dayStreak(trained, today)).toBe(1);
+  });
+});
 
 describe("trainedByDate", () => {
   it("несколько записей в один день складываются в один тренировочный день", () => {

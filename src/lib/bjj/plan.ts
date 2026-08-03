@@ -1,4 +1,5 @@
-import type { DiaryEntry, Frequency } from "./types";
+import type { DiaryEntry, Frequency, PausePeriod } from "./types";
+import { weekOverlapsPause, isPausedOn } from "./pause";
 
 // План тренировок от частоты из профиля: недельные квоты, план и итог месяца.
 // Все функции детерминированы — «сегодня» передаётся параметром (тестируемость, SSR-безопасность).
@@ -78,13 +79,22 @@ export function weekDays(d: Date): Date[] {
 
 // Дневной стрик: дни с тренировками подряд, считая от сегодня
 // (или от вчера, если сегодня ещё не тренировался — серия не сгорает днём).
-export function dayStreak(trained: Map<string, number>, today: Date): number {
-  const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  if (!trained.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
+export function dayStreak(trained: Map<string, number>, today: Date, pauses?: PausePeriod[]): number {
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const todayKey = dayKey(t0);
+  const cursor = new Date(t0);
+  // если сегодня не тренировался и не на паузе — серия считается со вчера (днём не сгорает)
+  const ck = dayKey(cursor);
+  if (!trained.has(ck) && !isPausedOn(ck, pauses, todayKey)) cursor.setDate(cursor.getDate() - 1);
   let n = 0;
-  while (trained.has(dayKey(cursor))) {
-    n++;
-    cursor.setDate(cursor.getDate() - 1);
+  for (;;) {
+    const k = dayKey(cursor);
+    if (trained.has(k)) {
+      n++;
+      cursor.setDate(cursor.getDate() - 1);
+    } else if (isPausedOn(k, pauses, todayKey)) {
+      cursor.setDate(cursor.getDate() - 1); // паузный день пропускаем: не рвёт и не считается
+    } else break;
   }
   return n;
 }
@@ -104,20 +114,27 @@ export function daysLeftInWeek(today: Date, loggedToday: boolean, trainingDays?:
 // Стрик недель в плане: сколько календарных недель подряд выполнена квота.
 // Текущая неделя засчитывается, как только квота добита; пока нет — стрик
 // прошлых недель не сгорает (нельзя терять серию в середине недели).
-export function planStreak(trained: Map<string, number>, quota: Frequency, today: Date): number {
+export function planStreak(
+  trained: Map<string, number>,
+  quota: Frequency,
+  today: Date,
+  pauses?: PausePeriod[],
+): number {
   const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const todayKey = dayKey(t0);
   const monday = new Date(t0);
   monday.setDate(t0.getDate() - ((t0.getDay() + 6) % 7));
 
-  const weekDone = (start: Date): number => {
-    let n = 0;
+  const weekKeys = (start: Date): string[] => {
+    const ks: string[] = [];
     const c = new Date(start);
     for (let i = 0; i < 7; i++) {
-      if (trained.has(dayKey(c))) n++;
+      ks.push(dayKey(c));
       c.setDate(c.getDate() + 1);
     }
-    return n;
+    return ks;
   };
+  const weekDone = (start: Date): number => weekKeys(start).filter((k) => trained.has(k)).length;
 
   let streak = 0;
   const cursor = new Date(monday);
@@ -126,6 +143,7 @@ export function planStreak(trained: Map<string, number>, quota: Frequency, today
   for (let i = 0; i < 520; i++) {
     cursor.setDate(cursor.getDate() - 7);
     if (weekDone(cursor) >= quota) streak++;
+    else if (weekOverlapsPause(weekKeys(cursor), pauses, todayKey)) continue; // пауза не рвёт серию
     else break;
   }
   return streak;

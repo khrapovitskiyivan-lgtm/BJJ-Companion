@@ -88,6 +88,15 @@ export interface Technique {
 export type Goal = "self-defense" | "competition" | "hobby" | "health";
 export type Frequency = 1 | 2 | 3 | 4;
 
+// Период паузы тренировок (травма/отпуск/перерыв). from/until/to — yyyy-mm-dd.
+// Активная пауза — та, у которой нет `to`. until — планируемая дата возврата
+// (опционально, для авто-снятия). to — фактическая дата снятия.
+export interface PausePeriod {
+  from: string;
+  until?: string;
+  to?: string;
+}
+
 export interface StyleProfile {
   belt: Belt;
   gi: boolean;
@@ -108,6 +117,7 @@ export interface StyleProfile {
   // Из них считается план недели и «до плана осталось Y дней».
   trainingDays?: number[];
   preferredStyles?: Style[]; // выбранные игроком стили игры (заменяют «качества»)
+  pauses?: PausePeriod[];    // история пауз тренировок; активная = без `to`
   // Профиль пользователя (в т.ч. из Telegram)
   name?: string;
   avatarUrl?: string;

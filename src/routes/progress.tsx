@@ -102,7 +102,7 @@ function ProgressPage() {
   // Модель «Сегодня» — только после гидратации (new Date() на клиенте, иначе SSR mismatch)
   const today =
     profileHydrated && diaryHydrated
-      ? todayCardModel(entries, profile.frequency, new Date(), profile.trainingDays)
+      ? todayCardModel(entries, profile.frequency, new Date(), profile.trainingDays, profile.pauses)
       : null;
 
   // Инсайты «что сделать сегодня» — только на клиенте после гидратации (new Date())
