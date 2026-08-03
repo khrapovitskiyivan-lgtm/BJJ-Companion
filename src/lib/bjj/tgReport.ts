@@ -2,7 +2,9 @@ import { supabase } from "@/lib/supabase";
 import { getDeviceId, hasConsent } from "./store";
 import { getTelegramUser, isTelegram } from "@/lib/telegram";
 import { weekReport } from "./tgRemind";
-import type { DiaryEntry, Frequency } from "./types";
+import { pausedUntilForBot } from "./pause";
+import { dayKey } from "./plan";
+import type { DiaryEntry, Frequency, PausePeriod } from "./types";
 
 // Отчёт для напоминаний бота: только внутри Telegram, fire-and-forget.
 // Уходят частота и счётчики недели — без содержимого дневника.
@@ -15,6 +17,7 @@ export function reportTgPlan(
   frequency: Frequency | undefined,
   entries: DiaryEntry[],
   trainingDays?: number[],
+  pauses?: PausePeriod[],
 ): void {
   if (typeof window === "undefined" || !isTelegram()) return;
   if (!hasConsent()) return; // chat_id и план на сервер только с согласия
@@ -30,6 +33,7 @@ export function reportTgPlan(
       p_week_done: r.weekDone,
       p_last_entry: r.lastEntry,
       p_training_days: trainingDays && trainingDays.length ? trainingDays : [0, 1, 2, 3, 4, 5],
+      p_paused_until: pausedUntilForBot(pauses, dayKey(new Date())),
     };
     const hash = JSON.stringify([
       payload.p_frequency,
@@ -37,6 +41,7 @@ export function reportTgPlan(
       payload.p_week_done,
       payload.p_last_entry,
       payload.p_training_days,
+      payload.p_paused_until,
     ]);
     const prev = JSON.parse(localStorage.getItem(KEY) ?? "null") as { hash: string; at: number } | null;
     if (prev && prev.hash === hash && Date.now() - prev.at < TTL) return;
