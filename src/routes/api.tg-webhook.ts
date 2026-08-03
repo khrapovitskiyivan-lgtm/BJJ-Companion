@@ -17,6 +17,7 @@ const COMMANDS_HINT = [
   "/diary — отметить тренировку",
   "/guide — инструкция (файл)",
   "/mute — выключить напоминания",
+  "/pause — пауза (уехал, травма, перерыв)",
 ].join("\n");
 
 const WELCOME = [
@@ -38,6 +39,7 @@ const HELP = [
   "Моя игра — стиль, характеристики, прогресс по поясам и группам.",
   "",
   "Напоминания: если план недели горит, бот напомнит вечером (пн-пт) и подведёт итог в воскресенье. Выключить: /mute, включить: /unmute.",
+  "Уезжаешь или травма? Поставь паузу: /pause — план и серия замрут, бот замолчит. Снять: /resume.",
   "",
   COMMANDS_HINT,
 ].join("\n");
@@ -113,6 +115,37 @@ const MUTE_REPLIES: Record<string, { ok: string; fail: string; muted: boolean }>
   },
 };
 
+// /pause и /resume: тот же security-definer паттерн, что и mute (anon-ключ).
+// until: дата (сентинел 2099-12-31 для без-срока) на паузу, null — снять.
+async function setPause(chatId: number, until: string | null): Promise<boolean> {
+  const url = process.env.VITE_SUPABASE_URL;
+  const key = process.env.VITE_SUPABASE_ANON_KEY;
+  if (!url || !key) return false;
+  try {
+    const r = await fetch(`${url}/rest/v1/rpc/bjj_tg_set_pause`, {
+      method: "POST",
+      headers: { apikey: key, authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_tg: chatId, p_until: until }),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
+const PAUSE_REPLIES: Record<string, { until: string | null; ok: string; fail: string }> = {
+  "/pause": {
+    until: "2099-12-31",
+    ok: "Поставил на паузу. Напоминания молчат, план и серия заморожены. Вернёшься — сними: /resume. Поправляйся.",
+    fail: "Не получилось поставить паузу, попробуй позже.",
+  },
+  "/resume": {
+    until: null,
+    ok: "С возвращением! Пауза снята, напоминания снова активны.",
+    fail: "Не получилось снять паузу, попробуй позже.",
+  },
+};
+
 export const Route = createFileRoute("/api/tg-webhook")({
   server: {
     handlers: {
@@ -137,6 +170,14 @@ export const Route = createFileRoute("/api/tg-webhook")({
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ chat_id: chatId, text: ok ? muteCmd.ok : muteCmd.fail }),
+            });
+          } else if (chatId && PAUSE_REPLIES[command]) {
+            const pc = PAUSE_REPLIES[command];
+            const ok = await setPause(chatId, pc.until);
+            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: chatId, text: ok ? pc.ok : pc.fail }),
             });
           } else if (chatId && command === "/guide") {
             await sendGuide(chatId, token, "Инструкция: как пользоваться BJJ Companion.");

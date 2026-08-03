@@ -85,7 +85,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
   // Отчёт для напоминаний бота (только внутри Telegram; троттлинг и гейт внутри)
   useEffect(() => {
     if (!hydrated || !profile.onboardingDone) return;
-    reportTgPlan(profile.frequency, entries, profile.trainingDays);
+    reportTgPlan(profile.frequency, entries, profile.trainingDays, profile.pauses);
   }, [hydrated, profile.onboardingDone, profile.frequency, profile.trainingDays, entries]);
 
   // Свежесть публичного профиля партнёра (гейт/дедуп внутри). Здесь, а не в

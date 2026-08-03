@@ -44,6 +44,7 @@ export interface TgChatRow {
   last_ping: string | null;
   soft_ping_week: string | null; // понедельник недели последнего мягкого нуджа
   soft_ping_count: number; // сколько мягких нуджей на этой неделе
+  paused_until: string | null; // пауза тренировок: молчим, пока todayIso <= paused_until (null = не на паузе)
   updated_at: string;
 }
 
@@ -65,6 +66,7 @@ function dayWord(n: number): string {
 // Тренировочные дни — из row.training_days (0=Пн..6=Вс); пусто/null = дефолт Пн-Сб.
 export function decide(row: TgChatRow, todayIso: string, dow: number, mondayIso: string): CronDecision {
   if (row.muted || !row.frequency) return { kind: "none" };
+  if (row.paused_until && todayIso <= row.paused_until) return { kind: "none" }; // на паузе — молчим
   if (row.last_ping === todayIso) return { kind: "none" }; // не чаще раза в день
 
   // 21 день не открывал приложение — ушёл, не спамим

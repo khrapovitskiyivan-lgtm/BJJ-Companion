@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { activePause, isPausedOn, weekOverlapsPause } from "./pause";
+import { activePause, isPausedOn, weekOverlapsPause, pausedUntilForBot } from "./pause";
 import type { PausePeriod } from "./types";
 
 const P = (p: PausePeriod[]) => p;
@@ -51,5 +51,20 @@ describe("weekOverlapsPause", () => {
   });
   it("неделя вне паузы -> false", () => {
     expect(weekOverlapsPause(week, P([{ from: "2026-09-01" }]), "2026-09-10")).toBe(false);
+  });
+});
+
+describe("pausedUntilForBot", () => {
+  it("не на паузе -> null", () => {
+    expect(pausedUntilForBot(undefined, "2026-08-10")).toBeNull();
+  });
+  it("без срока -> сентинел 2099-12-31", () => {
+    expect(pausedUntilForBot(P([{ from: "2026-08-03" }]), "2026-08-10")).toBe("2099-12-31");
+  });
+  it("с датой -> сама дата", () => {
+    expect(pausedUntilForBot(P([{ from: "2026-08-03", until: "2026-08-20" }]), "2026-08-10")).toBe("2026-08-20");
+  });
+  it("дата прошла (авто-снята) -> null", () => {
+    expect(pausedUntilForBot(P([{ from: "2026-08-03", until: "2026-08-08" }]), "2026-08-10")).toBeNull();
   });
 });
