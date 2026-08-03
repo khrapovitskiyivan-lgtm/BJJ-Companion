@@ -186,7 +186,7 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
         </div>
       </Section>
 
-      <Section title="Пауза" hint="Травма, отпуск, перерыв? План и серия замрут, напоминания выключатся. Это не провал.">
+      <Section title="Пауза" hint="Травма, отпуск, перерыв? План и серия замрут, напоминания выключатся.">
         {pause ? (
           <div
             className="rounded-xl border-2 p-3"
