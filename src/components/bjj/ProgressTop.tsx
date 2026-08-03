@@ -207,7 +207,7 @@ export function ProgressTop({
         {/* Правая колонка: Сегодня */}
       <section
         className="flex flex-col rounded-2xl border bg-card p-3"
-        style={{ borderColor: today && !today.loggedToday ? "var(--color-primary)" : "var(--color-border)" }}
+        style={{ borderColor: today && !today.loggedToday && !today.paused ? "var(--color-primary)" : "var(--color-border)" }}
       >
         <div className="flex items-baseline justify-between">
           <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Сегодня</p>
@@ -221,6 +221,21 @@ export function ProgressTop({
 
         {!today ? (
           <p className="mt-2 text-sm text-muted-foreground">…</p>
+        ) : today.paused ? (
+          <>
+            <p className="mt-1.5 flex items-center gap-1.5 text-sm font-semibold">
+              <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden className="text-primary">
+                <rect x="6" y="4" width="4" height="16" rx="1.3" fill="currentColor" />
+                <rect x="14" y="4" width="4" height="16" rx="1.3" fill="currentColor" />
+              </svg>
+              На паузе
+            </p>
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              {today.paused.until
+                ? `План и серия заморожены до ${today.paused.until}. Отдыхай.`
+                : "План и серия заморожены. Отдыхай, вернёшься — встретим."}
+            </p>
+          </>
         ) : today.week ? (
           <>
             <p className="mt-1.5 text-sm font-semibold">
@@ -256,7 +271,7 @@ export function ProgressTop({
           <p className="mt-1.5 text-sm text-muted-foreground">Отмечай тренировки</p>
         )}
 
-        {today && !today.loggedToday && (
+        {today && !today.loggedToday && !today.paused && (
           <Link to="/diary" search={{ add: true }} className={buttonClass("primary", "md", "mt-auto w-full")}>
             <NotebookPen className="h-4 w-4" />
             Записать
