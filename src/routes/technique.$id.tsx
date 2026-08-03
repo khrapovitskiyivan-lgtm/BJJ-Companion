@@ -103,7 +103,7 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
   const riskCritical = /КРИТИЧНО/i.test(injury);
   const riskMed = !riskHigh && /Средн/i.test(injury);
 
-  const videoUrl = tech.videoUrl;
+  const videoId = tech.videoId;
 
   // Открыл карточку = разобрал показанное (уводит технику из блока «Разбери показанное»)
   const { markReviewed, hydrated: reviewedHydrated } = useReviewed();
@@ -310,9 +310,11 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
         </Link>
       )}
 
-      {/* Под описанием: курированное видео (если есть) или тихий крючок «нужен видео-разбор» */}
-      {videoUrl ? (
-        <VideoBlock url={videoUrl} title={tech.nameRu} />
+      {/* Под описанием: видео-разбор Bunny (если снято) или тихий крючок «нужен видео-разбор».
+          Демо-фаза: любое снятое видео открыто всем. Фаза 1 монетизации подключит здесь замок:
+          videoId && (videoAccess === "demo" || userIsPro) ? VideoBlock : videoId ? Paywall : Prompt. */}
+      {videoId ? (
+        <VideoBlock videoId={videoId} title={tech.nameRu} />
       ) : (
         <VideoInterestPrompt techniqueId={tech.id} />
       )}
