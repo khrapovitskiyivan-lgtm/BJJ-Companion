@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { todayCardModel } from "./todayCard";
-import type { DiaryEntry } from "./types";
+import type { DiaryEntry, PausePeriod } from "./types";
 
 function entry(date: string): DiaryEntry {
   return { id: date, date, techniqueIds: [1] };
@@ -31,5 +31,12 @@ describe("todayCardModel", () => {
     );
     expect(m.week).toEqual({ done: 4, quota: 2, over: 2, daysLeft: 2 }); // пт+сб
     expect(m.weeksStreak).toBe(2); // прошлая неделя 2/2 + текущая добита
+  });
+
+  it("активная пауза -> paused, без week", () => {
+    const pauses: PausePeriod[] = [{ from: "2026-07-14" }];
+    const m = todayCardModel([entry("2026-07-10")], 3, today, undefined, pauses);
+    expect(m.paused).toEqual({ until: undefined });
+    expect(m.week).toBeUndefined();
   });
 });
