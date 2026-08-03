@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { deriveAllStyles } from './derive-styles.mjs';
+import { deriveVideoAccess } from './deriveVideoAccess.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -51,6 +52,8 @@ const aliasMap = JSON.parse(
 const starterSet = JSON.parse(
   readFileSync(join(ROOT, 'data', 'starter-set.json'), 'utf8'),
 );
+// Множество id стартового набора (для вывода demo-доступа к видео)
+const starterIds = new Set(starterSet.flatMap((b) => b.ids));
 const rows = parseCSV(csv);
 const header = rows[0];
 const recs = rows.slice(1).filter((r) => r.length > 1 && r[0].trim())
@@ -87,7 +90,10 @@ const techniques = recs.map((r) => {
     difficulty: parseInt(r.difficulty, 10) || 1,
     successRate: r.success_rate,
     energyCost: r.energy_cost,
-    videoUrl: videoUrls[r.id] || undefined,
+    videoId: videoUrls[r.id]?.bunny || undefined,
+    videoAccess: videoUrls[r.id]
+      ? deriveVideoAccess(videoUrls[r.id].access, starterIds.has(parseInt(r.id, 10)))
+      : undefined,
     content: {
       ru: {
         concept: r.concept,
@@ -143,6 +149,15 @@ for (const bucket of starterSet) {
       console.warn(`⚠️  starter-set: id ${ref} (${tech.nameRu}) не белый пояс (${tech.belt})`);
     }
   }
+}
+
+// --- валидация видео-разметки (Bunny) ---
+for (const [key, entry] of Object.entries(videoUrls)) {
+  if (!validIds.has(parseInt(key, 10))) errs.push(`video-urls: неизвестный id ${key}`);
+  if (!entry || typeof entry.bunny !== 'string' || !entry.bunny.trim())
+    errs.push(`video-urls id ${key}: пустой bunny (guid)`);
+  if (entry && entry.access !== undefined && entry.access !== 'demo' && entry.access !== 'pro')
+    errs.push(`video-urls id ${key}: access должен быть demo|pro, а не «${entry.access}»`);
 }
 
 // --- Проверка циклических зависимостей (в prerequisites) ---
