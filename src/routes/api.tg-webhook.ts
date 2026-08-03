@@ -7,7 +7,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 const APP_URL = "https://bjj-companionkhr.vercel.app";
 // PDF-инструкция лежит в public/ и отдаётся Vercel по URL; бот шлёт её sendDocument
-const GUIDE_URL = APP_URL + "/BJJ-Companion-guide.pdf?v=7";
+const GUIDE_URL = APP_URL + "/BJJ-Companion-guide.pdf?v=8";
 
 const COMMANDS_HINT = [
   "Команды:",
