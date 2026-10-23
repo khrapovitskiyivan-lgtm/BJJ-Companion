@@ -165,13 +165,25 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
   const resolve = (ids: number[]) =>
     ids.map((i) => TECH_BY_ID[i]).filter((x): x is Technique => Boolean(x));
 
-  const usedBy = TECHNIQUES.filter(
+  // Обратные связи вместо смешанного «Используется в» (там были «откуда», пререквизиты
+  // и сетапы вперемешку, лимит 20, повторы «Продолжений»):
+  // «Также отсюда» — техники, у которых эта в «откуда»/«сетапах», но её «дальше» их не называет;
+  // «Открывает для изучения» — техники, у которых эта в «сначала изучить».
+  // Роль: в данных «откуда» у проходов указывает на гард нижнего — на карточке нижнего
+  // это читалось бы как его действие. Показываем только действия своей роли.
+  const isBottom = /\bbottom\b/i.test(tech.nameEn);
+  const isTop = /\btop\b/i.test(tech.nameEn);
+  const otherRole = (t: Technique) =>
+    (isBottom && t.group === "guard_pass") ||
+    (isTop && (t.group === "escape" || t.group === "sweep" || t.group === "retention"));
+  const alsoFrom = TECHNIQUES.filter(
     (t) =>
       t.id !== tech.id &&
-      (t.prerequisites.includes(tech.id) ||
-        t.common_setups.includes(tech.id) ||
-        t.setup_from.includes(tech.id)),
-  ).slice(0, 20);
+      !tech.chain_to.includes(t.id) &&
+      (t.setup_from.includes(tech.id) || t.common_setups.includes(tech.id)) &&
+      !otherRole(t),
+  );
+  const unlocks = TECHNIQUES.filter((t) => t.id !== tech.id && t.prerequisites.includes(tech.id));
 
   const share = async () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -394,7 +406,8 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
       />
       <RelatedList title="Типичные сетапы" items={resolve(tech.common_setups)} />
       <RelatedList title="Продолжения" items={resolve(tech.chain_to)} highlightId={step?.id} />
-      <RelatedList title="Используется в" items={usedBy} />
+      <RelatedList title="Также отсюда" items={alsoFrom} />
+      <RelatedList title="Открывает для изучения" items={unlocks} />
     </GlossaryProvider>
   );
 }
