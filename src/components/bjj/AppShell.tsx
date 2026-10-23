@@ -3,6 +3,7 @@ import { useLocation } from "@tanstack/react-router";
 import { BottomNav } from "./BottomNav";
 import { Onboarding } from "./Onboarding";
 import { ConsentGate } from "./ConsentGate";
+import { SupportIntro } from "./Support";
 import { Logo } from "./Logo";
 import { AvatarMenu } from "./AvatarMenu";
 import {
@@ -196,6 +197,8 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
 
   return (
     <div className="min-h-dvh bg-background text-foreground pb-20">
+      {/* один раз: приложение бесплатное, вклад автора в сообщество */}
+      <SupportIntro />
       <header
         className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur"
         style={{ paddingTop: "env(safe-area-inset-top)" }}

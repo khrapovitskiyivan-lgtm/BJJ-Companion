@@ -5,7 +5,8 @@ import { AuthModal } from "@/components/AuthModal";
 import { CONSENT_VERSION, useProfile, useProgress } from "@/lib/bjj/store";
 import type { Locale } from "@/lib/bjj/types";
 import { Button, Section, Sheet, Toggle } from "@/components/bjj/ui";
-import { Cloud, CloudOff, LogIn, LogOut, Info, ChevronRight, Download, Upload, Trash2, AlertTriangle, ShieldCheck, FileText } from "lucide-react";
+import { Cloud, CloudOff, LogIn, LogOut, Info, ChevronRight, Download, Upload, Trash2, AlertTriangle, ShieldCheck, FileText, Heart } from "lucide-react";
+import { SupportSheet } from "@/components/bjj/Support";
 
 // Настройки и информация: шторка по тапу на значок в шапке.
 // Аккаунт (вход и синхронизация), язык, о приложении. Игровые настройки
@@ -15,6 +16,7 @@ export function AvatarMenu({ onClose }: { onClose: () => void }) {
   const { progress, setProgress, clearProgress } = useProgress();
   const [user, setUser] = useState<{ email?: string } | null>(null);
   const [showAuth, setShowAuth] = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
 
   // Управление данными (перенесено из «Моей игры»)
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -226,6 +228,19 @@ export function AvatarMenu({ onClose }: { onClose: () => void }) {
           </div>
         </Section>
 
+        {/* Приложение бесплатное: благодарность и добровольная поддержка */}
+        <button
+          type="button"
+          onClick={() => setShowSupport(true)}
+          className="flex w-full items-center justify-between rounded-2xl border border-border bg-card p-4 text-left transition hover:bg-muted"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium">
+            <Heart className="h-4 w-4 text-primary" />
+            Поддержать проект
+          </span>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </button>
+
         {/* О приложении */}
         <Link
           to="/about"
@@ -241,6 +256,7 @@ export function AvatarMenu({ onClose }: { onClose: () => void }) {
       </Sheet>
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      {showSupport && <SupportSheet onClose={() => setShowSupport(false)} />}
     </>
   );
 }
