@@ -15,5 +15,22 @@ export default defineConfig({
   // Деплой на Vercel: Nitro собирает вывод в .vercel/output (Build Output API v3),
   // который Vercel подхватывает автоматически. Пресет закреплён явно, чтобы не зависеть
   // от авто-детекта. (В Lovable-сборке это переопределение игнорируется и остаётся Cloudflare.)
-  nitro: { preset: "vercel" },
+  nitro: {
+    preset: "vercel",
+    // Функции во Франкфурте: аудитория в РФ, из США (iad1) первая загрузка была на ~0.5 с дольше.
+    // @ts-expect-error тип обёртки Lovable не знает vercel-опций Nitro, но передаёт их (проверено по .vc-config.json)
+    vercel: { functions: { regions: ["fra1"] } },
+    // Заголовки безопасности (аудит 2026-10-23). frame-ancestors: Telegram Web открывает
+    // приложение в iframe — его домены разрешены, чужие сайты встроить не смогут.
+    routeRules: {
+      "/**": {
+        headers: {
+          "X-Content-Type-Options": "nosniff",
+          "Referrer-Policy": "strict-origin-when-cross-origin",
+          "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+          "Content-Security-Policy": "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org",
+        },
+      },
+    },
+  },
 });

@@ -29,6 +29,22 @@ async function callRpc(fn: string, body: Record<string, unknown>): Promise<unkno
   return r.json().catch(() => null);
 }
 
+// Публикуемый профиль виден партнёрам: клиенту не доверяем ни типы, ни размеры (аудит 2026-10-23)
+const BELTS = new Set(["white", "blue", "purple", "brown", "black"]);
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const num = (v: unknown, min: number, max: number): number | null =>
+  typeof v === "number" && Number.isFinite(v) ? Math.min(max, Math.max(min, Math.round(v))) : null;
+// статы: до 12 ключей-идентификаторов, значения 0..1000
+function cleanStats(v: unknown): Record<string, number> {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return {};
+  const out: Record<string, number> = {};
+  for (const [k, x] of Object.entries(v as Record<string, unknown>).slice(0, 12)) {
+    const n = num(x, 0, 1000);
+    if (/^[a-z_]{1,24}$/.test(k) && n !== null) out[k] = n;
+  }
+  return out;
+}
+
 // Отображаемое имя из подписанных данных Telegram (имя не берём с клиента)
 function displayName(u: { first_name?: string; last_name?: string; username?: string }): string {
   return [u.first_name, u.last_name].filter(Boolean).join(" ").trim() || u.username || "";
@@ -64,20 +80,20 @@ export const Route = createFileRoute("/api/partners")({
           case "publish": {
             const code = await callRpc("bjj_partner_publish", {
               p_tg: tg,
-              p_device: (p.device as string) ?? null,
-              p_name: displayName(user),
+              p_device: typeof p.device === "string" ? p.device.slice(0, 64) : null,
+              p_name: displayName(user).slice(0, 64),
               p_photo: user.photo_url ?? null,
-              p_belt: (p.belt as string) ?? null,
-              p_gi: (p.gi as boolean) ?? true,
-              p_nogi: (p.nogi as boolean) ?? true,
-              p_style: (p.style as string) ?? null,
-              p_stats: (p.stats as Record<string, number>) ?? {},
-              p_week_start: (p.weekStart as string) ?? null,
-              p_week_done: (p.weekDone as number) ?? 0,
-              p_quota: (p.quota as number) ?? null,
-              p_streak: (p.streak as number) ?? 0,
-              p_level: (p.level as number) ?? 1,
-              p_paused: (p.paused as boolean) ?? false,
+              p_belt: BELTS.has(p.belt as string) ? (p.belt as string) : null,
+              p_gi: p.gi !== false,
+              p_nogi: p.nogi !== false,
+              p_style: typeof p.style === "string" ? p.style.slice(0, 32) : null,
+              p_stats: cleanStats(p.stats),
+              p_week_start: typeof p.weekStart === "string" && ISO_DATE.test(p.weekStart) ? p.weekStart : null,
+              p_week_done: num(p.weekDone, 0, 50) ?? 0,
+              p_quota: num(p.quota, 1, 7),
+              p_streak: num(p.streak, 0, 1000) ?? 0,
+              p_level: num(p.level, 1, 500) ?? 1,
+              p_paused: p.paused === true,
             });
             return Response.json({ code });
           }
