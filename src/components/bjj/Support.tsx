@@ -93,8 +93,7 @@ export function SupportIntro() {
     <Sheet kicker="BJJ Companion" title="Это приложение бесплатное" onClose={close}>
       <div className="space-y-3 text-sm leading-relaxed">
         <p>
-          Я сделал BJJ Companion как вклад в сообщество бразильского джиу-джитсу. Здесь нет платных функций
-          и подписок: всё доступно каждому.
+          Здесь нет платных функций и подписок: всё доступно каждому.
         </p>
         <p className="text-muted-foreground">
           Тренируйтесь, записывайте прогресс, разбирайте технику и делитесь приложением с партнёрами по
