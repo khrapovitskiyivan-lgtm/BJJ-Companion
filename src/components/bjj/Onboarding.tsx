@@ -147,7 +147,7 @@ function WelcomeScreen() {
   const slides = [
     {
       icon: BookOpen,
-      title: "340 приёмов и позиций",
+      title: "348 приёмов и позиций",
       description: "С механикой, рисками и пререквизитами. От белого до коричневого пояса.",
       accent: "var(--belt-blue)",
     },
