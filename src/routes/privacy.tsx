@@ -15,12 +15,13 @@ function PrivacyPage() {
     <div className="min-h-dvh bg-background text-foreground">
       <header
         className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur"
-        style={{ paddingTop: "env(safe-area-inset-top)" }}
+        // ниже зоны кнопок Telegram (полноэкранный режим), иначе «Назад» под его «Закрыть»
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + var(--tg-content-safe-area-inset-top, 0px))" }}
       >
         <div className="mx-auto flex max-w-xl items-center gap-3 px-4 py-3">
           <button
             type="button"
-            onClick={() => router.history.back()}
+            onClick={() => (window.history.length > 1 ? router.history.back() : router.navigate({ to: "/progress" }))}
             aria-label="Назад"
             className="rounded-full p-2 text-muted-foreground transition hover:bg-muted"
           >

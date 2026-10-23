@@ -44,8 +44,7 @@ export function SupportContent() {
       {hasSupportDetails() ? (
         <>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Если хотите отблагодарить и поддержать развитие (съёмку видео, новые техники, сервер), можно
-            перевести любую сумму. Даже символическая поддержка очень мотивирует.
+            Если хотите отблагодарить и поддержать развитие, можно перевести любую сумму. Даже символическая поддержка очень мотивирует.
           </p>
           <div className="space-y-2">
             {SUPPORT.sbpPhone && <Detail label="СБП по номеру телефона" value={SUPPORT.sbpPhone} />}
@@ -60,7 +59,7 @@ export function SupportContent() {
           залу.
         </p>
       )}
-      <p className="text-sm font-medium">Спасибо! Ос.</p>
+      <p className="text-sm font-medium">Спасибо!</p>
     </div>
   );
 }
@@ -101,7 +100,6 @@ export function SupportIntro() {
           Тренируйтесь, записывайте прогресс, разбирайте технику и делитесь приложением с партнёрами по
           залу. Если захотите отблагодарить, в настройках есть раздел «Поддержать проект».
         </p>
-        <p className="font-medium">Ос!</p>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button variant="primary" size="md" fullWidth onClick={close}>

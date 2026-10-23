@@ -71,7 +71,13 @@
   "49": [
     "стрейт энкл",
     "энкл лок",
-    "straight ankle"
+    "straight ankle",
+    "achilles",
+    "ахилл",
+    "ахиллес лок",
+    "achilles lock",
+    "аши энкл лок",
+    "ashi ankle lock"
   ],
   "50": [
     "нибар",
@@ -442,10 +448,6 @@
     "ристлок",
     "wristlock"
   ],
-  "385": [
-    "achilles",
-    "ахилл"
-  ],
   "386": [
     "john wayne"
   ],
@@ -701,5 +703,13 @@
     "ude gatame",
     "reverse armbar",
     "обратный рычаг локтя"
+  ],
+  "368": [
+    "система кимура-трэп",
+    "kimura trap system"
+  ],
+  "415": [
+    "проход с давлением плечом",
+    "shoulder pressure pass"
   ]
 }
