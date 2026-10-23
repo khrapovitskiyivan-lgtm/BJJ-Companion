@@ -1,4 +1,4 @@
-// Генератор данных: data/techniques.csv → src/lib/bjj/generated/techniques.json
+// Генератор данных: data/techniques.csv → src/lib/bjj/generated/techniques.json + technique-content.json
 // Источник правды — CSV (редактируется через Google Sheets / db-rework).
 // Запуск: node scripts/build-data.mjs
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -204,8 +204,17 @@ if (cycles.length > 0) {
   console.warn(`⚠️  Циклы в prerequisites: ${cycles.length} техник (обходы защищены; см. задачу по чистке DAG)`);
 }
 
-writeFileSync(join(ROOT, 'src', 'lib', 'bjj', 'generated', 'techniques.json'), JSON.stringify(techniques), 'utf8');
-console.log(`OK: ${techniques.length} техник → src/lib/bjj/generated/techniques.json`);
+// Лёгкая база (в стартовом бандле): всё, кроме текстов разборов. Из content остаются
+// только injuryRisk/tapWarning — их читают рекомендации и генератор тренировки.
+// Полные тексты — отдельный файл, грузится динамическим import() на странице техники.
+const light = techniques.map(({ content, ...rest }) => ({
+  ...rest,
+  content: { ru: { injuryRisk: content.ru.injuryRisk, tapWarning: content.ru.tapWarning } },
+}));
+const contentById = Object.fromEntries(techniques.map((t) => [t.id, t.content]));
+writeFileSync(join(ROOT, 'src', 'lib', 'bjj', 'generated', 'techniques.json'), JSON.stringify(light), 'utf8');
+writeFileSync(join(ROOT, 'src', 'lib', 'bjj', 'generated', 'technique-content.json'), JSON.stringify(contentById), 'utf8');
+console.log(`OK: ${techniques.length} техник → generated/techniques.json (+ тексты в technique-content.json)`);
 
 writeFileSync(join(ROOT, 'src', 'lib', 'bjj', 'generated', 'starter-set.json'), JSON.stringify(starterSet), 'utf8');
 console.log(`OK: стартовый набор ${starterSeen.size} техник → generated/starter-set.json`);

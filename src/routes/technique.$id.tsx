@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
 import { AppShell } from "@/components/bjj/AppShell";
-import { TECH_BY_ID, TECHNIQUES, contentFor } from "@/lib/bjj/data";
+import { TECH_BY_ID, TECHNIQUES, useTechniqueContent } from "@/lib/bjj/data";
 import { BELT_LABEL, GROUP_LABEL } from "@/lib/bjj/constants";
 import { useProgress, useProfile, useReviewed, useFavorites, useDiary } from "@/lib/bjj/store";
 import { track } from "@/lib/bjj/telemetry";
@@ -95,8 +95,10 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
   const [shared, setShared] = useState(false);
   const status = progress[tech.id] ?? "not_started";
   const Icon = STATUS_ICON[status];
-  const content = contentFor(tech, "ru");
-  const injury = content?.injuryRisk ?? "";
+  // тексты разбора — из отдельного чанка (null, пока грузится); риск и «когда стучать» — сразу из базы
+  const content = useTechniqueContent(tech.id, "ru");
+  const safety = tech.content.ru;
+  const injury = safety?.injuryRisk ?? "";
   // Уровень риска по вхождению (в данных бывает уточнение в скобках: «Средний (колено)»)
   const riskHigh = /КРИТИЧНО|Высок/i.test(injury);
   const riskCritical = /КРИТИЧНО/i.test(injury);
@@ -316,7 +318,7 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
         />
       )}
 
-      {content && (content.injuryRisk || content.tapWarning !== "Нет") && (
+      {safety && (safety.injuryRisk || (safety.tapWarning && safety.tapWarning !== "Нет")) && (
         <div
           className={`flex gap-3 rounded-2xl border p-4 ${
             riskHigh
@@ -343,14 +345,14 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
                       : "Информация о технике"}
               </span>
             </div>
-            {content.injuryRisk && (
+            {safety.injuryRisk && (
               <p className="mb-1">
-                <b>Риск травмы:</b> {content.injuryRisk}
+                <b>Риск травмы:</b> {safety.injuryRisk}
               </p>
             )}
-            {content.tapWarning !== "Нет" && (
+            {safety.tapWarning && safety.tapWarning !== "Нет" && (
               <p>
-                <b>Когда стучать:</b> {content.tapWarning}
+                <b>Когда стучать:</b> {safety.tapWarning}
               </p>
             )}
           </div>
@@ -358,6 +360,7 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
       )}
 
 
+      {!content && <div className="h-48 animate-pulse rounded-2xl bg-muted" aria-hidden />}
       {content && (
         <>
           <MechanismSection html={content.mechanics} techId={tech.id} />

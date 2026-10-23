@@ -74,7 +74,9 @@ export interface Technique {
   difficulty: number;
   successRate: string;    // "70%" | "N/A"
   energyCost: EnergyCost;
-  content: Partial<Record<Locale, TechniqueContent>>;
+  // В загруженной базе только injuryRisk/tapWarning; полные тексты разборов —
+  // loadTechniqueContent / useTechniqueContent (отдельный чанк, грузится по требованию).
+  content: Partial<Record<Locale, Partial<TechniqueContent>>>;
   // Монетизация (появится с платной версией)
   videoUrl?: string;
   isPremium?: boolean;
