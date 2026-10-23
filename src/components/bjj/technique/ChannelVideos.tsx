@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ChevronDown, PlayCircle, Send } from "lucide-react";
 import { getTelegram, isTelegram } from "@/lib/telegram";
+import { supabase } from "@/lib/supabase";
 
 // Видео из Telegram-канала тренера: альбомы с тренировок, где упоминается техника.
 // Один альбом может стоять в нескольких техниках (на тренировке разбирали связку).
@@ -27,6 +28,26 @@ function loadChannel(): Promise<ChannelData> {
 
 const SHOWN = 4;
 
+// Новые посты канала, распознанные ботом после разметки (таблица bjj_channel_posts).
+// Ошибка сети/базы не ломает блок: остаются размеченные видео.
+async function loadLive(techniqueId: number): Promise<ChannelAlbum[]> {
+  try {
+    const { data, error } = await supabase.rpc("bjj_channel_videos", { p_tech: techniqueId });
+    if (error || !Array.isArray(data)) return [];
+    return (data as { post: number; videos: number; posted_at: string | null; caption: string | null }[]).map((r) => {
+      const first = (r.caption ?? "").replace(/\s*#[\p{L}\p{N}_]+/gu, "").trim().split(String.fromCharCode(10))[0];
+      return {
+        post: Number(r.post),
+        videos: r.videos,
+        date: r.posted_at?.slice(0, 10),
+        text: first.length > 72 ? first.slice(0, 72) + "…" : first,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 function openLink(url: string) {
   const tg = getTelegram();
   if (isTelegram() && tg?.openTelegramLink) {
@@ -48,23 +69,29 @@ function fmtDate(iso?: string): string {
     : d.toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export function ChannelVideos({ techniqueId }: { techniqueId: number }) {
+export function ChannelVideos({ techniqueId, fallback }: { techniqueId: number; fallback?: ReactNode }) {
   // первый рендер пустой и на сервере, и на клиенте — гидрация без расхождений
   const [data, setData] = useState<{ channel: string; albums: ChannelAlbum[] } | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [all, setAll] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    void loadChannel().then((d) => {
-      const albums = d.byTechnique[String(techniqueId)] ?? [];
-      if (alive && d.channel && albums.length) setData({ channel: d.channel, albums });
+    setLoaded(false);
+    void Promise.all([loadChannel(), loadLive(techniqueId)]).then(([d, live]) => {
+      if (!alive) return;
+      const known = d.byTechnique[String(techniqueId)] ?? [];
+      const seen = new Set(known.map((a) => a.post));
+      const albums = [...known, ...live.filter((a) => !seen.has(a.post))].sort((a, b) => b.post - a.post);
+      setData(d.channel && albums.length ? { channel: d.channel, albums } : null);
+      setLoaded(true);
     });
     return () => {
       alive = false;
     };
   }, [techniqueId]);
 
-  if (!data) return null;
+  if (!data) return loaded ? <>{fallback}</> : null;
   const total = data.albums.reduce((n, a) => n + a.videos, 0);
   const list = all ? data.albums : data.albums.slice(0, SHOWN);
 

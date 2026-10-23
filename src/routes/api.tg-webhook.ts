@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { handleChannelPost, type TgChannelPost } from "@/lib/channelBot";
 
 // Вебхук Telegram-бота (@companionminiapp_bot): вступительное сообщение на /start.
 // Токен и секрет живут в env БЕЗ префикса VITE_ — на сервере, в бандл не попадают.
@@ -74,6 +75,8 @@ const REPLIES: Record<string, { text: string; reply_markup: unknown }> = {
 
 interface TgUpdate {
   message?: { chat?: { id?: number }; text?: string };
+  channel_post?: TgChannelPost;
+  edited_channel_post?: TgChannelPost;
 }
 
 // Отправить PDF-инструкцию (Telegram сам забирает файл по URL из public/)
@@ -159,6 +162,12 @@ export const Route = createFileRoute("/api/tg-webhook")({
         }
         try {
           const update = (await request.json()) as TgUpdate;
+          // посты канала тренера: распознать техники, сохранить, дописать хэштеги
+          const post = update.channel_post ?? update.edited_channel_post;
+          if (post) {
+            await handleChannelPost(post, token);
+            return new Response("ok");
+          }
           const chatId = update.message?.chat?.id;
           const text = update.message?.text ?? "";
           // «/команда» и «/команда@имябота» из меню команд

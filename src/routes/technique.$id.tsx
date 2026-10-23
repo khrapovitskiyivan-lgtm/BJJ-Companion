@@ -303,11 +303,10 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
           videoId && (videoAccess === "demo" || userIsPro) ? VideoBlock : videoId ? Paywall : Prompt. */}
       {videoId && <VideoBlock videoId={videoId} title={tech.nameRu} />}
       {/* Видео с тренировок из канала тренера; заглушка «снимаем разборы» — только если нет ничего */}
-      {tech.channelVideoCount ? (
-        <ChannelVideos techniqueId={tech.id} />
-      ) : (
-        !videoId && <VideoInterestPrompt techniqueId={tech.id} />
-      )}
+      <ChannelVideos
+        techniqueId={tech.id}
+        fallback={!videoId && <VideoInterestPrompt techniqueId={tech.id} />}
+      />
 
       {/* Личные заметки — сразу после описания/видео: свои детали ценнее справочных */}
       <NotesSection techniqueId={tech.id} />
