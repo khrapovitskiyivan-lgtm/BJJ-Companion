@@ -78,8 +78,9 @@ export function SupportIntro() {
   const [open, setOpen] = useState(false);
   const [support, setSupport] = useState(false);
   // читаем флаг после гидрации: на сервере окна нет
+  // Окно включается вместе с реквизитами: так его увидят один раз и сразу с кнопкой «Поддержать»
   useEffect(() => {
-    if (!supportIntroSeen()) setOpen(true);
+    if (hasSupportDetails() && !supportIntroSeen()) setOpen(true);
   }, []);
 
   function close() {
