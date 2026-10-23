@@ -60,7 +60,7 @@ function Avatar({ name, photo, size = 34, level }: { name: string; photo: string
       {inner}
       {level != null && (
         <span
-          className="absolute -bottom-1.5 -right-1.5 grid place-items-center rounded-md px-1 py-0.5 text-[9px] font-bold leading-none tracking-tight text-white"
+          className="absolute -bottom-1.5 -right-1.5 grid place-items-center rounded-md px-1 py-0.5 text-[10px] font-bold leading-none tracking-tight text-white"
           style={{ background: "var(--color-primary)", boxShadow: "0 0 0 2px var(--color-card)" }}
         >
           LVL {level}

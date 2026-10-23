@@ -248,7 +248,7 @@ function ProgressPage() {
                   </div>
                 ))}
               </div>
-              <p className="mt-3 text-[11px] text-muted-foreground">
+              <p className="mt-3 text-xs text-muted-foreground">
                 Растут от изученных техник и отработок в дневнике.
               </p>
             </>
@@ -293,7 +293,7 @@ function YourStyle({ scores, doneCount }: { scores: StyleScore[]; doneCount: num
             />
           ))}
         </div>
-        <p className="mt-1.5 text-[11px] tabular-nums text-muted-foreground">
+        <p className="mt-1.5 text-xs tabular-nums text-muted-foreground">
           {doneCount} из {ARCHETYPE_MIN_DONE}
         </p>
         <Link

@@ -139,7 +139,7 @@ export function ProgressTop({
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold">{profile.name || "Боец"}</span>
-          <span className="block truncate text-[11px] text-muted-foreground">
+          <span className="block truncate text-xs text-muted-foreground">
             {BELT_LABEL[profile.belt]} пояс
           </span>
           {level && (
@@ -230,7 +230,7 @@ export function ProgressTop({
               </svg>
               На паузе
             </p>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
               {today.paused.until
                 ? `План и серия заморожены до ${today.paused.until}. Отдыхай.`
                 : "План и серия заморожены. Отдыхай, вернёшься — встретим."}
@@ -241,7 +241,7 @@ export function ProgressTop({
             <p className="mt-1.5 text-sm font-semibold">
               {today.week.done} из {today.week.quota}
             </p>
-            <p className="text-[11px] text-muted-foreground">на этой неделе</p>
+            <p className="text-xs text-muted-foreground">на этой неделе</p>
             <div className="mt-2 flex gap-1" aria-hidden="true">
               {segments.map((bg, i) => (
                 <span key={i} className="h-1.5 flex-1 rounded-full" style={{ background: bg }} />
@@ -252,7 +252,7 @@ export function ProgressTop({
                 {today.week.over > 0 ? `План закрыт, +${today.week.over}` : "План недели закрыт"}
               </p>
             ) : today.week.daysLeft > 0 ? (
-              <p className="mt-1.5 text-[11px] text-muted-foreground">
+              <p className="mt-1.5 text-xs text-muted-foreground">
                 До плана {today.week.quota - today.week.done}, {today.week.daysLeft === 1 ? "остался" : "осталось"} {today.week.daysLeft} {plural(today.week.daysLeft, "день", "дня", "дней")}
               </p>
             ) : null}

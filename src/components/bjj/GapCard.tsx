@@ -78,7 +78,7 @@ export function GapCard({
             dismissStyleAspiration();
             setDismissed(true);
           }}
-          className="mt-3 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+          className="mt-3 text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
           Не сейчас
         </button>

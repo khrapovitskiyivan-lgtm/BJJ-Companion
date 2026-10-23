@@ -83,7 +83,7 @@ export function ProgressPieChart({
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-2xl font-bold text-muted-foreground">0</span>
-            <span className="text-[10px] text-muted-foreground">техник</span>
+            <span className="text-[11px] text-muted-foreground">техник</span>
           </div>
         </div>
       </div>
@@ -153,10 +153,10 @@ export function ProgressPieChart({
               >
                 {segments[hoveredIndex].value}
               </span>
-              <span className="text-[10px] text-muted-foreground text-center px-2 leading-tight">
+              <span className="text-[11px] text-muted-foreground text-center px-2 leading-tight">
                 {segments[hoveredIndex].label}
               </span>
-              <span className="text-[9px] text-muted-foreground/70">
+              <span className="text-[11px] text-muted-foreground/70">
                 {Math.round((segments[hoveredIndex].value / total) * 100)}%
               </span>
             </>
@@ -165,7 +165,7 @@ export function ProgressPieChart({
               <span className="text-2xl font-bold">
                 {centerValue ?? total}
               </span>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[11px] text-muted-foreground">
                 {centerLabel ?? "техник"}
               </span>
             </>

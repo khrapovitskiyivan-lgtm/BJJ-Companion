@@ -150,7 +150,7 @@ export function EntryRewardSheet({
                     style={{ width: `${grow ? Math.round((xp.xpIntoLevel / xp.xpForLevel) * 100) : 0}%` }}
                   />
                 </div>
-                <p className="mt-1 text-[11px] text-muted-foreground">
+                <p className="mt-1 text-xs text-muted-foreground">
                   ещё {xp.xpForLevel - xp.xpIntoLevel} XP до LVL {xp.level + 1}
                 </p>
               </div>
@@ -191,7 +191,7 @@ export function EntryRewardSheet({
                     style={{ width: `${grow ? stat.pctAfter : stat.pctBefore}%` }}
                   />
                 </div>
-                <p className="mt-1 text-[11px] text-muted-foreground">
+                <p className="mt-1 text-xs text-muted-foreground">
                   В записи: {stat.count} техн. этого стата
                 </p>
               </div>

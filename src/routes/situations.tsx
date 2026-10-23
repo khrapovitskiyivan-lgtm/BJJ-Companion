@@ -131,7 +131,7 @@ function Decide() {
       <div className="space-y-4">
         <button
           onClick={() => navigate({ search: {} })}
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          className="-mx-2 inline-flex min-h-11 items-center gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           К ситуациям

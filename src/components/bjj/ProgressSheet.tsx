@@ -109,7 +109,7 @@ export function ProgressSheet({ onClose }: { onClose: () => void }) {
                       className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${openGroup === group ? "rotate-180" : ""}`}
                     />
                   </span>
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {done}/{total}
                   </span>
                 </div>

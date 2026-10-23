@@ -61,7 +61,7 @@ export function GlossaryProvider({ children, className = "" }: { children: React
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-sm font-semibold">{pop.term.term}</p>
-            {pop.term.en && <p className="text-[11px] text-muted-foreground">{pop.term.en}</p>}
+            {pop.term.en && <p className="text-xs text-muted-foreground">{pop.term.en}</p>}
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{pop.term.definition}</p>
           </div>
         )}

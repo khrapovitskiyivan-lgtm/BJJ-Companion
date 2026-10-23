@@ -231,7 +231,7 @@ function WorkoutGenerator({
       </div>
 
       {source === "diary" && (
-        <p className="px-1 text-[11px] text-muted-foreground">
+        <p className="px-1 text-xs text-muted-foreground">
           {entries.length === 0
             ? "Дневник пуст — план соберётся по профилю. Отмечайте тренировки, и он станет точнее."
             : `Учтём ${entries.length} ${entries.length === 1 ? "запись" : entries.length < 5 ? "записи" : "записей"}: приоритет — техники в процессе и те, что давно не отрабатывали.`}
@@ -402,7 +402,7 @@ function SourceTile({
         {icon}
         {title}
       </span>
-      <span className="text-[11px] text-muted-foreground">{desc}</span>
+      <span className="text-xs text-muted-foreground">{desc}</span>
     </button>
   );
 }

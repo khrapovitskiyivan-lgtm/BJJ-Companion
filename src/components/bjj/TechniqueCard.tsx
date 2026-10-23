@@ -46,7 +46,7 @@ export function TechniqueRow({
     >
       <span className="min-w-0">
         <span className="block truncate text-sm font-medium">{technique.nameRu}</span>
-        <span className="block truncate text-[11px] text-muted-foreground">
+        <span className="block truncate text-xs text-muted-foreground">
           {GROUP_LABEL[technique.group]} · {BELT_LABEL[technique.belt]} · сложность{" "}
           {technique.difficulty}/5
         </span>

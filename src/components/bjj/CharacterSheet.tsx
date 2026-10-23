@@ -74,10 +74,10 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
             style={{ width: `${Math.round((lvl.xpIntoLevel / lvl.xpForLevel) * 100)}%` }}
           />
         </div>
-        <p className="mt-1 text-[11px] text-muted-foreground">
+        <p className="mt-1 text-xs text-muted-foreground">
           {lvl.xpIntoLevel} / {lvl.xpForLevel} XP до LVL {lvl.level + 1}
         </p>
-        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
           Растёт от тренировок в дневнике, разбора и отработки. Зеркало твоей регулярности.
         </p>
       </div>
@@ -151,7 +151,7 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
               }}
             >
               <span className="text-sm font-semibold">{label}</span>
-              <span className="text-[10px] text-muted-foreground">{desc}</span>
+              <span className="text-xs text-muted-foreground">{desc}</span>
             </button>
           ))}
         </div>
@@ -196,7 +196,7 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
               На паузе с {pause.from}
               {pause.until ? ` · до ${pause.until}` : " · без срока"}
             </p>
-            <p className="mt-1 text-[11px] text-muted-foreground">План и серия заморожены. Вернёшься — встретим.</p>
+            <p className="mt-1 text-xs text-muted-foreground">План и серия заморожены. Вернёшься — встретим.</p>
             <button
               onClick={endPause}
               className="mt-3 rounded-xl border border-input bg-card px-3 py-2 text-sm font-medium transition hover:bg-muted"
@@ -256,7 +256,7 @@ export function CharacterSheet({ onClose }: { onClose: () => void }) {
                 <Icon className="h-4 w-4 shrink-0 text-foreground/80" strokeWidth={1.9} />
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-medium">{meta.ru}</span>
-                  <span className="block truncate text-[11px] text-muted-foreground">{meta.desc}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{meta.desc}</span>
                 </span>
                 {selected && <Check className="h-4 w-4 shrink-0 text-primary" />}
               </button>

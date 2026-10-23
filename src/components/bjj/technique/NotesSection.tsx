@@ -53,7 +53,7 @@ export function NotesSection({ techniqueId }: { techniqueId: number }) {
           Мои заметки
         </h2>
         {(dirty || saved) && (
-          <span className="text-[11px] text-muted-foreground">{dirty ? "Сохраняем…" : "Сохранено"}</span>
+          <span className="text-xs text-muted-foreground">{dirty ? "Сохраняем…" : "Сохранено"}</span>
         )}
       </div>
       <textarea

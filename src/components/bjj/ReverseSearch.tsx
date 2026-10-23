@@ -96,7 +96,7 @@ export function ReverseSearch({ onClose }: { onClose: () => void }) {
         <button
           type="button"
           onClick={back}
-          className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          className="-mx-2 mb-1 inline-flex min-h-11 items-center gap-1 px-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" /> Назад
         </button>

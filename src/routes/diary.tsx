@@ -339,7 +339,7 @@ function Diary() {
                     style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
                   >
                     <span className="min-w-0 flex-1 truncate">{t.nameRu}</span>
-                    <span className="shrink-0 text-[11px] text-muted-foreground">
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       {GROUP_LABEL[t.group]}
                     </span>
                   </button>
@@ -415,7 +415,7 @@ function Diary() {
                     style={{ borderLeft: `3px solid var(--belt-${t.belt})` }}
                   >
                     <span className="min-w-0 flex-1 truncate">{t.nameRu}</span>
-                    <span className="shrink-0 text-[11px] text-muted-foreground">
+                    <span className="shrink-0 text-xs text-muted-foreground">
                       {GROUP_LABEL[t.group]}
                     </span>
                   </button>
@@ -595,7 +595,7 @@ function Diary() {
           <li key={e.id} className="rounded-2xl border border-border bg-card p-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold">{formatDate(e.date)}</span>
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {e.intensity && <span>{INTENSITY.find((i) => i.key === e.intensity)?.label}</span>}
                 {e.rounds ? <span>{e.rounds} р.</span> : null}
                 {e.wellbeing ? (
@@ -651,7 +651,7 @@ function Diary() {
             </div>
             {e.caughtBy && e.caughtBy.length > 0 && (
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   <ShieldAlert className="h-3.5 w-3.5 text-destructive/70" />
                   Поймали тебя:
                 </span>

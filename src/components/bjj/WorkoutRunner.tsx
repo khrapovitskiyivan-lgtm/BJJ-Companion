@@ -43,7 +43,7 @@ export function WorkoutRunner({ workout, onExit }: { workout: Workout; onExit: (
 
   return (
     <div className="space-y-4">
-      <button onClick={onExit} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+      <button onClick={onExit} className="-mx-2 inline-flex min-h-11 items-center gap-1 px-2 text-xs text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-3.5 w-3.5" />
         К плану отработки
       </button>

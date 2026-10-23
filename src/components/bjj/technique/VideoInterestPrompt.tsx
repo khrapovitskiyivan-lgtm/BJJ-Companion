@@ -29,7 +29,7 @@ export function VideoInterestPrompt({ techniqueId }: { techniqueId: number }) {
           <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
             <Check className="h-4 w-4" />В приоритете съёмки
           </div>
-          <p className="mt-1.5 text-[11px] text-muted-foreground">
+          <p className="mt-1.5 text-xs text-muted-foreground">
             Отметки помогают выбрать, какие техники снять первыми.
           </p>
         </div>
