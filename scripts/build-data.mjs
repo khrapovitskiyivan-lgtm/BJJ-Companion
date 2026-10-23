@@ -169,37 +169,48 @@ for (const [key, entry] of Object.entries(videoUrls)) {
     errs.push(`video-urls id ${key}: access должен быть demo|pro, а не «${entry.access}»`);
 }
 
-// --- Проверка циклических зависимостей (в prerequisites) ---
-function detectCycles(techniques) {
-  const graph = new Map();
-  for (const t of techniques) graph.set(t.id, t.prerequisites);
+// --- Валидация графа и согласованности (по экспертизе базы, 2026-10-23) ---
+// prerequisites = «сначала изучить»: настоящий DAG, иначе ломаются isUnlocked и learningPath.
+const BELT_RANK = { white: 0, blue: 1, purple: 2, brown: 3, black: 4 };
+const byId = new Map(techniques.map((t) => [t.id, t]));
 
-  const visited = new Set();
-  const recStack = new Set();
-
-  function dfs(nodeId) {
-    if (recStack.has(nodeId)) return true;
-    if (visited.has(nodeId)) return false;
-    visited.add(nodeId);
-    recStack.add(nodeId);
-    for (const dep of graph.get(nodeId) || []) {
-      if (dfs(dep)) return true;
+// циклы: DFS с цветами, путь цикла в сообщении
+{
+  const color = new Map();
+  const stack = [];
+  const visit = (id) => {
+    color.set(id, 1);
+    stack.push(id);
+    for (const dep of byId.get(id)?.prerequisites ?? []) {
+      if (color.get(dep) === 1) {
+        errs.push(`цикл в prerequisites: ${[...stack.slice(stack.indexOf(dep)), dep].join(' -> ')}`);
+      } else if (!color.get(dep)) visit(dep);
     }
-    recStack.delete(nodeId);
-    return false;
-  }
-
-  const cycles = [];
-  for (const id of graph.keys()) {
-    if (!visited.has(id) && dfs(id)) cycles.push(id);
-  }
-  return cycles;
+    stack.pop();
+    color.set(id, 2);
+  };
+  for (const t of techniques) if (!color.get(t.id)) visit(t.id);
 }
 
-// Циклы в prerequisites — ПРЕДУПРЕЖДЕНИЕ, не ошибка: в BJJ связи часто взаимны.
-// Обходы графа (learningPath и т.п.) защищены visited-множеством. Отдельная задача —
-// почистить prerequisites до настоящего DAG, чтобы «доступно сейчас» разблокировалось корректно.
-const cycles = detectCycles(techniques);
+const warns = [];
+let asym = 0;
+for (const t of techniques) {
+  // пререквизит не выше поясом самой техники
+  for (const pid of t.prerequisites) {
+    const p = byId.get(pid);
+    if (p && BELT_RANK[p.belt] > BELT_RANK[t.belt])
+      errs.push(`id ${t.id} (${t.belt}): пререквизит ${pid} выше поясом (${p.belt})`);
+  }
+  // ADCC — no-gi: у приёма только в ги не может быть «легален в ADCC»
+  if (!t.noGi && t.legal_adcc !== false) errs.push(`id ${t.id}: ADCC легален, но приём только в ги`);
+  // пояс техники не ниже пояса легальности IBJJF
+  for (const k of ['legal_ibjjf_gi', 'legal_ibjjf_nogi']) {
+    if (typeof t[k] === 'string' && BELT_RANK[t[k]] > BELT_RANK[t.belt])
+      warns.push(`id ${t.id}: пояс ${t.belt} ниже легальности IBJJF (${k}=${t[k]})`);
+  }
+  // «откуда» без обратной ссылки «дальше» — только счётчик (полная симметрия раздула бы карту)
+  for (const s of t.setup_from) if (!byId.get(s)?.chain_to.includes(t.id)) asym++;
+}
 
 if (errs.length) {
   console.error('ОШИБКИ ДАННЫХ:');
@@ -209,9 +220,8 @@ if (errs.length) {
 
 console.log('✅ Все ссылки валидны');
 console.log('✅ Все обязательные поля заполнены');
-if (cycles.length > 0) {
-  console.warn(`⚠️  Циклы в prerequisites: ${cycles.length} техник (обходы защищены; см. задачу по чистке DAG)`);
-}
+for (const w of warns) console.warn(`⚠️  ${w}`);
+console.log(`ℹ️  «откуда» без обратной ссылки «дальше»: ${asym}`);
 
 // Лёгкая база (в стартовом бандле): всё, кроме текстов разборов. Из content остаются
 // только injuryRisk/tapWarning — их читают рекомендации и генератор тренировки.
