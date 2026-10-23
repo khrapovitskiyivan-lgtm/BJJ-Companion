@@ -1,6 +1,6 @@
 import { forwardRef, type SVGProps } from "react";
 
-// Шака 🤙 в стиле lucide (линейная, под currentColor — как остальные значки нав-бара).
+// Шака в стиле lucide (линейная, под currentColor — как остальные значки нав-бара).
 // База — HandMetal, у которого согнут указательный палец: остаются вытянутыми
 // большой и мизинец, остальные согнуты. В самом lucide такой иконки нет.
 export const ShakaIcon = forwardRef<SVGSVGElement, SVGProps<SVGSVGElement>>(

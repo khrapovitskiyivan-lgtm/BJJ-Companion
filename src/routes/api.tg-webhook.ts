@@ -85,10 +85,10 @@ async function sendGuide(chatId: number, token: string, caption: string): Promis
   });
 }
 
-// /mute и /unmute: security definer RPC тем же anon-ключом, что у приложения
+// /mute и /unmute: security definer RPC сервисным ключом (chat id доверенный: апдейт проверен секретом)
 async function setMuted(chatId: number, muted: boolean): Promise<boolean> {
   const url = process.env.VITE_SUPABASE_URL;
-  const key = process.env.VITE_SUPABASE_ANON_KEY;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return false;
   try {
     const r = await fetch(`${url}/rest/v1/rpc/bjj_tg_set_muted`, {
@@ -115,11 +115,11 @@ const MUTE_REPLIES: Record<string, { ok: string; fail: string; muted: boolean }>
   },
 };
 
-// /pause и /resume: тот же security-definer паттерн, что и mute (anon-ключ).
+// /pause и /resume: тот же security-definer паттерн, что и mute (сервисный ключ).
 // until: дата (сентинел 2099-12-31 для без-срока) на паузу, null — снять.
 async function setPause(chatId: number, until: string | null): Promise<boolean> {
   const url = process.env.VITE_SUPABASE_URL;
-  const key = process.env.VITE_SUPABASE_ANON_KEY;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return false;
   try {
     const r = await fetch(`${url}/rest/v1/rpc/bjj_tg_set_pause`, {
@@ -152,8 +152,9 @@ export const Route = createFileRoute("/api/tg-webhook")({
       POST: async ({ request }) => {
         const token = process.env.TELEGRAM_BOT_TOKEN;
         const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
-        if (!token) return new Response("not configured", { status: 500 });
-        if (secret && request.headers.get("x-telegram-bot-api-secret-token") !== secret) {
+        // без секрета не принимаем ничего: иначе любой шлёт поддельные апдейты
+        if (!token || !secret) return new Response("not configured", { status: 503 });
+        if (request.headers.get("x-telegram-bot-api-secret-token") !== secret) {
           return new Response("forbidden", { status: 403 });
         }
         try {

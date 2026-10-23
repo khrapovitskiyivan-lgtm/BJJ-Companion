@@ -16,8 +16,10 @@ function sign(fields: Record<string, string>, token: string): string {
 }
 
 const TOKEN = "123456:test-bot-token";
+// подпись свежая: валидатор отвергает initData старше суток
+const NOW = String(Math.floor(Date.now() / 1000));
 const FIELDS = {
-  auth_date: "1700000000",
+  auth_date: NOW,
   query_id: "AAH0abc",
   user: JSON.stringify({
     id: 42,
@@ -42,8 +44,13 @@ describe("validateInitData", () => {
 
   it("отвергает подделанные данные", () => {
     const good = sign(FIELDS, TOKEN);
-    const tampered = good.replace("auth_date=1700000000", "auth_date=1700000001");
+    const tampered = good.replace(`auth_date=${NOW}`, `auth_date=${Number(NOW) - 1}`);
     expect(validateInitData(tampered, TOKEN).ok).toBe(false);
+  });
+
+  it("отвергает просроченный initData даже с верной подписью", () => {
+    const stale = String(Math.floor(Date.now() / 1000) - 2 * 24 * 60 * 60);
+    expect(validateInitData(sign({ ...FIELDS, auth_date: stale }, TOKEN), TOKEN).ok).toBe(false);
   });
 
   it("отвергает без hash и пустой ввод", () => {

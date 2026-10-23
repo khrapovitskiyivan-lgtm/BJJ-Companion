@@ -158,7 +158,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
   }, [hydrated, profile.onboardingDone, pathname]);
 
   if (!hydrated) {
-    return <div className="min-h-screen bg-background" />;
+    return <div className="min-h-dvh bg-background" />;
   }
 
   // Гейт согласия: до онбординга и до любой отправки на сервер. Показывается,
@@ -195,7 +195,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-20">
+    <div className="min-h-dvh bg-background text-foreground pb-20">
       <header
         className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur"
         style={{ paddingTop: "env(safe-area-inset-top)" }}

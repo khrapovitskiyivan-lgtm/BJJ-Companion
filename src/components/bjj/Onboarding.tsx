@@ -48,7 +48,7 @@ export function Onboarding({
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-dvh bg-background text-foreground">
       {/* Прогресс-бар сверху */}
       <div className="fixed top-0 left-0 right-0 h-1 bg-muted">
         <div
@@ -57,7 +57,7 @@ export function Onboarding({
         />
       </div>
 
-      <div className="mx-auto flex min-h-screen max-w-xl flex-col justify-between px-6 py-10">
+      <div className="mx-auto flex min-h-dvh max-w-xl flex-col justify-between px-6 py-10">
         {/* Индикатор шага */}
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>Шаг {step + 1} из {totalSteps}</span>

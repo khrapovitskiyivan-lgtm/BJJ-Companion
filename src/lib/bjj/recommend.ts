@@ -132,7 +132,7 @@ export function learningPath(target: Technique, progress: ProgressMap): Techniqu
     visited.add(current.id);
     chain.push(current);
     // непройденные пререквизиты, ещё не попавшие в цепочку
-    const prereqs = current.prerequisites
+    const prereqs: Technique[] = current.prerequisites
       .map((id) => TECH_BY_ID[id])
       .filter((p): p is Technique => !!p && progress[p.id] !== "done" && !visited.has(p.id));
     if (!prereqs.length) break;

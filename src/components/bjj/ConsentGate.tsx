@@ -17,8 +17,8 @@ export function ConsentGate({ onAccept, onLocal }: { onAccept: () => void; onLoc
   const [doc, setDoc] = useState<null | "privacy" | "terms">(null);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen max-w-xl flex-col justify-between px-6 py-10">
+    <div className="min-h-dvh bg-background text-foreground">
+      <div className="mx-auto flex min-h-dvh max-w-xl flex-col justify-between px-6 py-10">
         {view === "intro" ? (
           <>
             <div className="flex-1 flex flex-col justify-center space-y-6 py-8">

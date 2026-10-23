@@ -16,7 +16,7 @@ import { Button, buttonClass } from "../components/bjj/ui";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
         <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
@@ -33,7 +33,7 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
@@ -41,7 +41,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
           This page didn't load
@@ -94,8 +94,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Компаньон для бразильского джиу-джитсу: библиотека техник, генератор тренировок и трекинг прогресса по поясам." },
       { property: "og:description", content: "Компаньон для бразильского джиу-джитсу: библиотека техник, генератор тренировок и трекинг прогресса по поясам." },
       { name: "twitter:description", content: "Компаньон для бразильского джиу-джитсу: библиотека техник, генератор тренировок и трекинг прогресса по поясам." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ea3ba16d-0d89-4c14-8ec9-220fdd877148/id-preview-f9b26ae7--1461c968-c6f7-47db-bb4d-611f39c197ff.lovable.app-1783325590165.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ea3ba16d-0d89-4c14-8ec9-220fdd877148/id-preview-f9b26ae7--1461c968-c6f7-47db-bb4d-611f39c197ff.lovable.app-1783325590165.png" },
+      { property: "og:image", content: "https://bjj-companionkhr.vercel.app/og.png" },
+      { name: "twitter:image", content: "https://bjj-companionkhr.vercel.app/og.png" },
     ],
     links: [
       {

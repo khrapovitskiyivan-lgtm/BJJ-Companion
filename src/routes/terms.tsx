@@ -10,7 +10,7 @@ export const Route = createFileRoute("/terms")({
 function TermsPage() {
   const router = useRouter();
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-dvh bg-background text-foreground">
       <header
         className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur"
         style={{ paddingTop: "env(safe-area-inset-top)" }}

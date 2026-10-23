@@ -61,7 +61,7 @@
 Уровень: критично, блокирует активную раскрутку.
 
 **К2. Утёкший живой секрет в git (инцидент раскрытия).**
-Факт: `bjj-map/bot.py:9` - `TOKEN = "8861636500:AAHK3m1irqdPetr0uJREizHlw4XqoLiMaMc"`; строки 12-13 - `SUPABASE_URL`/`SUPABASE_KEY` (anon) проекта `ifrgxxcbkzuwfiuihgev`. Файл git-tracked, remote `github.com/khrapovitskiyivan-lgtm/bjj-map.git`, есть история коммитов («Update bot.py» x5) - секрет в истории, не только в HEAD.
+Факт: `bjj-map/bot.py:9` - `TOKEN = "<redacted>"`; строки 12-13 - `SUPABASE_URL`/`SUPABASE_KEY` (anon) проекта `ifrgxxcbkzuwfiuihgev`. Файл git-tracked, remote `github.com/khrapovitskiyivan-lgtm/bjj-map.git`, есть история коммитов («Update bot.py» x5) - секрет в истории, не только в HEAD.
 Оценка: живой bot-токен = полный контроль над ботом (чтение сообщений, рассылка от его имени, слив chat_id пользователей). Даже если это ДРУГОЙ бот и ДРУГОЙ Supabase-проект, чем прод (`vudxcyudgcsjyifsgceb`) - это раскрытие действующего секрета. Anon-key сам по себе низкорисковый при включённом RLS, но в связке с токеном - инцидент. Старый прототип к тому же линковал `telegram_id` -> прогресс в `bjj_progress` (bot.py:126) - исторический ПДн-стор.
 Рекомендация (немедленно, до раскрутки):
 1. Отозвать bot-токен в @BotFather (`/revoke` или /token заново) - старый мгновенно инвалидируется.

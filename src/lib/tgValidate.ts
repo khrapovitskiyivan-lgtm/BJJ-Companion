@@ -6,6 +6,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 // data_check_string — все поля кроме hash, отсортированные, "key=value" через \n.
 // Только для сервера (использует node:crypto) — в клиентский бандл не тянуть.
 
+const MAX_AGE_SEC = 24 * 60 * 60;
+
 export interface TgInitUser {
   id: number;
   first_name?: string;
@@ -44,6 +46,11 @@ export function validateInitData(
     equal = false;
   }
   if (!equal) return { ok: false };
+
+  // свежесть: утёкший однажды initData не должен работать вечно (окно сутки)
+  const authDate = Number(params.get("auth_date"));
+  const age = Date.now() / 1000 - authDate;
+  if (!Number.isFinite(authDate) || age > MAX_AGE_SEC || age < -300) return { ok: false };
 
   let user: TgInitUser | undefined;
   const raw = params.get("user");

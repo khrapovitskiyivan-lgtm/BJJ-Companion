@@ -377,9 +377,10 @@ export function useFavorites() {
 }
 
 // === CLOUD SYNC (best-effort, 3s timeout) ===
-async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
+// Построители Supabase — thenable, не Promise: оборачиваем, чтобы был .catch
+async function withTimeout<T>(p: PromiseLike<T>, ms: number): Promise<T | null> {
   return await Promise.race([
-    p.catch(() => null),
+    Promise.resolve(p).catch(() => null),
     new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
   ]);
 }

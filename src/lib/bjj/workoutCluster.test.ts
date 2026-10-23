@@ -99,9 +99,12 @@ describe("pickAnchor", () => {
     expect(a).toBeNull();
   });
   it("diary-источник берёт свежую технику из дневника", () => {
+    // today передаём явно: без него окно RECENT_DAYS считается от системной даты
+    // и тест зеленеет только первые три недели после написания (как в recentDiaryIds).
+    const today = new Date(2026, 6, 31); // 2026-07-31
     const av = [T({ id: 10 }), T({ id: 99 })];
     const entries: DiaryEntry[] = [{ id: "a", date: "2026-07-30", techniqueIds: [99] }];
-    const a = pickAnchor({ available: av, favorites: {}, progress: {}, entries, styleSet: new Set(), source: "diary" });
+    const a = pickAnchor({ available: av, favorites: {}, progress: {}, entries, styleSet: new Set(), source: "diary", today });
     expect(a?.id).toBe(99);
   });
 });

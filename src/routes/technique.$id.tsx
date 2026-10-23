@@ -19,7 +19,6 @@ import {
   Share2,
   ShieldAlert,
   Sparkles,
-  History,
   Crown,
 } from "lucide-react";
 
@@ -114,20 +113,6 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
   // Избранное: корона в шапке карточки
   const { favorites, toggleFavorite } = useFavorites();
   const isFav = !!favorites[tech.id];
-
-  const practiceHistory = useMemo(() => {
-    const history: { date: string }[] = [];
-    try {
-      const raw = localStorage.getItem("bjj_practice_history");
-      if (raw) {
-        const all: Record<number, string[]> = JSON.parse(raw);
-        (all[tech.id] || []).forEach((date) => history.push({ date }));
-      }
-    } catch {
-      /* ignore */
-    }
-    return history.slice(-5).reverse();
-  }, [tech.id]);
 
   // Персональные сигналы карточки-тренера (за гейтом гидратации)
   const byId = useMemo(() => new Map(TECHNIQUES.map((t) => [t.id, t])), []);
@@ -372,27 +357,6 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
         </div>
       )}
 
-      {practiceHistory.length > 0 && (
-        <section className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-            <History className="h-4 w-4 text-primary" />
-            История практики
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {practiceHistory.map((h, i) => (
-              <span
-                key={i}
-                className="rounded-full bg-muted px-2.5 py-1 text-[11px] text-muted-foreground"
-              >
-                {new Date(h.date).toLocaleDateString("ru-RU", {
-                  day: "numeric",
-                  month: "short",
-                })}
-              </span>
-            ))}
-          </div>
-        </section>
-      )}
 
       {content && (
         <>

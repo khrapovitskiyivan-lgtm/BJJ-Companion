@@ -1,6 +1,5 @@
-import { supabase } from "@/lib/supabase";
 import { getDeviceId, hasConsent } from "./store";
-import { getTelegramUser, isTelegram } from "@/lib/telegram";
+import { getTelegram, getTelegramUser, isTelegram } from "@/lib/telegram";
 import { weekReport } from "./tgRemind";
 import { pausedUntilForBot } from "./pause";
 import { dayKey } from "./plan";
@@ -9,6 +8,7 @@ import type { DiaryEntry, Frequency, PausePeriod } from "./types";
 // Отчёт для напоминаний бота: только внутри Telegram, fire-and-forget.
 // Уходят частота и счётчики недели — без содержимого дневника.
 // Повтор при неизменных данных не чаще раза в 12 часов.
+// Через доверенный роут /api/tg-report: tg id сервер берёт из подписи initData.
 
 const KEY = "bjj.tgReport.v1";
 const TTL = 12 * 60 * 60 * 1000;
@@ -22,32 +22,36 @@ export function reportTgPlan(
   if (typeof window === "undefined" || !isTelegram()) return;
   if (!hasConsent()) return; // chat_id и план на сервер только с согласия
   const u = getTelegramUser();
-  if (!u?.id) return;
+  const initData = getTelegram()?.initData;
+  if (!u?.id || !initData) return;
   try {
     const r = weekReport(entries, new Date());
     const payload = {
-      p_tg: u.id,
-      p_device: getDeviceId(),
-      p_frequency: frequency ?? null,
-      p_week_start: r.weekStart,
-      p_week_done: r.weekDone,
-      p_last_entry: r.lastEntry,
-      p_training_days: trainingDays && trainingDays.length ? trainingDays : [0, 1, 2, 3, 4, 5],
-      p_paused_until: pausedUntilForBot(pauses, dayKey(new Date())),
+      device: getDeviceId(),
+      frequency: frequency ?? null,
+      week_start: r.weekStart,
+      week_done: r.weekDone,
+      last_entry: r.lastEntry,
+      training_days: trainingDays && trainingDays.length ? trainingDays : [0, 1, 2, 3, 4, 5],
+      paused_until: pausedUntilForBot(pauses, dayKey(new Date())),
     };
     const hash = JSON.stringify([
-      payload.p_frequency,
-      payload.p_week_start,
-      payload.p_week_done,
-      payload.p_last_entry,
-      payload.p_training_days,
-      payload.p_paused_until,
+      payload.frequency,
+      payload.week_start,
+      payload.week_done,
+      payload.last_entry,
+      payload.training_days,
+      payload.paused_until,
     ]);
     const prev = JSON.parse(localStorage.getItem(KEY) ?? "null") as { hash: string; at: number } | null;
     if (prev && prev.hash === hash && Date.now() - prev.at < TTL) return;
-    void Promise.resolve(supabase.rpc("bjj_tg_report", payload))
+    void fetch("/api/tg-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ initData, payload }),
+    })
       .then((res) => {
-        if (res && !res.error) localStorage.setItem(KEY, JSON.stringify({ hash, at: Date.now() }));
+        if (res.ok) localStorage.setItem(KEY, JSON.stringify({ hash, at: Date.now() }));
       })
       .catch(() => {});
   } catch {

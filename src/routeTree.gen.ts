@@ -9,77 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WorkoutRouteImport } from './routes/workout'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as StarterRouteImport } from './routes/starter'
-import { Route as SituationsRouteImport } from './routes/situations'
-import { Route as ProgressRouteImport } from './routes/progress'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as MapRouteImport } from './routes/map'
-import { Route as LibraryRouteImport } from './routes/library'
-import { Route as GlossaryRouteImport } from './routes/glossary'
-import { Route as FlowtestRouteImport } from './routes/flowtest'
-import { Route as DiaryRouteImport } from './routes/diary'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as TechniqueIdRouteImport } from './routes/technique.$id'
-import { Route as ApiTgWebhookRouteImport } from './routes/api.tg-webhook'
-import { Route as ApiTgCronRouteImport } from './routes/api.tg-cron'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as DiaryRouteImport } from './routes/diary'
+import { Route as FlowtestRouteImport } from './routes/flowtest'
+import { Route as GlossaryRouteImport } from './routes/glossary'
+import { Route as LibraryRouteImport } from './routes/library'
+import { Route as MapRouteImport } from './routes/map'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ProgressRouteImport } from './routes/progress'
+import { Route as SituationsRouteImport } from './routes/situations'
+import { Route as StarterRouteImport } from './routes/starter'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as WorkoutRouteImport } from './routes/workout'
 import { Route as ApiPartnersRouteImport } from './routes/api.partners'
+import { Route as ApiTgCronRouteImport } from './routes/api.tg-cron'
+import { Route as ApiTgReportRouteImport } from './routes/api.tg-report'
+import { Route as ApiTgWebhookRouteImport } from './routes/api.tg-webhook'
+import { Route as TechniqueIdRouteImport } from './routes/technique.$id'
 
-const WorkoutRoute = WorkoutRouteImport.update({
-  id: '/workout',
-  path: '/workout',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StarterRoute = StarterRouteImport.update({
-  id: '/starter',
-  path: '/starter',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SituationsRoute = SituationsRouteImport.update({
-  id: '/situations',
-  path: '/situations',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProgressRoute = ProgressRouteImport.update({
-  id: '/progress',
-  path: '/progress',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MapRoute = MapRouteImport.update({
-  id: '/map',
-  path: '/map',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LibraryRoute = LibraryRouteImport.update({
-  id: '/library',
-  path: '/library',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GlossaryRoute = GlossaryRouteImport.update({
-  id: '/glossary',
-  path: '/glossary',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FlowtestRoute = FlowtestRouteImport.update({
-  id: '/flowtest',
-  path: '/flowtest',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DiaryRoute = DiaryRouteImport.update({
-  id: '/diary',
-  path: '/diary',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -87,19 +38,64 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const DiaryRoute = DiaryRouteImport.update({
+  id: '/diary',
+  path: '/diary',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TechniqueIdRoute = TechniqueIdRouteImport.update({
-  id: '/technique/$id',
-  path: '/technique/$id',
+const FlowtestRoute = FlowtestRouteImport.update({
+  id: '/flowtest',
+  path: '/flowtest',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiTgWebhookRoute = ApiTgWebhookRouteImport.update({
-  id: '/api/tg-webhook',
-  path: '/api/tg-webhook',
+const GlossaryRoute = GlossaryRouteImport.update({
+  id: '/glossary',
+  path: '/glossary',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MapRoute = MapRouteImport.update({
+  id: '/map',
+  path: '/map',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgressRoute = ProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SituationsRoute = SituationsRouteImport.update({
+  id: '/situations',
+  path: '/situations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StarterRoute = StarterRouteImport.update({
+  id: '/starter',
+  path: '/starter',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkoutRoute = WorkoutRouteImport.update({
+  id: '/workout',
+  path: '/workout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPartnersRoute = ApiPartnersRouteImport.update({
+  id: '/api/partners',
+  path: '/api/partners',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiTgCronRoute = ApiTgCronRouteImport.update({
@@ -107,9 +103,19 @@ const ApiTgCronRoute = ApiTgCronRouteImport.update({
   path: '/api/tg-cron',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPartnersRoute = ApiPartnersRouteImport.update({
-  id: '/api/partners',
-  path: '/api/partners',
+const ApiTgReportRoute = ApiTgReportRouteImport.update({
+  id: '/api/tg-report',
+  path: '/api/tg-report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTgWebhookRoute = ApiTgWebhookRouteImport.update({
+  id: '/api/tg-webhook',
+  path: '/api/tg-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TechniqueIdRoute = TechniqueIdRouteImport.update({
+  id: '/technique/$id',
+  path: '/technique/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/workout': typeof WorkoutRoute
   '/api/partners': typeof ApiPartnersRoute
   '/api/tg-cron': typeof ApiTgCronRoute
+  '/api/tg-report': typeof ApiTgReportRoute
   '/api/tg-webhook': typeof ApiTgWebhookRoute
   '/technique/$id': typeof TechniqueIdRoute
 }
@@ -148,6 +155,7 @@ export interface FileRoutesByTo {
   '/workout': typeof WorkoutRoute
   '/api/partners': typeof ApiPartnersRoute
   '/api/tg-cron': typeof ApiTgCronRoute
+  '/api/tg-report': typeof ApiTgReportRoute
   '/api/tg-webhook': typeof ApiTgWebhookRoute
   '/technique/$id': typeof TechniqueIdRoute
 }
@@ -168,6 +176,7 @@ export interface FileRoutesById {
   '/workout': typeof WorkoutRoute
   '/api/partners': typeof ApiPartnersRoute
   '/api/tg-cron': typeof ApiTgCronRoute
+  '/api/tg-report': typeof ApiTgReportRoute
   '/api/tg-webhook': typeof ApiTgWebhookRoute
   '/technique/$id': typeof TechniqueIdRoute
 }
@@ -189,6 +198,7 @@ export interface FileRouteTypes {
     | '/workout'
     | '/api/partners'
     | '/api/tg-cron'
+    | '/api/tg-report'
     | '/api/tg-webhook'
     | '/technique/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -208,6 +218,7 @@ export interface FileRouteTypes {
     | '/workout'
     | '/api/partners'
     | '/api/tg-cron'
+    | '/api/tg-report'
     | '/api/tg-webhook'
     | '/technique/$id'
   id:
@@ -227,6 +238,7 @@ export interface FileRouteTypes {
     | '/workout'
     | '/api/partners'
     | '/api/tg-cron'
+    | '/api/tg-report'
     | '/api/tg-webhook'
     | '/technique/$id'
   fileRoutesById: FileRoutesById
@@ -247,87 +259,18 @@ export interface RootRouteChildren {
   WorkoutRoute: typeof WorkoutRoute
   ApiPartnersRoute: typeof ApiPartnersRoute
   ApiTgCronRoute: typeof ApiTgCronRoute
+  ApiTgReportRoute: typeof ApiTgReportRoute
   ApiTgWebhookRoute: typeof ApiTgWebhookRoute
   TechniqueIdRoute: typeof TechniqueIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/workout': {
-      id: '/workout'
-      path: '/workout'
-      fullPath: '/workout'
-      preLoaderRoute: typeof WorkoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/starter': {
-      id: '/starter'
-      path: '/starter'
-      fullPath: '/starter'
-      preLoaderRoute: typeof StarterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/situations': {
-      id: '/situations'
-      path: '/situations'
-      fullPath: '/situations'
-      preLoaderRoute: typeof SituationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/progress': {
-      id: '/progress'
-      path: '/progress'
-      fullPath: '/progress'
-      preLoaderRoute: typeof ProgressRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/map': {
-      id: '/map'
-      path: '/map'
-      fullPath: '/map'
-      preLoaderRoute: typeof MapRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/library': {
-      id: '/library'
-      path: '/library'
-      fullPath: '/library'
-      preLoaderRoute: typeof LibraryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/glossary': {
-      id: '/glossary'
-      path: '/glossary'
-      fullPath: '/glossary'
-      preLoaderRoute: typeof GlossaryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/flowtest': {
-      id: '/flowtest'
-      path: '/flowtest'
-      fullPath: '/flowtest'
-      preLoaderRoute: typeof FlowtestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/diary': {
-      id: '/diary'
-      path: '/diary'
-      fullPath: '/diary'
-      preLoaderRoute: typeof DiaryRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -337,25 +280,88 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/diary': {
+      id: '/diary'
+      path: '/diary'
+      fullPath: '/diary'
+      preLoaderRoute: typeof DiaryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/technique/$id': {
-      id: '/technique/$id'
-      path: '/technique/$id'
-      fullPath: '/technique/$id'
-      preLoaderRoute: typeof TechniqueIdRouteImport
+    '/flowtest': {
+      id: '/flowtest'
+      path: '/flowtest'
+      fullPath: '/flowtest'
+      preLoaderRoute: typeof FlowtestRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/tg-webhook': {
-      id: '/api/tg-webhook'
-      path: '/api/tg-webhook'
-      fullPath: '/api/tg-webhook'
-      preLoaderRoute: typeof ApiTgWebhookRouteImport
+    '/glossary': {
+      id: '/glossary'
+      path: '/glossary'
+      fullPath: '/glossary'
+      preLoaderRoute: typeof GlossaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/map': {
+      id: '/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof MapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/progress': {
+      id: '/progress'
+      path: '/progress'
+      fullPath: '/progress'
+      preLoaderRoute: typeof ProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/situations': {
+      id: '/situations'
+      path: '/situations'
+      fullPath: '/situations'
+      preLoaderRoute: typeof SituationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/starter': {
+      id: '/starter'
+      path: '/starter'
+      fullPath: '/starter'
+      preLoaderRoute: typeof StarterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workout': {
+      id: '/workout'
+      path: '/workout'
+      fullPath: '/workout'
+      preLoaderRoute: typeof WorkoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/partners': {
+      id: '/api/partners'
+      path: '/api/partners'
+      fullPath: '/api/partners'
+      preLoaderRoute: typeof ApiPartnersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/tg-cron': {
@@ -365,11 +371,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTgCronRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/partners': {
-      id: '/api/partners'
-      path: '/api/partners'
-      fullPath: '/api/partners'
-      preLoaderRoute: typeof ApiPartnersRouteImport
+    '/api/tg-report': {
+      id: '/api/tg-report'
+      path: '/api/tg-report'
+      fullPath: '/api/tg-report'
+      preLoaderRoute: typeof ApiTgReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tg-webhook': {
+      id: '/api/tg-webhook'
+      path: '/api/tg-webhook'
+      fullPath: '/api/tg-webhook'
+      preLoaderRoute: typeof ApiTgWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/technique/$id': {
+      id: '/technique/$id'
+      path: '/technique/$id'
+      fullPath: '/technique/$id'
+      preLoaderRoute: typeof TechniqueIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -391,6 +411,7 @@ const rootRouteChildren: RootRouteChildren = {
   WorkoutRoute: WorkoutRoute,
   ApiPartnersRoute: ApiPartnersRoute,
   ApiTgCronRoute: ApiTgCronRoute,
+  ApiTgReportRoute: ApiTgReportRoute,
   ApiTgWebhookRoute: ApiTgWebhookRoute,
   TechniqueIdRoute: TechniqueIdRoute,
 }
