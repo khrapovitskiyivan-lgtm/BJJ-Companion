@@ -1,7 +1,7 @@
 // Генератор данных: data/techniques.csv → src/lib/bjj/generated/techniques.json + technique-content.json
 // Источник правды — CSV (редактируется через Google Sheets / db-rework).
 // Запуск: node scripts/build-data.mjs
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { deriveAllStyles } from './derive-styles.mjs';
@@ -44,6 +44,13 @@ const csv = readFileSync(join(ROOT, 'data', 'techniques.csv'), 'utf8').replace(/
 const videoUrls = JSON.parse(
   readFileSync(join(ROOT, 'data', 'video-urls.json'), 'utf8'),
 );
+// Видео из Telegram-канала тренера: techId -> [{ post, videos, date, text }].
+// Размечено по подписям альбомов; на карточке — ссылки на посты (t.me/<channel>/<post>).
+const channelPath = join(ROOT, 'data', 'channel-videos.json');
+const channelData = existsSync(channelPath)
+  ? JSON.parse(readFileSync(channelPath, 'utf8'))
+  : { channel: null, byTechnique: {} };
+
 // Поисковые алиасы (сленг сообщества -> карточка): id -> string[]
 const aliasMap = JSON.parse(
   readFileSync(join(ROOT, 'data', 'aliases.json'), 'utf8'),
@@ -94,6 +101,8 @@ const techniques = recs.map((r) => {
     videoAccess: videoUrls[r.id]
       ? deriveVideoAccess(videoUrls[r.id].access, starterIds.has(parseInt(r.id, 10)))
       : undefined,
+    channelVideoCount:
+      (channelData.byTechnique[r.id] ?? []).reduce((n, a) => n + (a.videos || 0), 0) || undefined,
     content: {
       ru: {
         concept: r.concept,
@@ -212,6 +221,17 @@ const light = techniques.map(({ content, ...rest }) => ({
   content: { ru: { injuryRisk: content.ru.injuryRisk, tapWarning: content.ru.tapWarning } },
 }));
 const contentById = Object.fromEntries(techniques.map((t) => [t.id, t.content]));
+// Видео канала: проверка ссылок на техники, отдельный ленивый файл
+const knownIds = new Set(techniques.map((t) => String(t.id)));
+for (const id of Object.keys(channelData.byTechnique)) {
+  if (!knownIds.has(id)) errs.push(`channel-videos: техника ${id} не существует`);
+}
+if (errs.length) { console.error(errs.join(String.fromCharCode(10))); process.exit(1); }
+writeFileSync(
+  join(ROOT, 'src', 'lib', 'bjj', 'generated', 'channel-videos.json'),
+  JSON.stringify({ channel: channelData.channel, byTechnique: channelData.byTechnique }),
+  'utf8',
+);
 writeFileSync(join(ROOT, 'src', 'lib', 'bjj', 'generated', 'techniques.json'), JSON.stringify(light), 'utf8');
 writeFileSync(join(ROOT, 'src', 'lib', 'bjj', 'generated', 'technique-content.json'), JSON.stringify(contentById), 'utf8');
 console.log(`OK: ${techniques.length} техник → generated/techniques.json (+ тексты в technique-content.json)`);

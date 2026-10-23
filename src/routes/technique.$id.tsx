@@ -26,6 +26,7 @@ import {
 import { Breadcrumbs } from "@/components/bjj/technique/Breadcrumbs";
 import { VideoBlock } from "@/components/bjj/technique/VideoBlock";
 import { VideoInterestPrompt } from "@/components/bjj/technique/VideoInterestPrompt";
+import { ChannelVideos } from "@/components/bjj/technique/ChannelVideos";
 import {
   MechanismSection,
   InsightSection,
@@ -300,10 +301,12 @@ function TechniqueDetail({ tech }: { tech: Technique }) {
       {/* Под описанием: видео-разбор Bunny (если снято) или тихий крючок «нужен видео-разбор».
           Демо-фаза: любое снятое видео открыто всем. Фаза 1 монетизации подключит здесь замок:
           videoId && (videoAccess === "demo" || userIsPro) ? VideoBlock : videoId ? Paywall : Prompt. */}
-      {videoId ? (
-        <VideoBlock videoId={videoId} title={tech.nameRu} />
+      {videoId && <VideoBlock videoId={videoId} title={tech.nameRu} />}
+      {/* Видео с тренировок из канала тренера; заглушка «снимаем разборы» — только если нет ничего */}
+      {tech.channelVideoCount ? (
+        <ChannelVideos techniqueId={tech.id} />
       ) : (
-        <VideoInterestPrompt techniqueId={tech.id} />
+        !videoId && <VideoInterestPrompt techniqueId={tech.id} />
       )}
 
       {/* Личные заметки — сразу после описания/видео: свои детали ценнее справочных */}

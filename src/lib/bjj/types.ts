@@ -84,6 +84,9 @@ export interface Technique {
   // videoAccess: "demo" (бесплатно, выводится из стартового набора) | "pro".
   videoId?: string;
   videoAccess?: "demo" | "pro";
+  // Сколько видео из Telegram-канала тренера привязано к технике (сами ссылки —
+  // ленивый generated/channel-videos.json, грузит ChannelVideos на странице техники).
+  channelVideoCount?: number;
 }
 
 // Цель тренировок и частота — из онбординга, влияют на рекомендации.
