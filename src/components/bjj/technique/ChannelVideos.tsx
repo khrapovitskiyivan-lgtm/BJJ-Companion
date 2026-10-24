@@ -81,8 +81,9 @@ export function ChannelVideos({ techniqueId, fallback }: { techniqueId: number; 
     void Promise.all([loadChannel(), loadLive(techniqueId)]).then(([d, live]) => {
       if (!alive) return;
       const known = d.byTechnique[String(techniqueId)] ?? [];
-      const seen = new Set(known.map((a) => a.post));
-      const albums = [...known, ...live.filter((a) => !seen.has(a.post))].sort((a, b) => b.post - a.post);
+      // бот хранит сообщение с подписью, а оно бывает не первым в альбоме: id внутри альбома = тот же альбом
+      const inKnown = (p: number) => known.some((k) => p >= k.post && p < k.post + Math.max(k.videos, 1));
+      const albums = [...known, ...live.filter((a) => !inKnown(a.post))].sort((a, b) => b.post - a.post);
       setData(d.channel && albums.length ? { channel: d.channel, albums } : null);
       setLoaded(true);
     });
