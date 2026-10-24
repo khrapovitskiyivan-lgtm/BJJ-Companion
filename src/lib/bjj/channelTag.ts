@@ -23,6 +23,16 @@ const OVERRIDE: Record<string, string> = {
   дип_халф_гард_свип: "свип_из_дип_халфа",
 };
 
+// Свои теги владельца канала (синонимы): распознаются как тег той же техники
+export const OWNER_ALIAS: Record<string, string> = {
+  "#батерфляй": "#баттерфляй",
+  "#ахилл": "#прямой_на_стопу",
+  "#ахиллес": "#прямой_на_стопу",
+  "#кимура_трэп": "#кимура_контроль",
+  "#подъем_из_гарда": "#подъем_в_гарде",
+  "#обратный_рычаг_локтя": "#уде_гатаме",
+};
+
 // Тег техники: короткое имя, «Играешь/Держишь X» -> X, «Проходишь X» -> проход_X
 export function techniqueTag(t: Pick<Technique, "label">): string {
   const short = t.label.split(" - ").pop()!.trim();
@@ -53,6 +63,11 @@ export function buildChannelIndex(techniques: Technique[]): ChannelIndex {
   for (const t of [...techniques].sort((a, b) => a.id - b.id)) {
     const tag = techniqueTag(t);
     if (!byTag.has(tag)) byTag.set(tag, t.id);
+  }
+  // теги, которые владелец канала ставит сам, -> наш тег той же техники
+  for (const [own, canon] of Object.entries(OWNER_ALIAS)) {
+    const id = byTag.get(canon);
+    if (id !== undefined && !byTag.has(own)) byTag.set(own, id);
   }
   const phrases: ChannelIndex["phrases"] = [];
   for (const t of techniques) {
@@ -104,5 +119,8 @@ export function matchCaption(text: string, idx: ChannelIndex): ChannelMatch {
 export function missingTags(text: string, ids: number[], techById: Record<number, Technique>): string[] {
   const have = text.toLowerCase().replace(/ё/g, "е");
   const tags = [...new Set(ids.map((id) => techById[id]).filter(Boolean).map((t) => techniqueTag(t)))];
-  return tags.filter((tg) => !new RegExp(`${tg}(?![a-zа-я0-9_])`).test(have));
+  const present = (tg: string) => new RegExp(`${tg}(?![a-zа-я0-9_])`).test(have);
+  // синоним владельца уже стоит: не дописываем наш тег, иначе задвоение
+  const viaAlias = (tg: string) => Object.entries(OWNER_ALIAS).some(([own, c]) => c === tg && present(own));
+  return tags.filter((tg) => !present(tg) && !viaAlias(tg));
 }
