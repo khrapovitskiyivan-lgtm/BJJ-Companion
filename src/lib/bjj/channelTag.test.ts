@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { TECHNIQUES, TECH_BY_ID } from "./data";
-import { buildChannelIndex, matchCaption, missingTags, techniqueTag } from "./channelTag";
+import { buildAppLine, buildChannelIndex, matchCaption, missingTags, stripAppLine, techniqueTag } from "./channelTag";
 import fixture from "./channelTag.fixture.json";
 
 const idx = buildChannelIndex(TECHNIQUES);
@@ -41,5 +41,23 @@ describe("missingTags", () => {
     const t33 = techniqueTag(TECH_BY_ID[33]);
     expect(missingTags(`текст ${t33}`, [33], TECH_BY_ID)).toEqual([]);
     expect(missingTags("текст #омоплата_x", [33], TECH_BY_ID)).toEqual([t33]);
+  });
+});
+
+describe("строка со ссылками на карточки", () => {
+  it("до трёх техник, смещения указывают на названия", () => {
+    const { line, links } = buildAppLine([90, 703, 93, 94], TECH_BY_ID);
+    expect(links).toHaveLength(3);
+    expect(line.slice(links[0].offset, links[0].offset + links[0].length)).toBe(TECH_BY_ID[90].title.split(" (")[0]);
+    expect(links[1].url).toBe("https://t.me/companionminiapp_bot?startapp=t703");
+  });
+  it("без техник: ссылка на бота", () => {
+    expect(buildAppLine([], TECH_BY_ID).links[0].url).toBe("https://t.me/companionminiapp_bot");
+  });
+  it("снимает новую и старую строку, остальной текст не трогает", () => {
+    const body = "Проход\n\n#нислайс";
+    expect(stripAppLine(body + "\n\n" + buildAppLine([90], TECH_BY_ID).line)).toBe(body);
+    expect(stripAppLine(body + "\n\nВсе техники и дневник тренировок: @companionminiapp_bot")).toBe(body);
+    expect(stripAppLine(body)).toBe(body);
   });
 });

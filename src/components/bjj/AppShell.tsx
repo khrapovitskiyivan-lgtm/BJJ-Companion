@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { useLocation } from "@tanstack/react-router";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { BottomNav } from "./BottomNav";
 import { Onboarding } from "./Onboarding";
 import { ConsentGate } from "./ConsentGate";
@@ -26,8 +26,14 @@ import {
   setPendingInvite,
 } from "@/lib/bjj/partners";
 import { track } from "@/lib/bjj/telemetry";
+import { TECH_BY_ID } from "@/lib/bjj/data";
+import { techniqueFromStartParam } from "@/lib/bjj/share";
 import { initTelegram, haptic, markThemeManual, isTelegram, getStartParam } from "@/lib/telegram";
 import { Moon, Sun, Settings } from "lucide-react";
+
+// Переход по ссылке на карточку из поста канала: один раз за запуск webview
+// (AppShell перемонтируется на каждом переходе, start_param живёт всю сессию)
+let deepLinkDone = false;
 
 // Инициалы из имени для фоллбэк-аватара (когда фото из Telegram недоступно).
 export function initials(name: string): string {
@@ -62,6 +68,7 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
   const { entries, practiceCount } = useDiary();
   const { reviewed } = useReviewed();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -76,6 +83,14 @@ export function AppShell({ children, wide = false }: { children: ReactNode; wide
     const code = getStartParam();
     if (code && /^[A-Z0-9]{8}$/.test(code)) setPendingInvite(code);
   }, [hydrated]);
+
+  // Ссылка на карточку (startapp=t<id>): новичок сначала проходит онбординг, потом в карточку
+  useEffect(() => {
+    if (!hydrated || !profile.onboardingDone || deepLinkDone) return;
+    const id = techniqueFromStartParam(getStartParam());
+    deepLinkDone = true;
+    if (id !== null && TECH_BY_ID[id]) void navigate({ to: "/technique/$id", params: { id: String(id) } });
+  }, [hydrated, profile.onboardingDone, navigate]);
 
   // Анонимный отчёт в глобальную статистику (device_id + пояс); троттлинг внутри
   useEffect(() => {

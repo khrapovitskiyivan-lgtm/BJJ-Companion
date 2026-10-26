@@ -118,6 +118,39 @@ export function matchCaption(text: string, idx: ChannelIndex): ChannelMatch {
   return { ids: [...fromTags, ...fromText], fromTags, fromText };
 }
 
+// Строка под видео со ссылками на карточки техник в приложении (до 3), без техник — на бота
+const BOT_URL = "https://t.me/companionminiapp_bot";
+export const APP_LINE_PREFIX = "Смотреть в приложении: ";
+const OLD_LINE_PREFIX = "Все техники и дневник тренировок:";
+
+export interface AppLine {
+  line: string;
+  links: { offset: number; length: number; url: string }[]; // смещения внутри line (UTF-16)
+}
+
+export function buildAppLine(ids: number[], techById: Record<number, Technique>): AppLine {
+  const techs = [...new Set(ids)].map((id) => techById[id]).filter(Boolean).slice(0, 3);
+  const items = techs.length
+    ? techs.map((t) => ({ name: t.title.split(" (")[0], url: `${BOT_URL}?startapp=t${t.id}` }))
+    : [{ name: "BJJ Companion", url: BOT_URL }];
+  let line = APP_LINE_PREFIX;
+  const links: AppLine["links"] = [];
+  items.forEach((it, i) => {
+    if (i) line += " · ";
+    links.push({ offset: line.length, length: it.name.length, url: it.url });
+    line += it.name;
+  });
+  return { line, links };
+}
+
+// Снять нашу строку-ссылку (новую или старую) с конца подписи
+export function stripAppLine(text: string): string {
+  const parts = text.trimEnd().split("\n");
+  const last = parts[parts.length - 1] ?? "";
+  if (!last.startsWith(APP_LINE_PREFIX) && !last.startsWith(OLD_LINE_PREFIX)) return text;
+  return parts.slice(0, -1).join("\n").trimEnd();
+}
+
 // Каких тегов не хватает в подписи (для авто-дописывания ботом)
 export function missingTags(text: string, ids: number[], techById: Record<number, Technique>): string[] {
   const have = text.toLowerCase().replace(/ё/g, "е");

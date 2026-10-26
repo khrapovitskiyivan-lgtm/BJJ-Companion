@@ -4,7 +4,7 @@
 // приложение покажет его на карточках техник, 3) дописываем недостающие хэштеги.
 // Только для сервера (сервисный ключ, токен бота) — в клиентский бандл не тянуть.
 import { TECHNIQUES, TECH_BY_ID } from "@/lib/bjj/data";
-import { buildChannelIndex, matchCaption, missingTags, type ChannelIndex } from "@/lib/bjj/channelTag";
+import { buildAppLine, buildChannelIndex, matchCaption, missingTags, stripAppLine, type ChannelIndex } from "@/lib/bjj/channelTag";
 
 export interface TgChannelPost {
   message_id: number;
@@ -20,9 +20,6 @@ export interface TgChannelPost {
 
 const CHANNEL = (process.env.TG_CHANNEL_USERNAME ?? "myownbjj").toLowerCase();
 let index: ChannelIndex | null = null;
-// строка под каждым видео канала: ведёт подписчиков в приложение
-export const APP_MENTION = "@companionminiapp_bot";
-export const APP_LINE = `Все техники и дневник тренировок: ${APP_MENTION}`;
 
 async function rpc(fn: string, body: Record<string, unknown>): Promise<boolean> {
   const url = process.env.VITE_SUPABASE_URL;
@@ -53,27 +50,33 @@ export async function handleChannelPost(post: TgChannelPost, token: string): Pro
     p_posted_at: new Date(post.date * 1000).toISOString(),
   });
 
-  // Хэштеги: дописываем только отсутствующие; под видео строка со ссылкой на приложение.
+  // Хэштеги: дописываем только отсутствующие; под видео строка со ссылками на карточки в приложении.
   // Правка вызовет edited_channel_post, но там уже ничего не будет не хватать — цикла нет.
   if (!text) return;
   // старые посты размечены вручную: теги дописываем только к свежим (иначе массовая правка
   // ссылкой разбудит распознавание по тексту на сотнях старых подписей)
   const fresh = Date.now() / 1000 - post.date < 14 * 86400;
   const miss = fresh && ids.length ? missingTags(text, ids, TECH_BY_ID) : [];
-  const needLink = !!post.video && !text.includes(APP_MENTION);
-  if (!miss.length && !needLink) return;
-  // строка-ссылка всегда последней: снимаем её, дописываем теги, возвращаем
-  const base = text.endsWith(APP_LINE) ? text.slice(0, -APP_LINE.length).trimEnd() : text;
+  // строка со ссылками на карточки всегда последней: снимаем её, дописываем теги, собираем заново
+  const base = stripAppLine(text);
   let next = miss.length ? base + (/#\S+\s*$/.test(base) ? " " : "\n\n") + miss.join(" ") : base;
-  if (!next.includes(APP_MENTION) || base !== text) next += "\n\n" + APP_LINE;
+  const links: { type: "text_link"; offset: number; length: number; url: string }[] = [];
+  if (post.video) {
+    const app = buildAppLine(ids, TECH_BY_ID);
+    next += "\n\n";
+    for (const l of app.links) links.push({ type: "text_link", offset: next.length + l.offset, length: l.length, url: l.url });
+    next += app.line;
+  }
   if (next === text) return;
   if (next.length > (isCaption ? 1024 : 4096)) return; // лимиты Telegram
-  // разметка сохраняется: дописываем в конец, смещения entities в оставшемся тексте не меняются
-  const keep = (e: unknown[] | undefined) =>
-    (e ?? []).filter((x) => {
+  // разметка сохраняется: смещения entities в оставшемся тексте не меняются, ссылки — новые entities
+  const keep = (e: unknown[] | undefined) => [
+    ...(e ?? []).filter((x) => {
       const { offset, length } = x as { offset: number; length: number };
       return offset + length <= base.length;
-    });
+    }),
+    ...links,
+  ];
   const body = isCaption
     ? { chat_id: post.chat?.id, message_id: post.message_id, caption: next, caption_entities: keep(post.caption_entities) }
     : { chat_id: post.chat?.id, message_id: post.message_id, text: next, entities: keep(post.entities) };

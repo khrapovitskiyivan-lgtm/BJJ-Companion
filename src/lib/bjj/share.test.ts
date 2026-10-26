@@ -1,5 +1,17 @@
 import { describe, it, expect } from "vitest";
-import { buildStyleShare, buildWeekShare } from "./share";
+import { buildStyleShare, buildWeekShare, buildTechniqueLink, techniqueFromStartParam } from "./share";
+
+describe("ссылка на карточку техники", () => {
+  it("строится и разбирается обратно", () => {
+    expect(buildTechniqueLink(703)).toBe("https://t.me/companionminiapp_bot?startapp=t703");
+    expect(techniqueFromStartParam("t703")).toBe(703);
+  });
+  it("коды приглашений и мусор не принимает", () => {
+    expect(techniqueFromStartParam("AB12CD34")).toBeNull();
+    expect(techniqueFromStartParam("invite")).toBeNull();
+    expect(techniqueFromStartParam(null)).toBeNull();
+  });
+});
 import type { StyleScore } from "./styleProfile";
 
 const top: StyleScore = { style: "pressure_passer", pct: 42 } as StyleScore;

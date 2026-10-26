@@ -20,6 +20,17 @@ export function buildInviteLink(code: string): string {
   return `${BOT_LINK}?startapp=${encodeURIComponent(code)}`;
 }
 
+// Ссылка на карточку техники: открывает приложение сразу на ней (посты канала тренера).
+// Формат t<id>: не пересекается с кодами приглашений (8 символов A-Z0-9).
+export function buildTechniqueLink(id: number): string {
+  return `${BOT_LINK}?startapp=t${id}`;
+}
+
+export function techniqueFromStartParam(param: string | null): number | null {
+  const m = param?.match(/^t(\d{1,4})$/);
+  return m ? Number(m[1]) : null;
+}
+
 // Текст карточки стиля: топ-архетип + прогресс
 export function buildStyleShare(top: StyleScore, doneCount: number, total: number): string {
   const stat = STAT_META[ARCHETYPE_STATS[top.style].primary].ru;
