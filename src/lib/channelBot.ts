@@ -20,6 +20,9 @@ export interface TgChannelPost {
 
 const CHANNEL = (process.env.TG_CHANNEL_USERNAME ?? "myownbjj").toLowerCase();
 let index: ChannelIndex | null = null;
+// строка под каждым видео канала: ведёт подписчиков в приложение
+export const APP_MENTION = "@companionminiapp_bot";
+export const APP_LINE = `Все техники и дневник тренировок: ${APP_MENTION}`;
 
 async function rpc(fn: string, body: Record<string, unknown>): Promise<boolean> {
   const url = process.env.VITE_SUPABASE_URL;
@@ -50,18 +53,30 @@ export async function handleChannelPost(post: TgChannelPost, token: string): Pro
     p_posted_at: new Date(post.date * 1000).toISOString(),
   });
 
-  // Хэштеги: дописываем только отсутствующие. Правка вызовет edited_channel_post,
-  // но там тегов уже не будет не хватать — цикла нет.
-  if (!text || !ids.length) return;
-  const miss = missingTags(text, ids, TECH_BY_ID);
-  if (!miss.length) return;
-  const sep = /#\S+\s*$/.test(text) ? " " : "\n\n";
-  const next = text + sep + miss.join(" ");
+  // Хэштеги: дописываем только отсутствующие; под видео строка со ссылкой на приложение.
+  // Правка вызовет edited_channel_post, но там уже ничего не будет не хватать — цикла нет.
+  if (!text) return;
+  // старые посты размечены вручную: теги дописываем только к свежим (иначе массовая правка
+  // ссылкой разбудит распознавание по тексту на сотнях старых подписей)
+  const fresh = Date.now() / 1000 - post.date < 14 * 86400;
+  const miss = fresh && ids.length ? missingTags(text, ids, TECH_BY_ID) : [];
+  const needLink = !!post.video && !text.includes(APP_MENTION);
+  if (!miss.length && !needLink) return;
+  // строка-ссылка всегда последней: снимаем её, дописываем теги, возвращаем
+  const base = text.endsWith(APP_LINE) ? text.slice(0, -APP_LINE.length).trimEnd() : text;
+  let next = miss.length ? base + (/#\S+\s*$/.test(base) ? " " : "\n\n") + miss.join(" ") : base;
+  if (!next.includes(APP_MENTION) || base !== text) next += "\n\n" + APP_LINE;
+  if (next === text) return;
   if (next.length > (isCaption ? 1024 : 4096)) return; // лимиты Telegram
-  // разметка сохраняется: дописываем в конец, смещения существующих entities не меняются
+  // разметка сохраняется: дописываем в конец, смещения entities в оставшемся тексте не меняются
+  const keep = (e: unknown[] | undefined) =>
+    (e ?? []).filter((x) => {
+      const { offset, length } = x as { offset: number; length: number };
+      return offset + length <= base.length;
+    });
   const body = isCaption
-    ? { chat_id: post.chat?.id, message_id: post.message_id, caption: next, caption_entities: post.caption_entities ?? [] }
-    : { chat_id: post.chat?.id, message_id: post.message_id, text: next, entities: post.entities ?? [] };
+    ? { chat_id: post.chat?.id, message_id: post.message_id, caption: next, caption_entities: keep(post.caption_entities) }
+    : { chat_id: post.chat?.id, message_id: post.message_id, text: next, entities: keep(post.entities) };
   await fetch(`https://api.telegram.org/bot${token}/${isCaption ? "editMessageCaption" : "editMessageText"}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

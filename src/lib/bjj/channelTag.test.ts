@@ -18,6 +18,11 @@ describe("matchCaption", () => {
   it("находит технику по хэштегу", () => {
     expect(matchCaption("Тренировка\n\n#омоплата", idx).fromTags).toEqual([33]);
   });
+  it("узнаёт сленг владельца: клемп, продёргивание, свой тег #ахилл", () => {
+    expect(matchCaption("Принципы прохода открытого гарда, выход нижнего в позицию клемп", idx).ids).toContain(382);
+    expect(matchCaption("Тейкдаун с продергиванием", idx).ids).toContain(692);
+    expect(matchCaption("Выход на ахилл\n\n#ахилл", idx).fromTags).toEqual([49]);
+  });
   it("находит по названию с окончанием и не дублирует найденное по тегу", () => {
     const m = matchCaption("Делаем омоплату из гарда #омоплата", idx);
     expect(m.ids.filter((id) => id === 33)).toHaveLength(1);
