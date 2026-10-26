@@ -107,10 +107,16 @@
     "darce",
     "д'арс",
     "дарче",
-    "дарс чоук"
+    "дарс чоук",
+    "arm-in darce",
+    "арм-ин дарс",
+    "arm-in d'arce"
   ],
   "58": [
-    "anaconda"
+    "anaconda",
+    "arm-in anaconda",
+    "арм-ин анаконда",
+    "arm-in anaconda"
   ],
   "59": [
     "japanese necktie"
@@ -120,7 +126,11 @@
     "scissor sweep"
   ],
   "71": [
-    "flower sweep"
+    "flower sweep",
+    "пендулум свип",
+    "pendulum",
+    "маятниковый свип",
+    "pendulum sweep"
   ],
   "72": [
     "хип бамп",
@@ -491,18 +501,15 @@
     "арм ин гильотина",
     "arm-in guillotine"
   ],
-  "404": [
-    "arm-in darce"
-  ],
-  "405": [
-    "arm-in anaconda"
-  ],
   "407": [
     "солья",
     "соуджа",
     "лапель",
     "ляпель",
-    "soulja"
+    "soulja",
+    "солья чоук",
+    "удушение солья",
+    "solja choke"
   ],
   "408": [
     "flying armbar",
@@ -567,10 +574,6 @@
     "ляпель",
     "ворм гард пасс",
     "worm guard pass"
-  ],
-  "462": [
-    "пендулум свип",
-    "pendulum"
   ],
   "500": [
     "leg lock system",

@@ -12,7 +12,7 @@ export const TECH_BY_ID: Record<number, Technique> = Object.fromEntries(
 
 // Слитые дубли (2026-10-23): старый id -> оставленная карточка. Только для поиска по
 // id (старые ссылки /technique/385, отметки прогресса); в списках и графе их нет.
-const MERGED: Record<number, number> = { 385: 49, 306: 49, 502: 368, 333: 415 };
+const MERGED: Record<number, number> = { 385: 49, 306: 49, 502: 368, 333: 415, 404: 57, 405: 58, 462: 71 };
 for (const [oldId, newId] of Object.entries(MERGED)) TECH_BY_ID[Number(oldId)] = TECH_BY_ID[newId];
 
 // Полные тексты разборов: отдельный чанк (около 660 КБ), грузится один раз по требованию.
